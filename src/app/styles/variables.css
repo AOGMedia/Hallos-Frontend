@@ -1,0 +1,48 @@
+:root {
+  --primary: #6a57e5;
+  --secondary: #5099f8;
+  --accent-cyan: #8ef1ff;
+  --accent-red: #f5313b;
+  --warning: #ffd42a;
+  --background-dark: #1f2636;
+  --background-darker: #0a0a0a;
+  --text-primary: #f2f2f2;
+  --text-secondary: #e5e5e5;
+  --text-muted: rgba(242, 242, 242, 0.8);
+  --border: rgba(234, 234, 234, 0.1);
+  --wallet-pending-bg: #1f2636;
+  --wallet-available-bg-start: rgba(106, 87, 229, 0.2);
+  --wallet-available-bg-end: rgba(229, 87, 198, 0.2);
+  --wallet-available-overlay: #1f2636;
+  --status-pending: #ffd42a;
+  --status-available: #00ff88;
+  --text-gray: #888c94;
+  --green-accent: #14c877;
+  --blue-accent: #00abe4;
+  --yellow-accent: #d9c80f;
+}
+
+
+@theme inline {
+  --color-primary: var(--primary);
+  --color-secondary: var(--secondary);
+  --color-accent-cyan: var(--accent-cyan);
+  --color-accent-red: var(--accent-red);
+  --color-warning: var(--warning);
+  --color-background-dark: var(--background-dark);
+  --color-background-darker: var(--background-darker);
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-muted: var(--text-muted);
+  --color-border: var(--border);
+  --color-wallet-pending-bg: var(--wallet-pending-bg);
+  --color-wallet-available-bg-start: var(--wallet-available-bg-start);
+  --color-wallet-available-bg-end: var(--wallet-available-bg-end);
+  --color-wallet-available-overlay: var(--wallet-available-overlay);
+  --color-status-pending: var(--status-pending);
+  --color-status-available: var(--status-available);
+  --color-text-gray: var(--text-gray);
+  --color-green-accent: var(--green-accent);
+  --color-blue-accent: var(--blue-accent);
+  --color-yellow-accent: var(--yellow-accent);
+}

@@ -1,0 +1,297 @@
+@utility heading-hero {
+  font-family: "Plus Jakarta Sans", sans-serif;
+  font-size: 64px;
+  font-weight: 800;
+  line-height: 80px;
+  color: var(--text-primary);
+}
+
+@utility heading-section {
+  font-family: "Plus Jakarta Sans", sans-serif;
+  font-size: 64px;
+  font-weight: 800;
+  line-height: 80px;
+  color: var(--text-primary);
+}
+
+@utility heading-card {
+  font-family: "Plus Jakarta Sans", sans-serif;
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 30px;
+  color: var(--text-primary);
+}
+
+@utility text-body {
+  font-family: "Plus Jakarta Sans", sans-serif;
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 24px;
+  color: var(--text-muted);
+}
+
+@utility text-small {
+  font-family: "Plus Jakarta Sans", sans-serif;
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 12px;
+  color: var(--text-primary);
+}
+
+@utility text-nav {
+  font-family: "Plus Jakarta Sans", sans-serif;
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 20px;
+  color: var(--text-primary);
+}
+
+@utility heading-large {
+  font-family: "Plus Jakarta Sans", sans-serif;
+  font-size: 48px;
+  font-weight: 700;
+  line-height: 67.2px;
+  color: var(--text-primary);
+}
+
+@utility heading-medium {
+  font-family: "Plus Jakarta Sans", sans-serif;
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 24px;
+  color: var(--text-primary);
+}
+
+@utility heading-small {
+  font-family: "Plus Jakarta Sans", sans-serif;
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 20px;
+  color: var(--text-primary);
+}
+
+@utility text-medium {
+  font-family: "Plus Jakarta Sans", sans-serif;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 16px;
+  color: var(--text-primary);
+}
+
+@utility text-regular {
+  font-family: "Plus Jakarta Sans", sans-serif;
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 20px;
+  color: var(--text-primary);
+}
+
+@utility text-muted-small {
+  font-family: "Plus Jakarta Sans", sans-serif;
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 12px;
+  color: var(--text-primary);
+}
+
+@utility text-description {
+  font-family: "Plus Jakarta Sans", sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 21px;
+  color: rgba(242, 242, 242, 0.8);
+}
+
+@utility text-metadata {
+  font-family: "Plus Jakarta Sans", sans-serif;
+  font-size: 24px;
+  font-weight: 600;
+  color: #888c94;
+}
+
+@utility text-stat-large {
+  font-family: "Plus Jakarta Sans", sans-serif;
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: 0.12px;
+  line-height: 24px;
+  color: var(--text-primary);
+}
+
+@utility text-stat-small {
+  font-family: "Plus Jakarta Sans", sans-serif;
+  font-size: 16px;
+  font-weight: 500;
+  letter-spacing: 0.08px;
+  line-height: 16px;
+  color: #777e90;
+}
+
+@utility rank-number {
+  font-family: "Familjen Grotesk", sans-serif;
+  font-size: 294px;
+  font-weight: 700;
+  line-height: 294px;
+  opacity: 80;
+}
+
+@utility live-event-title {
+  font-family: "Plus Jakarta Sans", sans-serif;
+  font-size: 32px;
+  font-weight: 500;
+  color: #f2f2f2;
+}
+
+@utility live-event-label {
+  font-family: "Inter", sans-serif;
+  font-size: 16px;
+  font-weight: 400;
+  color: #f2f2f2;
+}
+
+@utility live-event-input-text {
+  font-family: "Plus Jakarta Sans", sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  color: rgba(234, 234, 234, 0.50);
+}
+
+@utility live-event-helper-text {
+  font-family: "Inter", sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 20.30px;
+  color: #888c94;
+}
+
+@utility live-event-upload-text {
+  font-family: "Plus Jakarta Sans", sans-serif;
+  font-size: 16px;
+  font-weight: 500;
+  color: #f2f2f2;
+}
+
+@utility live-event-button-text {
+  font-family: "Plus Jakarta Sans", sans-serif;
+  font-size: 16px;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+@utility live-event-link-text {
+  font-family: "Plus Jakarta Sans", sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  color: #6a57e5;
+}
+
+@utility countdown-number {
+  font-family: "Plus Jakarta Sans", sans-serif;
+  font-size: 32px;
+  font-weight: 700;
+  line-height: 40px;
+  color: #f2f2f2;
+}
+
+@utility countdown-label {
+  font-family: "Plus Jakarta Sans", sans-serif;
+  font-size: 12.8px;
+  font-weight: 400;
+  color: rgba(242, 242, 242, 0.8);
+}
+
+@utility event-title-large {
+  font-family: "Plus Jakarta Sans", sans-serif;
+  font-size: 40px;
+  font-weight: 700;
+  line-height: 1.2;
+  color: #f2f2f2;
+}
+
+@utility form-section-title {
+  font-family: "Plus Jakarta Sans", sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  color: #eaeaea;
+  display: flex;
+  align-items: center;
+
+  gap: 10px;
+}
+
+@utility role-option-title {
+  font-family: "Plus Jakarta Sans", sans-serif;
+  font-size: 16px;
+  font-weight: 600;
+  color: rgba(234, 234, 234, 0.8);
+}
+
+@utility role-option-description {
+  font-family: "Plus Jakarta Sans", sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  color: rgba(136, 140, 148, 0.8);
+}
+
+@utility modal-title {
+  font-family: "Plus Jakarta Sans", sans-serif;
+  font-size: 24px;
+  font-weight: 700;
+  color: #f2f2f2;
+}
+
+@utility modal-subtitle {
+  font-family: "Plus Jakarta Sans", sans-serif;
+  font-size: 16px;
+  font-weight: 400;
+  color: #888c94;
+}
+
+@utility wallet-title {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 32px;
+  font-weight: 500;
+  color: #f2f2f2;
+}
+
+@utility wallet-tab-text {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 16px;
+  font-weight: 500;
+}
+
+@utility wallet-status-text {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 16px;
+  font-weight: 400;
+  color: #f2f2f2;
+}
+
+@utility wallet-amount {
+  font-family: 'Outfit', sans-serif;
+  font-size: 40px;
+  font-weight: 700;
+  color: #f2f2f2;
+}
+
+@utility wallet-description {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  color: #888c94;
+  opacity: 0.60;
+}
+
+@utility wallet-button-text {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+@utility wallet-link-text {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  color: rgba(234, 234, 234, 0.50);
+  text-decoration: underline;
+}

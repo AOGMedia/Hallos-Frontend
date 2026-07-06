@@ -1,0 +1,18 @@
+@import url("https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Familjen+Grotesk:wght@700&family=Outfit:wght@700&family=Bricolage+Grotesque:wght@500;800&family=Tangerine:wght@700&display=swap");
+
+@import "tailwindcss";
+@import "./styles/variables.css";
+@import "./styles/typography.css";
+@import "./styles/components.css";
+@import "./styles/utilities.css";
+@import "tw-animate-css";
+@custom-variant dark (&:is(.dark *));
+
+@layer base {
+  * {
+    @apply border-border outline-none;
+    }
+  body {
+    @apply bg-neutral-50 text-neutral-900;
+    }
+}

@@ -1,0 +1,32 @@
+<svg viewBox="0 0 127 127" x="0" y="0" fill="none" xmlns="http://www.w3.org/2000/svg"><defs><radialGradient id="paint4_radial_855_12391" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(671.105 383.058) rotate(126.371) scale(141.241)" xmlns="http://www.w3.org/2000/svg">
+<stop stop-color="#DC57E5"/>
+<stop offset="1" stop-color="#6A57E5"/>
+</radialGradient><linearGradient id="paint5_linear_855_12391" x1="94.10000000000002" y1="29.442000000000007" x2="76.81100000000004" y2="45.96300000000002" gradientUnits="userSpaceOnUse" xmlns="http://www.w3.org/2000/svg">
+<stop stop-color="white" stop-opacity="0.4"/>
+<stop offset="1" stop-color="white" stop-opacity="0"/>
+</linearGradient><radialGradient id="paint6_radial_855_12391" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(675.079 378.418) rotate(126.371) scale(151.883)" xmlns="http://www.w3.org/2000/svg">
+<stop stop-color="#DC57E5"/>
+<stop offset="1" stop-color="#6A57E5"/>
+</radialGradient><linearGradient id="paint7_linear_855_12391" x1="98.45000000000005" y1="24.831999999999994" x2="79.85799999999995" y2="42.59699999999998" gradientUnits="userSpaceOnUse" xmlns="http://www.w3.org/2000/svg">
+<stop stop-color="white" stop-opacity="0.4"/>
+<stop offset="1" stop-color="white" stop-opacity="0"/>
+</linearGradient><radialGradient id="paint8_radial_855_12391" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(678.237 374.655) rotate(126.371) scale(161.557)" xmlns="http://www.w3.org/2000/svg">
+<stop stop-color="#DC57E5"/>
+<stop offset="1" stop-color="#6A57E5"/>
+</radialGradient><linearGradient id="paint9_linear_855_12391" x1="101.95000000000005" y1="21.095000000000027" x2="82.17399999999998" y2="39.99200000000002" gradientUnits="userSpaceOnUse" xmlns="http://www.w3.org/2000/svg">
+<stop stop-color="white" stop-opacity="0.4"/>
+<stop offset="1" stop-color="white" stop-opacity="0"/>
+</linearGradient></defs><g id="Group 718327" xmlns="http://www.w3.org/2000/svg">
+<g id="Group 718323" opacity="0.2">
+<circle id="Ellipse 1053" cx="43" cy="84" r="73" fill="url(#paint4_radial_855_12391)"/>
+<circle id="Ellipse 1054" cx="43" cy="84" r="73" fill="url(#paint5_linear_855_12391)"/>
+</g>
+<g id="Group 718324" opacity="0.2">
+<circle id="Ellipse 1053_2" cx="43.5" cy="83.5" r="78.5" fill="url(#paint6_radial_855_12391)"/>
+<circle id="Ellipse 1054_2" cx="43.5" cy="83.5" r="78.5" fill="url(#paint7_linear_855_12391)"/>
+</g>
+<g id="Group 718325" opacity="0.2">
+<circle id="Ellipse 1053_3" cx="43.5" cy="83.5" r="83.5" fill="url(#paint8_radial_855_12391)"/>
+<circle id="Ellipse 1054_3" cx="43.5" cy="83.5" r="83.5" fill="url(#paint9_linear_855_12391)"/>
+</g>
+</g></svg>

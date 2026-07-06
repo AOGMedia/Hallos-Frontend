@@ -1,0 +1,388 @@
+@utility video-card {
+  background: rgba(242, 242, 242, 0.04);
+  border-radius: 16px;
+  border: 1px solid rgba(234, 234, 234, 0.1);
+}
+
+@utility short-card {
+  background: rgba(242, 242, 242, 0.04);
+  border-radius: 16px;
+  border: 1px solid rgba(234, 234, 234, 0.16);
+}
+
+@utility live-badge {
+  background: rgba(106, 87, 229, 0.1);
+  border-radius: 100px;
+}
+
+@utility call-control-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 8px;
+  border-radius: 8px;
+  background-color: transparent;
+  transition: background-color 0.2s;
+  cursor: pointer;
+  
+  &:hover {
+    background-color: rgba(234, 234, 234, 0.1);
+  }
+}
+
+@utility call-control-btn-active {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 8px;
+  border-radius: 8px;
+  background-color: rgba(106, 87, 229, 0.15);
+  transition: background-color 0.2s;
+  cursor: pointer;
+  
+  &:hover {
+    background-color: rgba(106, 87, 229, 0.2);
+  }
+}
+
+@utility settings-input-field {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 18px;
+  border-radius: 6px;
+  border: 1px solid rgba(234, 234, 234, 0.40);
+  background-color: rgba(234, 234, 234, 0.06);
+  backdrop-filter: blur(60px);
+  min-height: 57px;
+}
+
+@utility participant-avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: linear-gradient(135deg, rgba(106, 87, 229, 0.3), rgba(80, 153, 248, 0.3));
+  border: 2px solid rgba(106, 87, 229, 0.5);
+  font-family: "Plus Jakarta Sans", sans-serif;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+@utility participant-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 24px 16px;
+  border-radius: 4px;
+  background: linear-gradient(135deg, rgba(31, 38, 54, 0.6), rgba(31, 38, 54, 0.8));
+  position: relative;
+}
+
+@utility section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  cursor: pointer;
+  user-select: none;
+}
+
+@utility call-timer-text {
+  font-family: "Plus Jakarta Sans", sans-serif;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+@utility sidebar-item {
+  border-radius: 6px;
+  padding: 12px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  transition: background-color 0.2s;
+  cursor: pointer;
+
+  &:hover {
+    background-color: rgba(242, 242, 242, 0.05);
+  }
+}
+
+@utility sidebar-item-active {
+  background-color: #1f2636;
+  border-radius: 6px;
+  padding: 12px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+@utility countdown-card {
+  background-color: #1f2636;
+  border-radius: 13px;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+@utility event-details-card {
+  background-color: #1f2636;
+  border-radius: 16px;
+  padding: 16px;
+  display: flex;
+  gap: 16px;
+}
+
+@utility live-event-card {
+  background-color: #1f2636;
+  border-radius: 40px;
+  padding: 40px;
+}
+
+@utility live-event-input {
+  background-color: rgba(234, 234, 234, 0.06);
+  border: 1px solid rgba(234, 234, 234, 0.20);
+  border-radius: 6px;
+  backdrop-filter: blur(60px);
+  padding: 12px 16px;
+}
+
+@utility live-event-upload-zone {
+  border: 2px dashed #6a57e5;
+  border-radius: 16px;
+  background-color: rgba(106, 87, 229, 0.06);
+  padding: 40px;
+}
+
+@utility live-event-button-outline {
+  border: 1.2px solid rgba(234, 234, 234, 0.20);
+  border-radius: 1000px;
+  background-color: rgba(106, 87, 229, 0.00);
+  box-shadow: inset 2px 2px 4px rgba(255, 255, 255, 0.30);
+  padding: 16px 24px;
+}
+
+@utility live-event-button-primary {
+  border-radius: 1000px;
+  background-color: #6a57e5;
+  padding: 16px 24px;
+}
+
+@utility modal-overlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.75);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 50;
+  padding: 16px;
+}
+
+@utility modal-content {
+  background: linear-gradient(
+      0deg,
+      rgba(106, 87, 229, 0.06),
+      rgba(106, 87, 229, 0.06)
+    ),
+    #1f2636;
+  border-radius: 24px;
+  padding: 32px;
+  max-width: 800px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  position: relative;
+}
+
+@utility radio-option-card {
+  border-radius: 6px;
+  border: 1px solid rgba(234, 234, 234, 0.2);
+  padding: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &:hover {
+    border-color: rgba(106, 87, 229, 0.5);
+    background-color: rgba(106, 87, 229, 0.05);
+  }
+}
+
+@utility radio-option-card-selected {
+  border-color: #6a57e5;
+  background-color: rgba(106, 87, 229, 0.1);
+}
+
+@utility radio-button {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 1px solid #888c94;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+@utility radio-button-selected {
+  border-color: #6a57e5;
+  background-color: #6a57e5;
+}
+
+@utility radio-button-inner {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: #ffffff;
+}
+
+/* ── Event Landing Page Utilities ──────────────────────────────────────── */
+
+@utility event-about-card-dark {
+  border-radius: 40px;
+  padding: 40px;
+  display: flex;
+  flex-direction: column;
+  gap: 40px;
+  background:
+    linear-gradient(250.32deg, rgba(106,87,229,0.2) 5.32%, rgba(229,87,198,0.2) 95.16%),
+    linear-gradient(249.02deg, rgba(106,87,229,0) 4.59%, rgba(31,38,54,1) 95.53%),
+    #1f2636;
+}
+
+@utility event-about-card-perks {
+  border-radius: 40px;
+  padding: 40px;
+  display: flex;
+  flex-direction: column;
+  gap: 40px;
+  background:
+    linear-gradient(250.32deg, rgba(106,87,229,0.2) 5.32%, rgba(229,87,198,0.2) 95.16%),
+    #1f2636;
+}
+
+@utility event-about-card-commitment {
+  border-radius: 40px;
+  padding: 40px;
+  display: flex;
+  flex-direction: column;
+  gap: 40px;
+  background: linear-gradient(250.32deg, rgba(182,31,112,0.2) 5.32%, rgba(229,224,87,0.2) 95.16%);
+}
+
+@utility event-about-card-register {
+  border-radius: 40px;
+  padding: 40px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  background: radial-gradient(100% 100% at 0% 50%, #6a57e5 1.42%, #bae4ef 52.21%, #7edcf5 75.52%, #ebd4f3 99.79%);
+  border: 0px solid;
+  border-image-source: radial-gradient(72.87% 72.87% at 87.64% 49.92%, #8EF1FF 3.45%, #6A57E5 97.6%);
+  border-image-slice: 1;
+  position: relative;
+  overflow: hidden;
+}
+
+@utility event-section-dark {
+  background: linear-gradient(249.02deg, rgba(106,87,229,0) 4.59%, rgba(31,38,54,1) 95.53%);
+}
+
+@utility event-limited-section-bg {
+  background:
+    linear-gradient(250.32deg, rgba(106,87,229,0.2) 5.32%, rgba(229,87,198,0.2) 95.16%),
+    linear-gradient(249.02deg, rgba(106,87,229,0) 4.59%, rgba(31,38,54,1) 95.53%),
+    #1f2636;
+}
+
+@utility event-info-bar {
+  border-radius: 16px;
+  overflow: hidden;
+  position: relative;
+  background:
+    linear-gradient(0deg, rgba(106,87,229,0.50), rgba(106,87,229,0.50)),
+    radial-gradient(100% 412.28% at 0% 50%, #6a57e5 1.42%, #bae4ef 52.21%, #7edcf5 75.52%, #ebd4f3 99.79%),
+    #1f2636;
+  box-shadow: -16px -20px 40px rgba(106, 87, 229, 0.14);
+}
+
+@utility event-countdown-header {
+  border-radius: 16px 16px 0 0;
+  overflow: hidden;
+  position: relative;
+  background:
+    linear-gradient(0deg, rgba(106,87,229,0.50), rgba(106,87,229,0.50)),
+    radial-gradient(100% 412.28% at 0% 50%, #6a57e5 1.42%, #bae4ef 52.21%, #7edcf5 75.52%, #ebd4f3 99.79%),
+    #1f2636;
+}
+
+@utility event-countdown-body {
+  border-radius: 0 0 16px 16px;
+  overflow: hidden;
+  position: relative;
+  background:
+    linear-gradient(0deg, rgba(106,87,229,0.50), rgba(106,87,229,0.50)),
+    radial-gradient(100% 412.28% at 0% 50%, #6a57e5 1.42%, #bae4ef 52.21%, #7edcf5 75.52%, #ebd4f3 99.79%),
+    #1f2636;
+}
+
+@utility event-faq-container {
+  border-radius: 12px;
+  border: 1px solid rgba(234, 234, 234, 0.10);
+  background-color: rgba(250, 250, 250, 0.04);
+}
+
+@utility event-cta-card {
+  background-color: #1f2636;
+  border-radius: 24px;
+  padding: 80px 60px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 48px;
+}
+
+@utility event-hero-colorful-bg {
+  background: radial-gradient(100% 100% at 0% 50%, #6a57e5 1.42%, #bae4ef 52.21%, #7edcf5 75.52%, #ebd4f3 99.79%);
+}
+
+@utility event-card-icon-badge {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* ── End Event Landing Page Utilities ─────────────────────────────────── */
+
+@utility auth-input {
+  background: rgba(234, 234, 234, 0.06);
+  border: 1px solid rgba(234, 234, 234, 0.2);
+  border-radius: 6px;
+  padding: 12px 16px;
+  color: #eaeaea;
+  font-family: "Plus Jakarta Sans", sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  outline: none;
+  transition: border-color 0.2s;
+
+  &:focus {
+    border-color: var(--primary);
+  }
+
+  &::placeholder {
+    color: rgba(234, 234, 234, 0.5);
+    font-weight: 400;
+  }
+}
