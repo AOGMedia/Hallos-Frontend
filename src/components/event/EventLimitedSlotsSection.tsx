@@ -86,7 +86,7 @@ export function EventLimitedSlotsSection({ onRegister }: EventLimitedSlotsSectio
                     color: 'rgba(242,242,242,0.8)',
                   }}
                 >
-                   24th & 25th July
+                   17th & 18th September
                 </span>
               </div>
 

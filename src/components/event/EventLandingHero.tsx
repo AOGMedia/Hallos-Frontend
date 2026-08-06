@@ -92,7 +92,7 @@ export function EventLandingHero({
       {/* Event details info bar */}
       <div className="px-4 sm:px-8 lg:px-16 -mt-6 sm:-mt-8 relative z-20">
         <EventInfoBar
-          date="24th & 25th July"
+          date="17th & 18th September"
           time="2 days"
           location="Lagos, Nigeria"
         />
