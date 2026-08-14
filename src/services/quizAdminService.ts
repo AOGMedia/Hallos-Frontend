@@ -30,17 +30,82 @@ export interface QuizCategory {
   createdAt: string;
 }
 
+/** Mirrors the backend's QuizTournament.status enum exactly */
+export type QuizTournamentStatus =
+  | 'draft'
+  | 'pending_review'
+  | 'open'
+  | 'in_progress'
+  | 'completed'
+  | 'cancelled'
+  | 'rejected';
+
 export interface QuizTournament {
   id: string;
   name: string;
-  status: 'open' | 'active' | 'completed' | 'cancelled';
+  description?: string;
+  format?: 'classic' | 'speed_run' | 'knockout' | 'battle_royale';
+  status: QuizTournamentStatus;
   prizePool: number;
   entryFee?: number;
-  maxParticipants?: number;
+  maxParticipants?: number | null;
   minParticipants?: number;
+  currentRound?: number;
+  totalRounds?: number;
   createdAt: string;
   startTime?: string;
   registrationDeadline?: string;
+  /** Set when a user proposed this rather than an admin creating it */
+  proposedBy?: number | null;
+  reviewedBy?: number | null;
+  reviewedAt?: string | null;
+  rejectionReason?: string | null;
+}
+
+export interface TournamentProposalsResponse {
+  success: boolean;
+  proposals: QuizTournament[];
+  totalCount: number;
+  page: number;
+  totalPages: number;
+}
+
+export interface TournamentOverviewRound {
+  id: string;
+  roundNumber: number;
+  status: 'pending' | 'active' | 'completed';
+  questions: string[];
+  participants: Array<{
+    userId: number;
+    score: number;
+    completionTime: number | null;
+    rank: number | null;
+    matchId?: string;
+    bye?: boolean;
+    answers?: string[];
+  }>;
+  startedAt: string | null;
+  completedAt: string | null;
+}
+
+export interface TournamentOverviewMatch {
+  id: string;
+  roundNumber: number;
+  status: string;
+  challengerId: number;
+  opponentId: number;
+  winnerId: number | null;
+  startedAt: string | null;
+  completedAt: string | null;
+}
+
+export interface TournamentOverviewResponse {
+  success: boolean;
+  tournament: QuizTournament;
+  participantCount: number;
+  statusCounts: Record<string, number>;
+  rounds: TournamentOverviewRound[];
+  matches: TournamentOverviewMatch[];
 }
 
 export interface AdminDashboardStats {
@@ -117,6 +182,64 @@ export const quizAdminService = {
   },
 
   // 28. Create Tournament
+  /**
+   * List tournaments. The public listing endpoint only returns
+   * open/in_progress/completed/cancelled — proposals awaiting review come from
+   * getTournamentProposals below, since they're deliberately not public.
+   */
+  getTournaments: async (params: { status?: QuizTournamentStatus; page?: number; limit?: number } = {}) => {
+    const response = await apiClient.get<{
+      success: boolean;
+      tournaments: QuizTournament[];
+      totalCount: number;
+      page: number;
+      totalPages: number;
+    }>('/api/quiz/tournaments', { params: { page: 1, limit: 50, ...params } });
+    return response.data;
+  },
+
+  // --- User-hosted proposal review ---
+
+  getTournamentProposals: async (params: { page?: number; limit?: number } = {}) => {
+    const response = await apiClient.get<TournamentProposalsResponse>(
+      '/api/quiz/admin/tournament/proposals',
+      { params: { page: 1, limit: 20, ...params } }
+    );
+    return response.data;
+  },
+
+  approveTournamentProposal: async (id: string) => {
+    const response = await apiClient.post<{ success: boolean; tournament: QuizTournament; message?: string }>(
+      `/api/quiz/admin/tournament/${id}/approve`
+    );
+    return response.data;
+  },
+
+  rejectTournamentProposal: async (id: string, reason: string) => {
+    const response = await apiClient.post<{ success: boolean; message?: string }>(
+      `/api/quiz/admin/tournament/${id}/reject`,
+      { reason }
+    );
+    return response.data;
+  },
+
+  // --- Live monitoring ---
+
+  getTournamentOverview: async (id: string) => {
+    const response = await apiClient.get<TournamentOverviewResponse>(
+      `/api/quiz/admin/tournament/${id}/overview`
+    );
+    return response.data;
+  },
+
+  /** Last-resort override: pays out prizes from current standings */
+  forceFinalizeTournament: async (id: string) => {
+    const response = await apiClient.post<{ success: boolean; message?: string }>(
+      `/api/quiz/admin/tournament/${id}/force-finalize`
+    );
+    return response.data;
+  },
+
   createTournament: async (data: CreateTournamentData) => {
     const response = await apiClient.post<{ success: boolean; tournamentId: string; tournament: QuizTournament }>('/api/quiz/admin/tournament/create', data);
     return response.data;

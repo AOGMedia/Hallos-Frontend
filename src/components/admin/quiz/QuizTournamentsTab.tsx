@@ -1,12 +1,14 @@
 'use client';
 
-import React, { useEffect, useCallback, useTransition } from 'react';
-import { Plus, Trophy, Calendar, Users, DollarSign, PlayCircle, XCircle } from 'lucide-react';
+import React, { useEffect, useCallback, useState, useTransition } from 'react';
+import { Plus, Trophy, Calendar, Users, DollarSign, PlayCircle, XCircle, Activity } from 'lucide-react';
 import { quizAdminService, QuizTournament } from '@/services/quizAdminService';
 import { useQuizTournamentsStore } from '@/store/quizTournamentsStore';
+import TournamentProposalsPanel from '@/components/admin/quiz/TournamentProposalsPanel';
 import dynamic from 'next/dynamic';
 
 const TournamentFormModal = dynamic(() => import('@/components/admin/quiz/TournamentFormModal'), { ssr: false });
+const TournamentOverviewModal = dynamic(() => import('@/components/admin/quiz/TournamentOverviewModal'), { ssr: false });
 
 export default function QuizTournamentsTab() {
   const {
@@ -21,13 +23,22 @@ export default function QuizTournamentsTab() {
   } = useQuizTournamentsStore();
 
   const [, startTransition] = useTransition();
+  const [overviewId, setOverviewId] = useState<string | null>(null);
+  const [fetchError, setFetchError] = useState<string | null>(null);
 
+  // This previously set an empty array and never called the API, so the table
+  // was permanently empty no matter how many tournaments existed.
   const fetchTournaments = useCallback(async () => {
     try {
       setLoading(true);
-      setTournaments([]);
-    } catch (err) {
+      setFetchError(null);
+      const res = await quizAdminService.getTournaments();
+      setTournaments(res.tournaments ?? []);
+    } catch (err: unknown) {
+      const e = err as { response?: { data?: { message?: string } }; message?: string };
       console.error('Failed to fetch tournaments', err);
+      setFetchError(e.response?.data?.message || e.message || 'Failed to load tournaments');
+      setTournaments([]);
     } finally {
       setLoading(false);
     }
@@ -73,7 +84,10 @@ export default function QuizTournamentsTab() {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'open': return <span className="bg-emerald-500/10 text-emerald-400 px-2 py-1 rounded text-xs font-medium border border-emerald-500/20">Registrations Open</span>;
-      case 'active': return <span className="bg-blue-500/10 text-blue-400 px-2 py-1 rounded text-xs font-medium border border-blue-500/20">Active</span>;
+      // The backend's enum value is in_progress; 'active' was never a real status.
+      case 'in_progress': return <span className="bg-blue-500/10 text-blue-400 px-2 py-1 rounded text-xs font-medium border border-blue-500/20">In Progress</span>;
+      case 'pending_review': return <span className="bg-amber-500/10 text-amber-400 px-2 py-1 rounded text-xs font-medium border border-amber-500/20">Pending Review</span>;
+      case 'rejected': return <span className="bg-rose-500/10 text-rose-400 px-2 py-1 rounded text-xs font-medium border border-rose-500/20">Declined</span>;
       case 'completed': return <span className="bg-zinc-500/10 text-zinc-400 px-2 py-1 rounded text-xs font-medium border border-zinc-500/20">Completed</span>;
       case 'cancelled': return <span className="bg-rose-500/10 text-rose-400 px-2 py-1 rounded text-xs font-medium border border-rose-500/20">Cancelled</span>;
       default: return <span className="bg-zinc-800 text-zinc-400 px-2 py-1 rounded text-xs font-medium">{status.toUpperCase()}</span>;
@@ -97,6 +111,15 @@ export default function QuizTournamentsTab() {
           <Plus size={16} /> New Tournament
         </button>
       </div>
+
+      <TournamentProposalsPanel onReviewed={fetchTournaments} />
+
+      {fetchError && (
+        <div className="bg-rose-500/10 border border-rose-500/20 text-rose-400 px-4 py-3 rounded-xl text-sm">
+          {fetchError}
+          <button onClick={fetchTournaments} className="ml-2 underline hover:text-rose-300">Retry</button>
+        </div>
+      )}
 
       <div className="bg-zinc-900 border border-zinc-800 rounded-2xl overflow-hidden shadow-sm">
         <div className="overflow-x-auto">
@@ -172,7 +195,16 @@ export default function QuizTournamentsTab() {
                             </button>
                           </>
                         )}
-                        {(t.status === 'open' || t.status === 'active') && (
+                        {(t.status === 'in_progress' || t.status === 'completed') && (
+                          <button
+                            onClick={() => setOverviewId(t.id)}
+                            title="Live overview / force-finalize"
+                            className="p-1.5 text-zinc-500 hover:text-blue-400 hover:bg-blue-500/10 rounded transition-colors"
+                          >
+                            <Activity size={16} />
+                          </button>
+                        )}
+                        {(t.status === 'open' || t.status === 'in_progress') && (
                           <button
                             onClick={() => handleCancel(t.id)}
                             title="Cancel Tournament"
@@ -195,6 +227,12 @@ export default function QuizTournamentsTab() {
         isOpen={isModalOpen}
         onClose={() => { setIsModalOpen(false); fetchTournaments(); }}
         tournament={editingTournament}
+      />
+
+      <TournamentOverviewModal
+        tournamentId={overviewId}
+        onClose={() => setOverviewId(null)}
+        onFinalized={fetchTournaments}
       />
     </div>
   );
