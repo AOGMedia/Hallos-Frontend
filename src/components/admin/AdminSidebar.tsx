@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Users, LogOut, Gamepad2, CreditCard, UserCheck } from 'lucide-react';
+import { LayoutDashboard, Users, LogOut, Gamepad2, CreditCard, UserCheck, Newspaper } from 'lucide-react';
 
 const links = [
   { href: '/admin', label: 'Dashboard', icon: LayoutDashboard },
@@ -10,6 +10,7 @@ const links = [
   { href: '/admin/payouts', label: 'Payouts', icon: CreditCard },
   { href: '/admin/enrollments', label: 'Enrollments', icon: Users },
   { href: '/admin/quiz', label: 'Quiz', icon: Gamepad2 },
+  { href: '/admin/blog', label: 'Blog', icon: Newspaper },
 ];
 
 export default function AdminSidebar() {
