@@ -1,12 +1,13 @@
 'use client';
 
 import { Sidebar } from '@/components/dashboard/Sidebar';
-import { LayoutDashboard, Users, Gamepad2, Bell } from 'lucide-react';
+import { LayoutDashboard, Users, Gamepad2, Bell, Newspaper } from 'lucide-react';
 
 const adminMenuItems = [
   { name: 'Dashboard', icon: LayoutDashboard, href: '/admin' },
   { name: 'Enrollments', icon: Users, href: '/admin/enrollments' },
   { name: 'Quiz', icon: Gamepad2, href: '/admin/quiz' },
+  { name: 'Blog', icon: Newspaper, href: '/admin/blog' },
   { name: 'Notifications', icon: Bell, href: '/admin/notifications' },
 ];
 
