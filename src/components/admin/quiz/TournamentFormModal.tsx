@@ -21,6 +21,16 @@ const FORMATS: { id: NonNullable<QuizTournament['format']>; label: string; blurb
 
 const ENTRY_FEE_PRESETS = [0, 50, 100, 250, 500];
 
+// Knockout/battle_royale round counts are derived from the final registered
+// headcount when the tournament starts, so there's no input for them here.
+// classic/speed_run have no elimination mechanic to derive a count from, so
+// the organizer sets it directly, same as entry fee/player caps/prize split.
+// Bounds/default must match tournamentService.js's MIN/MAX/DEFAULT_TOURNAMENT_ROUNDS.
+const CONFIGURABLE_ROUNDS_FORMATS: NonNullable<QuizTournament['format']>[] = ['classic', 'speed_run'];
+const DEFAULT_ROUNDS = 3;
+const MIN_ROUNDS = 1;
+const MAX_ROUNDS = 10;
+
 /** Numeric field that clamps on blur, not on every keystroke */
 function NumberField({
   label, value, onCommit, min, max, suffix, hint, disabled,
@@ -85,6 +95,7 @@ export default function TournamentFormModal({ isOpen, onClose, tournament }: Tou
   const [entryFee, setEntryFee] = useState(100);
   const [maxParticipants, setMaxParticipants] = useState(64);
   const [minParticipants, setMinParticipants] = useState(8);
+  const [totalRounds, setTotalRounds] = useState(DEFAULT_ROUNDS);
   const [registrationDeadline, setRegistrationDeadline] = useState<Date | undefined>();
   const [startTime, setStartTime] = useState<Date | undefined>();
 
@@ -133,6 +144,7 @@ export default function TournamentFormModal({ isOpen, onClose, tournament }: Tou
       setEntryFee(100);
       setMaxParticipants(64);
       setMinParticipants(8);
+      setTotalRounds(DEFAULT_ROUNDS);
       setRegistrationDeadline(undefined);
       setStartTime(undefined);
     }
@@ -177,6 +189,10 @@ export default function TournamentFormModal({ isOpen, onClose, tournament }: Tou
             startTime: startTime!.toISOString(),
             format,
             prizeDistribution: { first: 60, second: 30, third: 10 },
+            // Ignored by the backend for knockout/battle_royale (their round
+            // count is computed from the final headcount at start time), so
+            // it's fine to always send the current value regardless of format.
+            totalRounds,
           };
           const res = await quizAdminService.createTournament(payload);
           if (res.success) onClose();
@@ -269,6 +285,19 @@ export default function TournamentFormModal({ isOpen, onClose, tournament }: Tou
                       </p>
                     </div>
                   </div>
+
+                  {CONFIGURABLE_ROUNDS_FORMATS.includes(format) && (
+                    <div className="max-w-[10rem]">
+                      <NumberField
+                        label="Rounds"
+                        value={totalRounds}
+                        onCommit={setTotalRounds}
+                        min={MIN_ROUNDS}
+                        max={MAX_ROUNDS}
+                        hint={totalRounds === 1 ? 'Single round decides it' : 'Score accumulates across rounds'}
+                      />
+                    </div>
+                  )}
                 </>
               )}
 
