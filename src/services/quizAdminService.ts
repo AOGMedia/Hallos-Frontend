@@ -128,6 +128,8 @@ export interface CreateTournamentData {
   startTime?: string;
   format?: string;
   prizeDistribution?: { first: number; second: number; third: number };
+  /** classic/speed_run only — ignored by the backend for knockout/battle_royale, whose round count is derived from the final headcount at start time. */
+  totalRounds?: number;
 }
 
 export interface UpdateTournamentData {
