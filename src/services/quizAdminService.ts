@@ -272,7 +272,8 @@ export const quizAdminService = {
   },
 
   // 33. Adjust User Balance
-  adjustUserBalance: async (userId: string | number, amount: number, reason: string) => {
+  /** userId comes from the shared UserPicker — never hand-typed. */
+  adjustUserBalance: async (userId: number, amount: number, reason: string) => {
     const response = await apiClient.post<{ success: boolean; newBalance: number; transactionId: string; message: string }>(`/api/quiz/admin/user/${userId}/adjust-balance`, { amount, reason });
     return response.data;
   },
