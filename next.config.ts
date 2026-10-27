@@ -32,10 +32,6 @@ const nextConfig: NextConfig = {
         protocol: "https",
         hostname: "hallos-bucket.s3.eu-west-1.amazonaws.com",
       },
-      {
-        protocol: "https",
-        hostname: "pub-568ce08600d94c44a1b05475c24924ec.r2.dev",
-      },
     ],
   },
 };
