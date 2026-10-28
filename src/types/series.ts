@@ -150,6 +150,7 @@ export interface CreateSeriesResponse {
   success: boolean;
   message: string;
   series: Series;
+  idempotentReplay?: boolean;
 }
 
 export interface ListSeriesResponse {

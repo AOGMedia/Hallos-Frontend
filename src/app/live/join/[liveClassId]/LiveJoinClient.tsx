@@ -15,6 +15,9 @@ import { checkAccess, initializePayment } from "@/lib/api/payments";
 import LobbyDetailsCard from "./components/LobbyDetailsCard";
 import type { CouponValidationData } from "@/types/coupon";
 
+/** How often the lobby re-checks a class that isn't live yet. */
+const LOBBY_STATUS_POLL_MS = 15_000;
+
 interface CouponResult {
   discountAmount: number;
   finalPrice: number;
@@ -146,6 +149,32 @@ export default function ZegoJoinPage() {
   useEffect(() => {
     if (id && !userLoading) loadClass();
   }, [id, userLoading, loadClass]);
+
+  // Keep the lobby's status current while the class isn't live yet (or reads
+  // as ended): a class can go live, or be recovered after being wrongly marked
+  // ended, without the viewer having to refresh. Status only — no reload.
+  const lobbyStatus = liveClass?.status;
+  useEffect(() => {
+    if (!id || !lobbyStatus || lobbyStatus === "live" || lobbyStatus === "recorded") return;
+
+    const timer = setInterval(async () => {
+      try {
+        let status: LiveStatus | undefined;
+        if (isSeries) {
+          const session = await getSessionDetails(id);
+          status = session.status === "cancelled" ? "ended" : (session.status as LiveStatus);
+        } else {
+          status = (await getLiveClass(id)).status;
+        }
+        if (!status) return;
+        setLiveClass((prev) => (prev && prev.status !== status ? { ...prev, status } : prev));
+      } catch {
+        // Transient failure — try again on the next tick.
+      }
+    }, LOBBY_STATUS_POLL_MS);
+
+    return () => clearInterval(timer);
+  }, [id, isSeries, lobbyStatus]);
 
   const handleRegister = async () => {
     if (!user || !liveClass) return;

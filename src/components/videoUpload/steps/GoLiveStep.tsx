@@ -1,6 +1,6 @@
 "use client";
 
-import { memo, useCallback, useState } from "react";
+import { memo, useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useLiveEventStore } from "@/store/liveEventStore";
 import LiveEventActionBtn from "@/components/ui/LiveEventActionBtn";
@@ -11,6 +11,24 @@ import { createLiveClass, type CreateLiveClassBody } from '@/services/liveClassS
 import { startZegoLive } from "@/services/zegoService";
 import { SuccessModal } from "@/components/ui/SuccessModal";
 import { AlertModal } from "@/components/ui/AlertModal";
+import {
+  describeCreateError,
+  retryStatusLabel,
+  supportsIdempotentCreate,
+  uploadProgressLabel,
+  withNetworkRetry,
+  type CreateRequestOptions,
+} from "@/lib/api/resilientCreate";
+import { clearSubmissionKey, fileSignature, submissionKeyFor } from "@/lib/drafts/submissionKey";
+import { clearDraftFile, fileToDataUrl, loadDraftFile, saveDraftFile } from "@/lib/drafts/draftFileStore";
+
+const SUBMISSION_SLOT = "live-class";
+const THUMBNAIL_SLOT = "live-class-thumbnail";
+
+function finishSubmission() {
+  clearSubmissionKey(SUBMISSION_SLOT);
+  void clearDraftFile(THUMBNAIL_SLOT);
+}
 
 interface GoLiveStepProps {
   currentUserAvatar?: string;
@@ -64,13 +82,41 @@ export const GoLiveStep = memo(function GoLiveStep({
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [statusLabel, setStatusLabel] = useState<string | null>(null);
 
   // Remove the mutation hook since we'll use the service directly
   // const createLiveClassMutation = useCreateLiveClass();
 
+  useEffect(() => {
+    void supportsIdempotentCreate("liveClass");
+    if (useLiveEventStore.getState().liveEventThumbnail) return;
+    let cancelled = false;
+    const stillEmpty = () => !cancelled && !useLiveEventStore.getState().liveEventThumbnail;
+    void (async () => {
+      const file = await loadDraftFile(THUMBNAIL_SLOT);
+      if (!file || !stillEmpty()) return;
+      const preview = await fileToDataUrl(file);
+      if (!preview || !stillEmpty()) return;
+      useLiveEventStore.getState().setLiveEventThumbnail(file, preview);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const createOptions = useCallback(
+    (idempotencyKey: string): CreateRequestOptions => ({
+      idempotencyKey,
+      onUploadProgress: (fraction) => setStatusLabel(uploadProgressLabel(fraction)),
+      onRetryStatus: (s) => setStatusLabel(retryStatusLabel(s)),
+    }),
+    []
+  );
+
   const handleThumbnailSelect = useCallback(
     (file: File, preview: string) => {
       setLiveEventThumbnail(file, preview);
+      void saveDraftFile(THUMBNAIL_SLOT, file);
     },
     [setLiveEventThumbnail]
   );
@@ -103,8 +149,14 @@ export const GoLiveStep = memo(function GoLiveStep({
         maxParticipants: liveEventStreamingProvider === 'zegocloud' && liveEventMaxParticipants ? Number(liveEventMaxParticipants) : undefined,
       };
 
-      const res = await createLiveClass(body, liveEventThumbnail ?? undefined);
+      const idempotencyKey = submissionKeyFor(SUBMISSION_SLOT, {
+        kind: 'now',
+        body,
+        thumbnail: fileSignature(liveEventThumbnail),
+      });
+      const res = await createLiveClass(body, liveEventThumbnail ?? undefined, createOptions(idempotencyKey));
       if (res.success && res.liveClass && res.liveClass.id) {
+        const liveClassId = res.liveClass.id;
         // Link to community if in community context
         const { useVideoModalStore } = await import('@/store/videoModalStore');
         const { pendingCommunityId, clearCommunityContext } = useVideoModalStore.getState();
@@ -133,6 +185,7 @@ export const GoLiveStep = memo(function GoLiveStep({
         }
 
         if (isQueued) {
+          finishSubmission();
           setSuccessCommunityId(pendingCommunityId ?? null);
           setSuccessMessage(submissionMsg);
           setShowSuccessModal(true);
@@ -141,21 +194,28 @@ export const GoLiveStep = memo(function GoLiveStep({
 
         // Redirect based on streaming provider
         if (liveEventStreamingProvider === 'zegocloud') {
-          await startZegoLive(res.liveClass.id);
+          // Safe to repeat: the backend answers "already active" (409), which counts as started.
+          setStatusLabel('Starting your stream...');
+          await withNetworkRetry(() => startZegoLive(liveClassId), {
+            onStatus: (s) => setStatusLabel(retryStatusLabel(s)),
+          });
+          finishSubmission();
           const roomUrl = communityIdForRoom
-            ? `/live/${res.liveClass.id}/room?from=community&communityId=${communityIdForRoom}`
-            : `/live/${res.liveClass.id}/room`;
+            ? `/live/${liveClassId}/room?from=community&communityId=${communityIdForRoom}`
+            : `/live/${liveClassId}/room`;
           router.push(roomUrl);
         } else {
-          router.push(`/live/creator/${res.liveClass.id}`);
+          finishSubmission();
+          router.push(`/live/creator/${liveClassId}`);
         }
       } else {
         setError(res.message || 'Failed to create live class');
       }
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to create live class');
+      setError(await describeCreateError(e, 'Failed to create live class', 'liveClass'));
     } finally {
       setLoading(false);
+      setStatusLabel(null);
     }
   }, [
     liveEventTitle,
@@ -166,6 +226,7 @@ export const GoLiveStep = memo(function GoLiveStep({
     liveEventStreamingProvider,
     liveEventMaxParticipants,
     liveEventThumbnail,
+    createOptions,
     router
   ]);
 
@@ -219,8 +280,19 @@ export const GoLiveStep = memo(function GoLiveStep({
         maxParticipants: liveEventStreamingProvider === 'zegocloud' && liveEventMaxParticipants ? Number(liveEventMaxParticipants) : undefined,
       };
 
-      const res = await createLiveClass(body, liveEventThumbnail ?? undefined);
+      const idempotencyKey = submissionKeyFor(SUBMISSION_SLOT, {
+        kind: 'scheduled',
+        body,
+        thumbnail: fileSignature(liveEventThumbnail),
+      });
+      const res = await createLiveClass(body, liveEventThumbnail ?? undefined, createOptions(idempotencyKey));
       if (res.success && res.liveClass && res.liveClass.id) {
+        finishSubmission();
+        setSuccessMessage(
+          res.idempotentReplay
+            ? `Your class "${liveEventTitle}" was already scheduled, so we did not create it twice. You will find it on your schedule.`
+            : ""
+        );
         // Link to community if in community context
         const { useVideoModalStore } = await import('@/store/videoModalStore');
         const { pendingCommunityId, clearCommunityContext } = useVideoModalStore.getState();
@@ -246,9 +318,10 @@ export const GoLiveStep = memo(function GoLiveStep({
         setError(res.message || 'Failed to create live class');
       }
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to create live class');
+      setError(await describeCreateError(e, 'Failed to create live class', 'liveClass'));
     } finally {
       setLoading(false);
+      setStatusLabel(null);
     }
   }, [
     scheduleClass,
@@ -263,6 +336,7 @@ export const GoLiveStep = memo(function GoLiveStep({
     startTime,
     endTime,
     liveEventThumbnail,
+    createOptions,
   ]);
 
 
@@ -313,6 +387,7 @@ export const GoLiveStep = memo(function GoLiveStep({
               scheduleClass={scheduleClass}
               handleSendInvite={handleSendInvite}
               loading={loading}
+              loadingLabel={statusLabel}
             />
           </div>
         </div>
