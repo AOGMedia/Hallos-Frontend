@@ -146,7 +146,7 @@ export const GoLiveStep = memo(function GoLiveStep({
         privacy: liveEventPrivacy,
         category: liveEventCategory || undefined,
         streamingProvider: liveEventStreamingProvider,
-        maxParticipants: liveEventStreamingProvider === 'zegocloud' && liveEventMaxParticipants ? Number(liveEventMaxParticipants) : undefined,
+        maxParticipants: liveEventMaxParticipants ? Number(liveEventMaxParticipants) : undefined,
       };
 
       const idempotencyKey = submissionKeyFor(SUBMISSION_SLOT, {
@@ -192,22 +192,20 @@ export const GoLiveStep = memo(function GoLiveStep({
           return;
         }
 
-        // Redirect based on streaming provider
+        // Start the provider's session, then open the room. GetStream classes
+        // are started by the room page itself (features/live/getstream).
         if (liveEventStreamingProvider === 'zegocloud') {
           // Safe to repeat: the backend answers "already active" (409), which counts as started.
           setStatusLabel('Starting your stream...');
           await withNetworkRetry(() => startZegoLive(liveClassId), {
             onStatus: (s) => setStatusLabel(retryStatusLabel(s)),
           });
-          finishSubmission();
-          const roomUrl = communityIdForRoom
-            ? `/live/${liveClassId}/room?from=community&communityId=${communityIdForRoom}`
-            : `/live/${liveClassId}/room`;
-          router.push(roomUrl);
-        } else {
-          finishSubmission();
-          router.push(`/live/creator/${liveClassId}`);
         }
+        finishSubmission();
+        const roomUrl = communityIdForRoom
+          ? `/live/${liveClassId}/room?from=community&communityId=${communityIdForRoom}`
+          : `/live/${liveClassId}/room`;
+        router.push(roomUrl);
       } else {
         setError(res.message || 'Failed to create live class');
       }
@@ -277,7 +275,7 @@ export const GoLiveStep = memo(function GoLiveStep({
         privacy: liveEventPrivacy,
         category: liveEventCategory || undefined,
         streamingProvider: liveEventStreamingProvider,
-        maxParticipants: liveEventStreamingProvider === 'zegocloud' && liveEventMaxParticipants ? Number(liveEventMaxParticipants) : undefined,
+        maxParticipants: liveEventMaxParticipants ? Number(liveEventMaxParticipants) : undefined,
       };
 
       const idempotencyKey = submissionKeyFor(SUBMISSION_SLOT, {

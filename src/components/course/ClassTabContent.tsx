@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { listLiveClassesExternal, getPlaybackUrl, type LiveClass } from '@/services/liveClassService';
+import { listLiveClassesExternal, type LiveClass } from '@/services/liveClassService';
+import { liveClassHref } from '@/lib/live/providers';
 import { getMyPurchases } from '@/lib/api/payments';
 import { transformPurchaseToCardProps, groupPurchasesByType, PurchaseDisplayItem } from '@/utils/purchaseTransformers';
 import { CourseCard } from './CourseCard';
@@ -33,39 +34,6 @@ export function ClassTabContent({ activeTab }: ClassTabContentProps) {
   });
 
   const classes = useMemo(() => liveClassesData || [], [liveClassesData]);
-  const [, setPlaybacks] = useState<Record<string, string | null>>({});
-
-  useEffect(() => {
-    if (activeTab !== 'explore') return;
-    
-    let mounted = true;
-    const fetchMissing = async () => {
-      const idsToFetch = classes
-        .filter((c) => !c.mux_playback_id && !c.playback_url)
-        .map((c) => c.id);
-
-      if (!idsToFetch.length) return;
-
-      const updates: Record<string, string | null> = {};
-      for (const id of idsToFetch) {
-        try {
-          const pb = await getPlaybackUrl(id);
-          updates[id] = pb.playbackUrl;
-        } catch {
-          updates[id] = null;
-        }
-      }
-
-      if (mounted) {
-        setPlaybacks((prev) => ({ ...prev, ...updates }));
-      }
-    };
-
-    fetchMissing();
-    return () => {
-      mounted = false;
-    };
-  }, [classes, activeTab]);
 
   // Group classes by category
   const groupedClasses = useMemo(() => {
@@ -123,27 +91,7 @@ export function ClassTabContent({ activeTab }: ClassTabContentProps) {
   
   // Helper: Get HREF for Live Class
   
-  const getLiveClassHref = (c: LiveClass) => {
-    const isOwner = String(c.userId) === String(userId);
-    const isMuxClass = Boolean(c.mux_playback_id || c.playback_url);
-    const isZegoClass = Boolean(c.isZegoCloud && !isMuxClass);
-
-    // ZEGO (Interactive)
-    if (isZegoClass) {
-      if (isOwner) {
-        return `/live/${c.id}/room`;
-      }
-      return `/live/join/${c.id}`;
-    }
-
-    // MUX / RTMP
-    if (isOwner) {
-      return `/live/creator/${c.id}`;
-    }
-    
-    // Default Viewer
-    return `/live/${c.id}`;
-  };
+  const getLiveClassHref = (c: LiveClass) => liveClassHref(c, userId);
 
   
   // Renderers

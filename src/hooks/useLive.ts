@@ -1,6 +1,5 @@
 import { useMutation, useQuery } from '@tanstack/react-query'
-// import { createLiveClass, getLiveClass, getLivePlaybackUrl, addHost, addAttendee, listHosts, listAttendees, type CreateLiveClassBody, type CreateLiveClassResponse } from '@/lib/api/live'
-import { createLiveClass, getLiveClass, getLivePlaybackUrl, addHost, addAttendee, listHosts, listAttendees, getMyLiveClasses, type CreateLiveClassBody, type CreateLiveClassResponse } from '@/lib/api/live'
+import { createLiveClass, getLiveClass, addHost, addAttendee, listHosts, listAttendees, getMyLiveClasses, type CreateLiveClassBody, type CreateLiveClassResponse } from '@/lib/api/live'
 
 export function useCreateLiveClass() {
   return useMutation<CreateLiveClassResponse, unknown, CreateLiveClassBody>({
@@ -15,15 +14,6 @@ export function useGetLiveClass(id: string, enabled = true) {
     queryKey: ['live', 'class', id],
     queryFn: async () => await getLiveClass(id),
     enabled: !!id && enabled,
-  })
-}
-
-export function useLivePlayback(id: string, enabled = true) {
-  return useQuery({
-    queryKey: ['live', 'playback', id],
-    queryFn: async () => await getLivePlaybackUrl(id),
-    enabled: !!id && enabled,
-    refetchInterval: 5000,
   })
 }
 

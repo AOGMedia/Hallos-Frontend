@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/Button";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import ArrowLeftIcon from "@/components/icons/ArrowLeftIcon";
+import { GetStreamRoomClient, type GetStreamTarget } from "@/features/live/getstream";
 
 const LiveStream = dynamic(() => import("@/components/zego-room/LiveStream"), {
   ssr: false,
@@ -43,6 +44,12 @@ export default function RoomClient({ liveClassId }: RoomClientProps) {
   // recovers a wrongly-ended class — retry instead of turning people away.
   const [joinAttempt, setJoinAttempt] = useState(0);
   const [waitingForClass, setWaitingForClass] = useState(false);
+  const [getStreamRoom, setGetStreamRoom] = useState<{
+    target: GetStreamTarget;
+    isOwner: boolean;
+    title: string;
+    backHref: string;
+  } | null>(null);
 
   useEffect(() => {
     let mounted = true;
@@ -59,6 +66,19 @@ export default function RoomClient({ liveClassId }: RoomClientProps) {
           // Get session details to check ownership
           const session = await getSessionDetails(sessionId);
           const isOwner = user && session.series && String(session.series.userId) === String(user.id);
+
+          // Sessions of a GetStream series have their own room (features/live/getstream).
+          if (session.series?.streamingProvider === "getstream") {
+            if (mounted) {
+              setGetStreamRoom({
+                target: { kind: "session", id: sessionId },
+                isOwner: !!isOwner,
+                title: `${session.series.title} - Session ${session.sessionNumber}`,
+                backHref: fromCommunityId ? `/dashboard/community/${fromCommunityId}` : `/series/${session.seriesId}`,
+              });
+            }
+            return;
+          }
 
           // ✅ FIXED: Properly type the credentials based on whether user is owner
           let token: string;
@@ -144,6 +164,19 @@ export default function RoomClient({ liveClassId }: RoomClientProps) {
           const liveClass = await getLiveClass(liveClassId);
           const isOwner = user && String(liveClass.userId) === String(user.id);
 
+          // GetStream classes have their own room (features/live/getstream).
+          if (liveClass.streamingProvider === "getstream") {
+            if (mounted) {
+              setGetStreamRoom({
+                target: { kind: "class", id: liveClassId },
+                isOwner: !!isOwner,
+                title: liveClass.title,
+                backHref: fromCommunityId ? `/dashboard/community/${fromCommunityId}` : "/dashboard",
+              });
+            }
+            return;
+          }
+
           if (isOwner) {
             await startZegoLive(liveClassId);
           }
@@ -203,7 +236,9 @@ export default function RoomClient({ liveClassId }: RoomClientProps) {
       mounted = false;
       if (retryTimer) clearTimeout(retryTimer);
     };
-  }, [liveClassId, router, user, userLoading, isSeries, searchParams, joinAttempt]);
+  }, [liveClassId, router, user, userLoading, isSeries, searchParams, fromCommunityId, joinAttempt]);
+
+  if (getStreamRoom) return <GetStreamRoomClient {...getStreamRoom} />;
 
   if (waitingForClass && !roomData && !error) {
     return (

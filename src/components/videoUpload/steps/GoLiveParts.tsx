@@ -1,10 +1,12 @@
-import React from 'react'
+import React, { useEffect } from 'react'
 import { Avatar } from '@/components/ui/Avatar'
 import { ToggleSwitch } from '../ToggleSwitch'
 import { EmailChipInput } from '../EmailChipInput'
 import { CurrencySelect } from '../CurrencySelect'
 import { LiveEventThumbnailUpload } from '../LiveEventThumbnailUpload'
 import LinkIcon from '@/components/icons/LinkIcon'
+import { DEFAULT_LIVE_PROVIDER, LIVE_PROVIDERS, PROVIDER_OPTIONS, type LiveProvider } from '@/lib/live/providers'
+import { useAvailableLiveProviders, type LiveContentKind } from '@/lib/live/useAvailableLiveProviders'
 
 interface TitleFieldProps {
   value: string
@@ -169,39 +171,55 @@ export function PrivacyField({ value, onChange }: PrivacyFieldProps) {
 }
 
 interface StreamingProviderFieldProps {
-  value: 'mux' | 'zegocloud'
-  onChange: (v: 'mux' | 'zegocloud') => void
+  value: LiveProvider
+  onChange: (v: LiveProvider) => void
+  /** One-time live class (default) or live series — availability can differ. */
+  kind?: LiveContentKind
 }
 
-export function StreamingProviderField({ value, onChange }: StreamingProviderFieldProps) {
+export function StreamingProviderField({ value, onChange, kind = 'class' }: StreamingProviderFieldProps) {
+  const { providers: available, ready } = useAvailableLiveProviders(kind)
+
+  // A saved choice that isn't offered (e.g. GetStream switched off on the
+  // server) falls back to the default instead of being sent on create.
+  useEffect(() => {
+    if (ready && !available.includes(value)) onChange(DEFAULT_LIVE_PROVIDER)
+  }, [ready, available, value, onChange])
+
+  // Every provider is shown; one the server hasn't enabled yet is visible but
+  // can't be picked, so a class is never created with it.
   return (
     <div className="flex flex-col gap-2">
       <label className="live-event-label">Streaming Method</label>
-      <div className="grid grid-cols-1 gap-3">
-        <button
-          type="button"
-          onClick={() => onChange('zegocloud')}
-          className={`p-4 rounded-xl border-2 transition-all text-left ${
-            value === 'zegocloud'
-              ? 'border-primary bg-primary/10'
-              : 'border-border/20 bg-background-dark hover:border-border/40 shadow-2xl'
-          }`}
-        >
-          <div className="font-semibold text-text-primary mb-1">Stream In-App   (Recommended)</div>
-          <div className="text-sm text-text-primary/70">Stream directly from Hallos .</div>
-        </button>
-        {/* <button
-          type="button"
-          onClick={() => onChange('mux')}
-          className={`p-4 rounded-xl border-2 transition-all text-left ${
-            value === 'mux'
-              ? 'border-primary bg-primary/10'
-              : 'border-border/20 bg-background-dark hover:border-border/40 shadow-2xl'
-          }`}
-        >
-          <div className="font-semibold text-text-primary mb-1">Stream with OBS or Others</div>
-          <div className="text-sm text-text-primary/70">Use OBS or external streaming software (Stream Prerecorded classes etc).</div>
-        </button> */}
+      <div className="flex flex-col gap-3">
+        {LIVE_PROVIDERS.map((provider) => {
+          const enabled = available.includes(provider)
+          const selected = enabled && value === provider
+          return (
+            <button
+              key={provider}
+              type="button"
+              disabled={!enabled}
+              aria-pressed={selected}
+              onClick={() => onChange(provider)}
+              className={`p-4 rounded-xl border-2 transition-all text-left disabled:cursor-not-allowed disabled:opacity-50 ${
+                selected
+                  ? 'border-primary bg-primary/10'
+                  : 'border-border/20 bg-background-dark hover:border-border/40 shadow-2xl'
+              }`}
+            >
+              <div className="flex items-center justify-between gap-2 mb-1">
+                <span className="font-semibold text-text-primary">{PROVIDER_OPTIONS[provider].title}</span>
+                {!enabled && (
+                  <span className="shrink-0 rounded-full bg-white/10 px-2 py-0.5 text-[11px] font-medium text-text-primary/70">
+                    {ready ? 'Not available yet' : 'Checking…'}
+                  </span>
+                )}
+              </div>
+              <div className="text-sm text-text-primary/70">{PROVIDER_OPTIONS[provider].description}</div>
+            </button>
+          )
+        })}
       </div>
     </div>
   )
@@ -239,12 +257,11 @@ export function CategoryField({ value, onChange }: CategoryFieldProps) {
 interface MaxParticipantsFieldProps {
   value: string
   onChange: (v: string) => void
-  streamingProvider: 'mux' | 'zegocloud'
+  /** Every current provider supports a participant limit. */
+  streamingProvider: LiveProvider
 }
 
-export function MaxParticipantsField({ value, onChange, streamingProvider }: MaxParticipantsFieldProps) {
-  if (streamingProvider !== 'zegocloud') return null
-  
+export function MaxParticipantsField({ value, onChange }: MaxParticipantsFieldProps) {
   return (
     <div className="flex flex-col gap-1">
       <label className="live-event-label">Max Participants</label>

@@ -13,8 +13,10 @@ import {
   CategoryField, 
   PrivacyField, 
   MaxParticipantsField,
-  ThumbnailSection 
+  StreamingProviderField,
+  ThumbnailSection
 } from '@/components/videoUpload/steps/GoLiveParts';
+import { DEFAULT_LIVE_PROVIDER, type LiveProvider } from '@/lib/live/providers';
 import { CurrencyCode } from '@/types/videoUpload';
 import { AlertModal } from '@/components/ui/AlertModal';
 
@@ -43,6 +45,7 @@ export default function EditSeriesPage() {
   const [category, setCategory] = useState('');
   const [privacy, setPrivacy] = useState<'public' | 'private'>('public');
   const [maxParticipants, setMaxParticipants] = useState('50');
+  const [streamingProvider, setStreamingProvider] = useState<LiveProvider>(DEFAULT_LIVE_PROVIDER);
   const [thumbnail, setThumbnail] = useState<File | null>(null);
   const [thumbnailPreview, setThumbnailPreview] = useState<string | null>(null);
   const [endDate, setEndDate] = useState('');
@@ -84,6 +87,7 @@ export default function EditSeriesPage() {
       setCategory(series.category || '');
       setPrivacy(series.privacy);
       setMaxParticipants(String(series.maxParticipants));
+      setStreamingProvider(series.streamingProvider ?? DEFAULT_LIVE_PROVIDER);
       setThumbnailPreview(series.thumbnailUrl || null);
       setEndDate(series.endDate ? series.endDate.split('T')[0] : '');
     }
@@ -130,6 +134,9 @@ export default function EditSeriesPage() {
         privacy,
         maxParticipants: parseInt(maxParticipants),
         endDate: endDate || undefined,
+        // Only sent when changed; applies to sessions that haven't started.
+        streamingProvider:
+          streamingProvider !== (series?.streamingProvider ?? DEFAULT_LIVE_PROVIDER) ? streamingProvider : undefined,
       };
 
       console.log('Updating series:', updateBody);
@@ -240,11 +247,18 @@ export default function EditSeriesPage() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <PrivacyField value={privacy} onChange={setPrivacy} />
-            <MaxParticipantsField 
-              value={maxParticipants} 
-              onChange={setMaxParticipants} 
-              streamingProvider="zegocloud"
+            <MaxParticipantsField
+              value={maxParticipants}
+              onChange={setMaxParticipants}
+              streamingProvider={streamingProvider}
             />
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <StreamingProviderField kind="series" value={streamingProvider} onChange={setStreamingProvider} />
+            <p className="text-xs text-text-primary/60">
+              Changes apply to sessions that haven&apos;t started yet.
+            </p>
           </div>
 
           <ThumbnailSection 

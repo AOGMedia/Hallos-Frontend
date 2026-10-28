@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@gsap/react": "^2.1.2",
+    "@stream-io/video-react-sdk": "^1.44.1",
     "@tanstack/react-query": "^5.90.5",
     "@zegocloud/zego-uikit-prebuilt": "^2.17.2",
     "axios": "^1.12.2",

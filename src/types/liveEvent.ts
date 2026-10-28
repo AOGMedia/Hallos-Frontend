@@ -1,4 +1,5 @@
 import { CurrencyCode } from './videoUpload';
+import type { LiveProvider } from '@/lib/live/providers';
 
 export interface LiveEventState {
   liveEventTitle: string;
@@ -6,7 +7,7 @@ export interface LiveEventState {
   liveEventPrice: string;
   liveEventCurrency: CurrencyCode;
   liveEventPrivacy: 'public' | 'private';
-  liveEventStreamingProvider: 'mux' | 'zegocloud';
+  liveEventStreamingProvider: LiveProvider;
   liveEventMaxParticipants: string;
   liveEventCategory: string;
   scheduleClass: boolean;

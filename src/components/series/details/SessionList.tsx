@@ -8,28 +8,38 @@ import { useQuery } from '@tanstack/react-query';
 import { getSeriesSessions, joinSession, endSession } from '@/services/sessionService';
 import { useRouter } from 'next/navigation';
 import type { Session } from '@/types/series';
+import type { LiveProvider } from '@/lib/live/providers';
+import { endGetStreamLive } from '@/features/live/getstream';
 
 interface SessionListProps {
   seriesId: string;
   showActions?: boolean;
   isCreator?: boolean;
+  /** The series' live provider (missing on older series, which are ZegoCloud). */
+  streamingProvider?: LiveProvider;
 }
 
 // Memoized SessionCard component to prevent unnecessary re-renders
-const SessionCard = ({ 
-  session, 
-  totalSessions, 
+const SessionCard = ({
+  session,
+  totalSessions,
   currentTime,
   showActions,
-  isCreator
-}: { 
-  session: Session; 
-  totalSessions: number; 
+  isCreator,
+  streamingProvider
+}: {
+  session: Session;
+  totalSessions: number;
   currentTime: Date;
   showActions: boolean;
   isCreator: boolean;
+  streamingProvider?: LiveProvider;
 }) => {
   const router = useRouter();
+  // GetStream sessions open straight in the room, which starts (creator) or
+  // joins (attendee, with the access check) the session itself.
+  const isGetStream = streamingProvider === 'getstream';
+  const getStreamRoomHref = `/live/${session.id}/room?type=series`;
   const [isStarting, setIsStarting] = useState(false);
   const [isJoining, setIsJoining] = useState(false);
   const [isEnding, setIsEnding] = useState(false);
@@ -48,7 +58,7 @@ const SessionCard = ({
     try {
       // Don't start the session here - let HostClient do it
       // Just redirect with the series flag
-      router.push(`/live/host-zego/${session.id}?type=series`);
+      router.push(isGetStream ? getStreamRoomHref : `/live/host-zego/${session.id}?type=series`);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to start session';
       setError(errorMessage);
@@ -60,9 +70,14 @@ const SessionCard = ({
 
   // Handle join session (for students)
   const handleJoinSession = async () => {
+    if (isGetStream) {
+      router.push(getStreamRoomHref);
+      return;
+    }
+
     setIsJoining(true);
     setError(null);
-    
+
     try {
       const response = await joinSession(session.id);
       
@@ -98,8 +113,10 @@ const SessionCard = ({
     setError(null);
     
     try {
-      const response = await endSession(session.id);
-      
+      const response = isGetStream
+        ? await endGetStreamLive({ kind: 'session', id: session.id })
+        : await endSession(session.id);
+
       if (response.success) {
         // Session ended successfully - the UI will update via refetch
         // Optionally show a success message
@@ -259,7 +276,7 @@ const SessionCard = ({
                 <>
                   <button
                     className="w-full px-3 py-2 bg-primary text-white rounded-lg hover:bg-primary/80 transition-colors text-sm font-medium flex items-center justify-center gap-2"
-                    onClick={() => router.push(`/live/host-zego/${session.id}?type=series`)}
+                    onClick={() => router.push(isGetStream ? getStreamRoomHref : `/live/host-zego/${session.id}?type=series`)}
                   >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
@@ -347,7 +364,7 @@ const SessionCard = ({
   );
 };
 
-export function SessionList({ seriesId, showActions = false, isCreator = false }: SessionListProps) {
+export function SessionList({ seriesId, showActions = false, isCreator = false, streamingProvider }: SessionListProps) {
   const [currentTime, setCurrentTime] = useState(new Date());
 
   // Fetch sessions - only refetch when tab is visible and only for live/upcoming sessions
@@ -433,6 +450,7 @@ export function SessionList({ seriesId, showActions = false, isCreator = false }
           currentTime={currentTime}
           showActions={showActions}
           isCreator={isCreator}
+          streamingProvider={streamingProvider}
         />
       ))}
     </div>

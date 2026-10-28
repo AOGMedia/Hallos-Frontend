@@ -245,7 +245,7 @@ export default function SeriesManagementPage() {
                 {series.stats?.totalSessions || 0} total
               </span>
             </div>
-            <SessionList seriesId={id} showActions={true} isCreator={true} />
+            <SessionList seriesId={id} showActions={true} isCreator={true} streamingProvider={series.streamingProvider} />
           </div>
 
           {/* Right — Stats & Info */}
