@@ -117,6 +117,10 @@ export const useLiveEventStore = create<LiveEventStore>()(
         liveEventStreamingProvider: state.liveEventStreamingProvider,
         liveEventMaxParticipants: state.liveEventMaxParticipants,
         liveEventCategory: state.liveEventCategory,
+        scheduleClass: state.scheduleClass,
+        scheduleDate: state.scheduleDate,
+        startTime: state.startTime,
+        endTime: state.endTime,
       }),
     }
   )

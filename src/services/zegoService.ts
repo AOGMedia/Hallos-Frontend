@@ -14,6 +14,8 @@ export interface JoinRoomResponse {
   userId: string;
   userName: string;
   appId: number;
+  /** Server-verified: 'creator' (owner), 'cohost' or 'participant'. */
+  userType?: "creator" | "cohost" | "participant";
   liveClass?: {
     id: string;
     title: string;
@@ -198,6 +200,19 @@ export async function startZegoLive(liveClassId: string): Promise<StartLiveRespo
 export async function endZegoLive(liveClassId: string) {
   const res = await apiClient.post(`/live/${liveClassId}/end-zegocloud`);
   return res.data;
+}
+
+/**
+ * Host heartbeat (creator only). Keeps the class marked live while the host is
+ * in the room, and lets the backend recover a class that was wrongly marked
+ * ended while the room is still running.
+ */
+export async function sendZegoHeartbeat(
+  liveClassId: string,
+  roomId: string
+): Promise<{ status: string; recovered: boolean }> {
+  const res = await apiClient.post(`/live/${liveClassId}/heartbeat-zegocloud`, { roomId });
+  return res.data.data;
 }
 
 /**

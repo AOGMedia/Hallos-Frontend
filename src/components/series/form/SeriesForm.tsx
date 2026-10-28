@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { TitleField, DescriptionField, PriceField, CategoryField, PrivacyField, MaxParticipantsField, ThumbnailSection } from "@/components/videoUpload/steps/GoLiveParts";
 import { CurrencyCode } from "@/types/videoUpload";
@@ -9,6 +9,28 @@ import { RecurrencePatternField } from "./RecurrencePatternField";
 import { SuccessModal } from "@/components/ui/SuccessModal";
 import { AlertModal } from "@/components/ui/AlertModal";
 import { createSeries } from "@/services/seriesService";
+import {
+  describeCreateError,
+  retryStatusLabel,
+  supportsIdempotentCreate,
+  uploadProgressLabel,
+} from "@/lib/api/resilientCreate";
+import { clearSubmissionKey, fileSignature, submissionKeyFor } from "@/lib/drafts/submissionKey";
+import { clearDraftFile, fileToDataUrl, loadDraftFile, saveDraftFile } from "@/lib/drafts/draftFileStore";
+
+const DRAFT_KEY = "hallos-series-draft";
+const SUBMISSION_SLOT = "live-series";
+const THUMBNAIL_SLOT = "live-series-thumbnail";
+
+const str = (v: unknown): string | undefined => (typeof v === "string" ? v : undefined);
+
+function clearSeriesDraft() {
+  try {
+    localStorage.removeItem(DRAFT_KEY);
+  } catch {}
+  clearSubmissionKey(SUBMISSION_SLOT);
+  void clearDraftFile(THUMBNAIL_SLOT);
+}
 
 // interface SeriesFormProps {
 //   mode: 'single' | 'series';
@@ -57,9 +79,78 @@ export function SeriesForm() {
     duration?: string;
   }>({});
 
+  const [statusLabel, setStatusLabel] = useState<string | null>(null);
+  const [draftReady, setDraftReady] = useState(false);
+
+  useEffect(() => {
+    void supportsIdempotentCreate("liveSeries");
+    try {
+      const raw = localStorage.getItem(DRAFT_KEY);
+      const d = raw ? (JSON.parse(raw) as Record<string, unknown>) : null;
+      if (d && typeof d === "object") {
+        const set = (v: unknown, setter: (s: string) => void) => {
+          const s = str(v);
+          if (s !== undefined) setter(s);
+        };
+        set(d.title, setTitle);
+        set(d.description, setDescription);
+        set(d.price, setPrice);
+        set(d.category, setCategory);
+        set(d.maxParticipants, setMaxParticipants);
+        set(d.startDate, setStartDate);
+        set(d.endDate, setEndDate);
+        set(d.startTime, setStartTime);
+        set(d.duration, setDuration);
+        if (Object.values(CurrencyCode).includes(d.currency as CurrencyCode)) setCurrency(d.currency as CurrencyCode);
+        if (d.privacy === "public" || d.privacy === "private") setPrivacy(d.privacy);
+        if (Array.isArray(d.recurrenceDays)) {
+          setRecurrenceDays(d.recurrenceDays.filter((x): x is string => typeof x === "string"));
+        }
+      }
+    } catch {}
+    setDraftReady(true);
+
+    let cancelled = false;
+    void (async () => {
+      const file = await loadDraftFile(THUMBNAIL_SLOT);
+      if (!file || cancelled) return;
+      const preview = await fileToDataUrl(file);
+      if (!preview || cancelled) return;
+      setThumbnail((prev) => prev ?? file);
+      setThumbnailPreview((prev) => prev ?? preview);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!draftReady) return;
+    try {
+      localStorage.setItem(
+        DRAFT_KEY,
+        JSON.stringify({
+          title,
+          description,
+          price,
+          currency,
+          category,
+          privacy,
+          maxParticipants,
+          startDate,
+          endDate,
+          recurrenceDays,
+          startTime,
+          duration,
+        })
+      );
+    } catch {}
+  }, [draftReady, title, description, price, currency, category, privacy, maxParticipants, startDate, endDate, recurrenceDays, startTime, duration]);
+
   const handleThumbnailSelect = (file: File, preview: string) => {
     setThumbnail(file);
     setThumbnailPreview(preview);
+    void saveDraftFile(THUMBNAIL_SLOT, file);
   };
 
   const validateForm = () => {
@@ -135,10 +226,24 @@ export function SeriesForm() {
       console.log('Submitting series creation:', requestBody);
       console.log('Recurrence pattern:', JSON.stringify(requestBody.recurrencePattern));
 
-      const response = await createSeries(requestBody, thumbnail || undefined);
+      const idempotencyKey = submissionKeyFor(SUBMISSION_SLOT, {
+        body: requestBody,
+        thumbnail: fileSignature(thumbnail),
+      });
+      const response = await createSeries(requestBody, thumbnail || undefined, {
+        idempotencyKey,
+        onUploadProgress: (fraction) => setStatusLabel(uploadProgressLabel(fraction)),
+        onRetryStatus: (s) => setStatusLabel(retryStatusLabel(s)),
+      });
 
       if (response.success) {
         console.log('Series created successfully:', response.series);
+        clearSeriesDraft();
+        setSuccessMessage(
+          response.idempotentReplay
+            ? `Your series "${title}" was already created, so we did not create it twice. You will find it on your schedule.`
+            : ""
+        );
 
         // Link to community if in community context
         const seriesId = response.series?.id;
@@ -175,10 +280,11 @@ export function SeriesForm() {
       console.error('Error creating series:', error);
       setAlertState({
         open: true,
-        message: error instanceof Error ? error.message : 'An unexpected error occurred. Please try again.'
+        message: await describeCreateError(error, 'An unexpected error occurred. Please try again.', 'liveSeries')
       });
     } finally {
       setIsLoading(false);
+      setStatusLabel(null);
     }
   };
 
@@ -307,7 +413,7 @@ export function SeriesForm() {
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                   </svg>
-                  Creating Series...
+                  {statusLabel || 'Creating Series...'}
                 </>
               ) : (
                 'Create Series'

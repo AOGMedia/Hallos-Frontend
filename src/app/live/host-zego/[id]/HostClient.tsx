@@ -69,6 +69,8 @@ export default function HostClient({ liveClassId }: HostClientProps) {
             roomId: res.data.roomId,
             appId: Number(res.data.appId),
             title: res.data.liveClass?.title,
+            // Server decides ownership; the host page is only usable by the creator.
+            isCreator: res.data.userType === "creator",
           });
           setStarting(false);
         } else if (mounted) {
@@ -250,6 +252,9 @@ export default function HostClient({ liveClassId }: HostClientProps) {
         token={sessionData.token}
         roomId={sessionData.roomId}
         appId={sessionData.appId}
+        // Series sessions can only be started/joined here by their owner.
+        isCreator={isSeries ? true : !!sessionData.isCreator}
+        isSeries={isSeries}
       />
     </div>
   );

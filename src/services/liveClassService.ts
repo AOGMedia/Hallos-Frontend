@@ -1,5 +1,14 @@
 import { apiClient } from '@/lib/api/client'
-import type { AxiosError } from 'axios'
+import type { AxiosError, AxiosProgressEvent } from 'axios'
+import {
+  JSON_CREATE_TIMEOUT_MS,
+  MULTIPART_CREATE_TIMEOUT_MS,
+  progressFraction,
+  supportsIdempotentCreate,
+  toCreateError,
+  withNetworkRetry,
+  type CreateRequestOptions,
+} from '@/lib/api/resilientCreate'
 export type LiveStatus = 'scheduled' | 'live' | 'ended' | 'recorded'
 
 export interface LiveClass {
@@ -80,6 +89,7 @@ export interface CreateLiveClassResponse {
   success: boolean
   liveClass?: LiveClass
   message?: string
+  idempotentReplay?: boolean
 }
 
 function toError(e: unknown): Error {
@@ -88,9 +98,13 @@ function toError(e: unknown): Error {
   return new Error(msg)
 }
 
-export async function createLiveClass(body: CreateLiveClassBody, thumbnailFile?: File): Promise<CreateLiveClassResponse> {
-  try {
-    console.log('Creating live class with body:', body)
+export async function createLiveClass(
+  body: CreateLiveClassBody,
+  thumbnailFile?: File,
+  options?: CreateRequestOptions
+): Promise<CreateLiveClassResponse> {
+  const idempotencyKey = options?.idempotencyKey
+  const send = async (): Promise<CreateLiveClassResponse> => {
     if (thumbnailFile) {
       const fd = new FormData()
       fd.append('title', body.title)
@@ -102,18 +116,42 @@ export async function createLiveClass(body: CreateLiveClassBody, thumbnailFile?:
       if (body.streamingProvider) fd.append('streamingProvider', body.streamingProvider)
       if (typeof body.maxParticipants === 'number') fd.append('maxParticipants', String(body.maxParticipants))
       if (body.category) fd.append('category', body.category)
+      if (idempotencyKey) fd.append('idempotencyKey', idempotencyKey)
       fd.append('thumbnailUrl', thumbnailFile)
+      const onProgress = options?.onUploadProgress
       const res = await apiClient.post<CreateLiveClassResponse>('/live/create', fd, {
         headers: { 'Content-Type': 'multipart/form-data' },
+        ...(options ? { timeout: MULTIPART_CREATE_TIMEOUT_MS } : {}),
+        ...(onProgress
+          ? {
+              onUploadProgress: (e: AxiosProgressEvent) => {
+                const fraction = progressFraction(e)
+                if (fraction !== undefined) onProgress(fraction)
+              },
+            }
+          : {}),
       })
       console.log('Backend response:', res.data)
       return res.data
     }
-    const res = await apiClient.post<CreateLiveClassResponse>('/live/create', body)
+    const res = await apiClient.post<CreateLiveClassResponse>(
+      '/live/create',
+      idempotencyKey ? { ...body, idempotencyKey } : body,
+      options ? { timeout: JSON_CREATE_TIMEOUT_MS } : undefined
+    )
     console.log('Backend response:', res.data)
     return res.data
+  }
+
+  try {
+    console.log('Creating live class with body:', body)
+    if (!idempotencyKey) return await send()
+    return await withNetworkRetry(send, {
+      canRetry: () => supportsIdempotentCreate('liveClass'),
+      onStatus: options?.onRetryStatus,
+    })
   } catch (e) {
-    throw toError(e)
+    throw options ? toCreateError(e) : toError(e)
   }
 }
 

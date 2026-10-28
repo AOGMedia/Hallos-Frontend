@@ -6,13 +6,16 @@ type LiveEventBtnProps = {
   handleGoLive: () => void;
   handleSendInvite?: () => void;
   loading?: boolean;
+  loadingLabel?: string | null;
 };
 const LiveEventActionBtn = ({
   scheduleClass,
   handleGoLive,
   handleSendInvite,
   loading = false,
+  loadingLabel,
 }: LiveEventBtnProps) => {
+  const busyLabel = loadingLabel || 'Creating...';
   return (
     <div className="flex items-center-end justify-end">
       {scheduleClass ? (
@@ -23,7 +26,7 @@ const LiveEventActionBtn = ({
           className="self-end flex items-center gap-2 px-6 py-4 rounded-full transition-all mt-auto bg-primary text-white hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <span className="flex live-event-button-text">
-            {loading ? 'Creating...' : 'Schedule'}
+            {loading ? busyLabel : 'Schedule'}
             {!loading && <ArrowRightIcon />}
           </span>
         </button>
@@ -44,7 +47,7 @@ self-end items-center gap-2 px-6 py-4 rounded-full transition-all mt-auto border
             className="sm:w-5 sm:h-5 animate-pulse"
           />
           <span className="live-event-button-text">
-            {loading ? 'Creating...' : 'Go Live Now'}
+            {loading ? busyLabel : 'Go Live Now'}
           </span>
         </button>
       )}

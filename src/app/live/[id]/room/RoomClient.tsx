@@ -24,6 +24,10 @@ interface RoomClientProps {
   liveClassId: string;
 }
 
+/** Retry joining a class that reads as inactive for about a minute before giving up. */
+const INACTIVE_RETRY_MS = 10_000;
+const MAX_INACTIVE_RETRIES = 6;
+
 export default function RoomClient({ liveClassId }: RoomClientProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -34,6 +38,11 @@ export default function RoomClient({ liveClassId }: RoomClientProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [roomData, setRoomData] = useState<{ action: string; data: JoinRoomResponse } | null>(null);
+  const [isCreator, setIsCreator] = useState(false);
+  // A class can briefly read as "not active" while the host's heartbeat
+  // recovers a wrongly-ended class — retry instead of turning people away.
+  const [joinAttempt, setJoinAttempt] = useState(0);
+  const [waitingForClass, setWaitingForClass] = useState(false);
 
   useEffect(() => {
     let mounted = true;
@@ -100,6 +109,7 @@ export default function RoomClient({ liveClassId }: RoomClientProps) {
           }
 
           if (!mounted) return;
+          setIsCreator(!!isOwner);
 
           // Map series credentials to match JoinRoomResponse structure
           setRoomData({
@@ -156,6 +166,8 @@ export default function RoomClient({ liveClassId }: RoomClientProps) {
               });
             }
             // res is a JoinRoomResult. We need to match the action string.
+            setWaitingForClass(false);
+            setIsCreator(res.data.userType === "creator");
             setRoomData(res as { action: string; data: JoinRoomResponse });
           } else if (res.action === "PAY") {
             router.replace(`/live/join/${liveClassId}?error=payment_required`);
@@ -165,8 +177,18 @@ export default function RoomClient({ liveClassId }: RoomClientProps) {
         }
       } catch (e: unknown) {
         if (mounted) {
-          const errorMsg = e instanceof Error ? e.message : "Failed to join the live room";
+          // Prefer the server's message (axios puts it on response.data).
+          const serverMsg = (e as { response?: { data?: { message?: string } } })?.response?.data?.message;
+          const errorMsg = serverMsg || (e instanceof Error ? e.message : "Failed to join the live room");
           console.error('Room init error:', errorMsg);
+          if (!isSeries && /not currently active/i.test(errorMsg) && joinAttempt < MAX_INACTIVE_RETRIES) {
+            setWaitingForClass(true);
+            retryTimer = setTimeout(() => {
+              if (mounted) setJoinAttempt((n) => n + 1);
+            }, INACTIVE_RETRY_MS);
+            return;
+          }
+          setWaitingForClass(false);
           setError(errorMsg);
         }
       } finally {
@@ -174,12 +196,28 @@ export default function RoomClient({ liveClassId }: RoomClientProps) {
       }
     };
 
+    let retryTimer: ReturnType<typeof setTimeout> | undefined;
     if (liveClassId && !userLoading) init();
 
     return () => {
       mounted = false;
+      if (retryTimer) clearTimeout(retryTimer);
     };
-  }, [liveClassId, router, user, userLoading, isSeries, searchParams]);
+  }, [liveClassId, router, user, userLoading, isSeries, searchParams, joinAttempt]);
+
+  if (waitingForClass && !roomData && !error) {
+    return (
+      <div className="min-h-screen bg-black flex items-center justify-center text-white px-6">
+        <div className="flex flex-col items-center gap-4 text-center">
+          <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+          <p className="text-lg">Reconnecting to the class…</p>
+          <p className="text-sm text-white/60 max-w-sm">
+            The class isn&apos;t reachable right now — the host may be rejoining. We&apos;ll keep trying for a minute.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   if (loading || userLoading) {
     return (
@@ -236,6 +274,8 @@ export default function RoomClient({ liveClassId }: RoomClientProps) {
         token={roomData.data.token}
         roomId={roomData.data.roomId}
         appId={Number(roomData.data.appId)}
+        isCreator={isCreator}
+        isSeries={isSeries}
       />
     </div>
   );

@@ -1,5 +1,14 @@
 import { apiClient } from '@/lib/api/client';
-import type { AxiosError } from 'axios';
+import type { AxiosError, AxiosProgressEvent } from 'axios';
+import {
+  JSON_CREATE_TIMEOUT_MS,
+  MULTIPART_CREATE_TIMEOUT_MS,
+  progressFraction,
+  supportsIdempotentCreate,
+  toCreateError,
+  withNetworkRetry,
+  type CreateRequestOptions,
+} from '@/lib/api/resilientCreate';
 import type {
   Series,
   SeriesFilters,
@@ -47,11 +56,11 @@ export interface UpdateSeriesBody {
  */
 export async function createSeries(
   body: CreateSeriesBody,
-  thumbnailFile?: File
+  thumbnailFile?: File,
+  options?: CreateRequestOptions
 ): Promise<CreateSeriesResponse> {
-  try {
-    console.log('Creating series with body:', body);
-
+  const idempotencyKey = options?.idempotencyKey;
+  const send = async (): Promise<CreateSeriesResponse> => {
     if (thumbnailFile) {
       const fd = new FormData();
       fd.append('title', body.title);
@@ -70,10 +79,21 @@ export async function createSeries(
       if (typeof body.maxParticipants === 'number') {
         fd.append('maxParticipants', String(body.maxParticipants));
       }
+      if (idempotencyKey) fd.append('idempotencyKey', idempotencyKey);
       fd.append('thumbnail', thumbnailFile);
 
+      const onProgress = options?.onUploadProgress;
       const res = await apiClient.post<CreateSeriesResponse>('/api/live/series/create', fd, {
         headers: { 'Content-Type': 'multipart/form-data' },
+        ...(options ? { timeout: MULTIPART_CREATE_TIMEOUT_MS } : {}),
+        ...(onProgress
+          ? {
+              onUploadProgress: (e: AxiosProgressEvent) => {
+                const fraction = progressFraction(e);
+                if (fraction !== undefined) onProgress(fraction);
+              },
+            }
+          : {}),
       });
 
       // console.log('Backend response:', res.data);
@@ -81,11 +101,24 @@ export async function createSeries(
     }
 
     // When no thumbnail, send as JSON (recurrencePattern will be an object)
-    const res = await apiClient.post<CreateSeriesResponse>('/api/live/series/create', body);
+    const res = await apiClient.post<CreateSeriesResponse>(
+      '/api/live/series/create',
+      idempotencyKey ? { ...body, idempotencyKey } : body,
+      options ? { timeout: JSON_CREATE_TIMEOUT_MS } : undefined
+    );
     // console.log('Backend response:', res.data);
     return res.data;
+  };
+
+  try {
+    console.log('Creating series with body:', body);
+    if (!idempotencyKey) return await send();
+    return await withNetworkRetry(send, {
+      canRetry: () => supportsIdempotentCreate('liveSeries'),
+      onStatus: options?.onRetryStatus,
+    });
   } catch (e) {
-    throw toError(e);
+    throw options ? toCreateError(e) : toError(e);
   }
 }
 
