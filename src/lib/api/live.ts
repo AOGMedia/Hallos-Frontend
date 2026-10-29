@@ -1,4 +1,5 @@
 import { apiClient } from './client'
+import { DEFAULT_LIVE_PROVIDER } from '@/lib/live/providers'
 
 export interface CreateLiveClassBody {
   title: string
@@ -20,10 +21,6 @@ export interface LiveClass {
   endTime?: string
   privacy?: 'public' | 'private'
   status?: 'scheduled' | 'live' | 'ended' | 'recorded'
-  mux_stream_id?: string
-  mux_stream_key?: string
-  mux_rtmp_url?: string
-  mux_playback_id?: string
   recording_asset_id?: string | null
   createdAt?: string
   updatedAt?: string
@@ -59,7 +56,12 @@ function getAuthHeaders() {
 }
 
 export async function createLiveClass(body: CreateLiveClassBody): Promise<CreateLiveClassResponse> {
-  const res = await apiClient.post<CreateLiveClassResponse>('/live/create', body, { headers: getAuthHeaders() })
+  // Always send a provider explicitly — never rely on the server default.
+  const res = await apiClient.post<CreateLiveClassResponse>(
+    '/live/create',
+    { ...body, streamingProvider: DEFAULT_LIVE_PROVIDER },
+    { headers: getAuthHeaders() }
+  )
   return res.data
 }
 
@@ -75,11 +77,6 @@ export async function addAttendee(id: string, payload: { userId: number | string
 
 export async function getLiveClass(id: string): Promise<LiveClass> {
   const res = await apiClient.get<LiveClass>(`/live/${id}`, { headers: getAuthHeaders() })
-  return res.data
-}
-
-export async function getLivePlaybackUrl(id: string): Promise<{ playbackUrl: string | null }> {
-  const res = await apiClient.get<{ playbackUrl: string | null }>(`/live/${id}/playback`)
   return res.data
 }
 

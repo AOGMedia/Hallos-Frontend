@@ -16,6 +16,7 @@ export async function getCurrentUser(): Promise<User> {
     let firstname = (r.firstname ?? r.firstName ?? r.first_name) as string | undefined;
     let lastname = (r.lastname ?? r.lastName ?? r.last_name) as string | undefined;
     const role = (r.role) as string | undefined;
+    const avatarUrl = (r.avatarUrl ?? null) as string | null;
     const name = (r.name ?? r.fullName) as string | undefined;
     if ((!firstname || !lastname) && name) {
       const parts = name.split(' ');
@@ -28,6 +29,7 @@ export async function getCurrentUser(): Promise<User> {
       firstname: firstname ?? '',
       lastname: lastname ?? '',
       role: role,
+      avatarUrl,
     };
   } catch {
     const res = await authApi.me();

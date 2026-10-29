@@ -1,4 +1,5 @@
 import Image from "next/image";
+import { Avatar } from "@/components/ui/Avatar";
 import type { LiveSeriesData } from "./types";
 
 interface LiveSeriesPreviewCardProps {
@@ -73,19 +74,8 @@ export function LiveSeriesPreviewCard({ series }: LiveSeriesPreviewCardProps) {
             </div>
           </div>
 
-          {/* Avatar */}
-          <div
-            className="shrink-0 rounded-full overflow-hidden border border-white/10"
-            style={{ width: 40, height: 40 }}
-          >
-            <Image
-              src={series.host.avatar}
-              alt={series.host.name}
-              width={40}
-              height={40}
-              className="object-cover w-full h-full"
-            />
-          </div>
+          {/* Host's picture, or their initial when they have none */}
+          <Avatar src={series.host.avatar} alt={series.host.name} size="md" className="border border-white/10" />
         </div>
 
         {/* Details row */}

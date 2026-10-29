@@ -25,6 +25,9 @@ export interface VideoListItem {
   userId?: string | number;
   playbackId?: string;
   muxPlaybackId?:string;
+  /** Creator's name and profile picture (null => show their initial). */
+  author?: string;
+  authorAvatar?: string | null;
 }
 
 export interface VideoDetailResponse {
@@ -227,7 +230,8 @@ export async function getVideoById(
       thumbnailUrl: thumb ?? '',
       videoUrl: playbackUrl,
       author: String((raw.author as string | undefined) ?? 'Creator'),
-      authorAvatar: String((raw.authorAvatar as string | undefined) ?? '/images/instructor-avatar.jpg'),
+      // No picture => '' so the Avatar shows the creator's initial.
+      authorAvatar: String((raw.authorAvatar as string | undefined) ?? ''),
       authorBio: (raw.authorBio as string | undefined) ?? undefined,
       duration: Number((raw.durationSeconds as number | undefined) ?? (raw.duration as number | undefined) ?? 0),
       postedDate: String((raw.createdAt as string | undefined) ?? (raw.updatedAt as string | undefined) ?? new Date().toISOString()),
@@ -312,5 +316,7 @@ function normalizeVideoItem(raw: Record<string, unknown>): VideoListItem {
     durationSeconds: (raw?.durationSeconds as number | undefined) ?? (raw?.duration as number | undefined) ?? undefined,
     createdAt: (raw?.createdAt as string | undefined) ?? (raw?.created_at as string | undefined) ?? undefined,
     userId: (raw?.userId as string | number | undefined) ?? (raw?.user_id as string | number | undefined) ?? undefined,
+    author: (raw?.author as string | undefined) ?? undefined,
+    authorAvatar: (raw?.authorAvatar as string | null | undefined) ?? null,
   };
 }

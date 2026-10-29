@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useParams, useRouter, usePathname } from "next/navigation";
 import { getLiveClass, LiveClass, LiveStatus, registerLiveClass, cancelLiveClassRegistration } from "@/services/liveClassService";
 import { joinZegoRoom } from "@/services/zegoService";
+import { joinGetStreamCall } from "@/features/live/getstream";
 import { joinSession, getSessionDetails } from "@/services/sessionService";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import Link from "next/link";
@@ -85,6 +86,7 @@ export default function ZegoJoinPage() {
               ? `${session.series.creator.firstname} ${session.series.creator.lastname}`
               : "Instructor",
             isRegistered: (session.series as { isRegistered?: boolean })?.isRegistered || (session as { isRegistered?: boolean })?.isRegistered || false,
+            streamingProvider: session.series?.streamingProvider,
           };
         } catch (err) {
           throw err;
@@ -114,7 +116,15 @@ export default function ZegoJoinPage() {
 
       // Redirect owner to host page
       if (user && String(lc.userId) === String(user.id)) {
-        const hostRoute = isSeries ? `/live/host-zego/${id}?type=series` : `/live/host-zego/${id}`;
+        // GetStream is hosted from the room page; ZegoCloud from host-zego.
+        const isGetStream = lc.streamingProvider === "getstream";
+        const hostRoute = isSeries
+          ? isGetStream
+            ? `/live/${id}/room?type=series`
+            : `/live/host-zego/${id}?type=series`
+          : isGetStream
+            ? `/live/${id}/room`
+            : `/live/host-zego/${id}`;
         router.replace(hostRoute);
         return;
       }
@@ -269,6 +279,11 @@ export default function ZegoJoinPage() {
     }
 
     if (isSeries) {
+      // GetStream sessions: the room runs the access check and joins.
+      if (liveClass?.streamingProvider === "getstream") {
+        router.push(`/live/${id}/room?type=series`);
+        return;
+      }
       try {
         setJoining(true);
         const response = await joinSession(id);
@@ -295,7 +310,11 @@ export default function ZegoJoinPage() {
 
     try {
       setJoining(true);
-      const res = await joinZegoRoom(id, "participant");
+      // Same access checks either way; each provider has its own join endpoint.
+      const res =
+        liveClass?.streamingProvider === "getstream"
+          ? await joinGetStreamCall({ kind: "class", id })
+          : await joinZegoRoom(id, "participant");
       if (res.action === "JOIN") {
         router.push(`/live/${id}/room`);
       } else if (res.action === "PAY") {

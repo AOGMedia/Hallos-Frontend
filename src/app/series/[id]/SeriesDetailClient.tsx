@@ -283,7 +283,7 @@ export default function SeriesDetailPage() {
 
               <div className="bg-background-card p-4 lg:p-6 rounded-lg">
                 <h2 className="text-base lg:text-lg font-semibold text-text-primary mb-4">Sessions</h2>
-                <SessionList seriesId={id} isCreator={!!isCreator} showActions={!!hasAccess} />
+                <SessionList seriesId={id} isCreator={!!isCreator} showActions={!!hasAccess} streamingProvider={series.streamingProvider} />
               </div>
             </div>
           </div>

@@ -40,8 +40,8 @@ export default function DashboardPage() {
   //       : v.thumbnailUrl
   //       ? `${process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "")}${v.thumbnailUrl}`
   //       : "/images/video-thumbnail-1.svg",
-    author: 'Creator',
-    authorAvatar: "/public/images/instructor-avatar.jpg".replace('/public',''),
+    author: v.author || 'Creator',
+    authorAvatar: v.authorAvatar || '',
     isLive: false,
     duration: Math.max(0, v.durationSeconds ?? 0),
     postedDate: v.createdAt ? new Date(v.createdAt) : new Date(),
@@ -75,8 +75,8 @@ export default function DashboardPage() {
       title: v.title,
       description: v.description ?? '',
       thumbnail: v.thumbnailUrl || "/images/video-thumbnail-1.svg",
-      author: 'Creator',
-      authorAvatar: "/images/instructor-avatar.jpg",
+      author: v.author || 'Creator',
+      authorAvatar: v.authorAvatar || '',
       isLive: false,
       duration: Math.max(0, v.durationSeconds ?? 0),
       postedDate: v.createdAt ? new Date(v.createdAt) : new Date(),

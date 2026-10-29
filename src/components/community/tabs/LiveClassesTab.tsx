@@ -1,23 +1,10 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { CourseCard } from '@/components/course/CourseCard';
+import { liveClassHref } from '@/lib/live/providers';
 
 interface LiveClassesTabProps {
   communityContent: any[];
   currentUserId?: string;
-}
-
-function getLiveClassHref(data: any, currentUserId?: string) {
-  const id = data.id;
-  const isOwner = currentUserId && String(data.userId) === String(currentUserId);
-  // Treat as Mux only if there's explicit Mux evidence; everything else is Zego
-  const isMuxClass = Boolean(data.mux_playback_id || data.playback_url) &&
-    !(data.streamingProvider === 'zegocloud' || data.isZegoCloud);
-
-  if (isMuxClass) {
-    return isOwner ? `/live/creator/${id}` : `/live/${id}`;
-  }
-  // Zego (default)
-  return isOwner ? `/live/${id}/room` : `/live/join/${id}`;
 }
 
 export function LiveClassesTab({ communityContent, currentUserId }: LiveClassesTabProps) {
@@ -58,7 +45,7 @@ export function LiveClassesTab({ communityContent, currentUserId }: LiveClassesT
               reviews={data.reviews || '0'}
               isLive={Boolean(isLiveNow)}
               scheduledFor={scheduledFor}
-              href={getLiveClassHref(data, currentUserId)}
+              href={liveClassHref(data, currentUserId)}
             />
           );
         })

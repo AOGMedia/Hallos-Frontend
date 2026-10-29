@@ -5,6 +5,7 @@ import { ArrowRightIcon } from "lucide-react";
 import { CourseCard } from "@/components/course/CourseCard";
 import { formatDuration } from "@/utils/videoUploadFormatters";
 import { useVideoUploadStore } from "@/store/videoUploadStore";
+import { useCurrentUser } from "@/hooks/useCurrentUser";
 
 interface UploadSuccessViewProps {
   videoTitle: string;
@@ -34,7 +35,8 @@ export function UploadSuccessView({
 
   // Default values for required CourseCard props
   const defaultThumbnail = thumbnailPreview || "/images/default-thumbnail.jpg";
-  const defaultAvatar = "/avatars/alex-chapman.jpg";
+  const { userAvatarUrl } = useCurrentUser();
+  const defaultAvatar = userAvatarUrl || "";
 
   return (
     <div className="flex flex-col items-start gap-4 p-6 rounded-2xl shadow-md shadow-black/60">

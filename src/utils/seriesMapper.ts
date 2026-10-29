@@ -82,7 +82,8 @@ export function seriesToLiveSeriesData(series: Series): LiveSeriesData {
     thumbnail: series.thumbnailUrl || '/images/video-placeholder.svg',
     host: {
       name: series.creator ? `${series.creator.firstname} ${series.creator.lastname}` : 'Unknown',
-      avatar: '/avatars/host-avatar.jpg' // Default avatar
+      // Creator's picture; empty shows their initial.
+      avatar: series.creator?.avatarUrl || ''
     },
     isLive: (series.stats?.liveSessions || 0) > 0, // True if any session is currently live
     title: series.title,

@@ -78,12 +78,15 @@ export default function HostClient({ liveClassId }: HostClientProps) {
         }
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } catch (e: any) {
+        const message = e.response?.data?.message || e.message || "Failed to initiate live session";
+        // An old link to this ZegoCloud host page for a GetStream class:
+        // GetStream classes are hosted from the room page.
+        if (mounted && /not configured for ZegoCloud/i.test(message)) {
+          router.replace(`/live/${liveClassId}/room`);
+          return;
+        }
         if (mounted) {
-          setError(
-            e.response?.data?.message ||
-              e.message ||
-              "Failed to initiate live session"
-          );
+          setError(message);
           setStarting(false);
         }
       }
@@ -130,7 +133,13 @@ export default function HostClient({ liveClassId }: HostClientProps) {
         if (mounted) {
           const error = e as { response?: { data?: { message?: string } }; message?: string };
           const errorMsg = error.response?.data?.message || error.message || "";
-          
+
+          // A GetStream series is hosted from the room page, not this ZegoCloud one.
+          if (/uses GetStream/i.test(errorMsg)) {
+            router.replace(`/live/${liveClassId}/room?type=series`);
+            return;
+          }
+
           // If session is already live, try to join it instead
           if (errorMsg.includes('Current status: live') || errorMsg.includes('already')) {
             console.log('Session already live, attempting to join...');

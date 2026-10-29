@@ -5,6 +5,8 @@
  * These types align with the backend API documented in frontend/src/live_series.md
  */
 
+import type { LiveProvider } from '@/lib/live/providers';
+
 /**
  * Recurrence pattern defining when sessions occur
  */
@@ -25,6 +27,8 @@ export interface SeriesCreator {
   firstname: string;
   lastname: string;
   email: string;
+  /** Profile picture (null => show their initial). */
+  avatarUrl?: string | null;
 }
 
 /**
@@ -90,6 +94,8 @@ export interface Series {
   recurrencePattern: RecurrencePattern;
   privacy: 'public' | 'private';
   maxParticipants: number;
+  /** Live provider for every session. Missing on older series, which are ZegoCloud. */
+  streamingProvider?: LiveProvider;
   status: 'active' | 'cancelled';
   createdAt: string; // ISO date string
   updatedAt: string; // ISO date string
@@ -113,10 +119,13 @@ export interface SessionSeriesInfo {
   price?: number;
   currency?: string;
   thumbnailUrl?: string;
+  /** Missing on older series, which are ZegoCloud. */
+  streamingProvider?: LiveProvider;
   creator?: {
     id: number;
     firstname: string;
     lastname: string;
+    avatarUrl?: string | null;
   };
 }
 

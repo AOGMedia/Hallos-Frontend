@@ -18,6 +18,7 @@ import type {
   UpdateSeriesResponse,
   CancelSeriesResponse,
 } from '@/types/series';
+import type { LiveProvider } from '@/lib/live/providers';
 
 function toError(e: unknown): Error {
   const err = e as AxiosError<{ message?: string }>;
@@ -40,6 +41,8 @@ export interface CreateSeriesBody {
   };
   privacy?: 'public' | 'private';
   maxParticipants?: number;
+  /** Provider for every session of the series (lib/live/providers). */
+  streamingProvider?: LiveProvider;
 }
 
 export interface UpdateSeriesBody {
@@ -49,6 +52,8 @@ export interface UpdateSeriesBody {
   category?: string;
   privacy?: 'public' | 'private';
   maxParticipants?: number;
+  /** Applies to sessions that haven't started yet. */
+  streamingProvider?: LiveProvider;
 }
 
 /**
@@ -79,6 +84,7 @@ export async function createSeries(
       if (typeof body.maxParticipants === 'number') {
         fd.append('maxParticipants', String(body.maxParticipants));
       }
+      if (body.streamingProvider) fd.append('streamingProvider', body.streamingProvider);
       if (idempotencyKey) fd.append('idempotencyKey', idempotencyKey);
       fd.append('thumbnail', thumbnailFile);
 
@@ -215,6 +221,7 @@ export async function updateSeries(
       if (typeof body.maxParticipants === 'number') {
         fd.append('maxParticipants', String(body.maxParticipants));
       }
+      if (body.streamingProvider) fd.append('streamingProvider', body.streamingProvider);
       fd.append('thumbnail', thumbnailFile);
 
       const res = await apiClient.put<UpdateSeriesResponse>(`/api/live/series/${id}`, fd, {

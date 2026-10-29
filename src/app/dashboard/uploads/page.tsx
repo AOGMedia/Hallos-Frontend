@@ -10,6 +10,7 @@ import { UploadingState } from '@/components/uploads/UploadingState';
 import Image from 'next/image';
 import { ConfirmationModal } from '@/components/ui/ConfirmationModal';
 import { AlertModal } from '@/components/ui/AlertModal';
+import { useCurrentUser } from '@/hooks/useCurrentUser';
 
 type TabType = 'videos' | 'shorts';
 
@@ -18,6 +19,7 @@ export default function UploadsPage() {
   const queryClient = useQueryClient();
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [alertMessage, setAlertMessage] = useState<string | null>(null);
+  const { userAvatarUrl } = useCurrentUser();
 
   const handleDeleteVideo = (id: string) => {
     setDeleteId(id);
@@ -153,7 +155,7 @@ export default function UploadsPage() {
                       description: v.description || '',
                       thumbnail: v.thumbnailUrl || '/images/video-thumbnail-1.svg',
                       author: 'You',
-                      authorAvatar: '/images/instructor-avatar.jpg',
+                      authorAvatar: userAvatarUrl || '',
                       isLive: false,
                       duration: Math.max(0, v.durationSeconds ?? 0),
                       postedDate: v.createdAt ? new Date(v.createdAt) : new Date(),

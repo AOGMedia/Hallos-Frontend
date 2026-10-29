@@ -17,6 +17,7 @@ import {
   type LiveClass,
 } from "@/services/liveClassService";
 import { deleteLiveClass } from "@/lib/api/live";
+import { liveClassHref } from "@/lib/live/providers";
 import { ConfirmationModal } from "@/components/ui/ConfirmationModal";
 import { AlertModal } from "@/components/ui/AlertModal";
 import { listSeries } from "@/services/seriesService";
@@ -207,24 +208,7 @@ export function ScheduleTabsClient() {
     }
   };
 
-  const getLiveClassHref = (c: LiveClass) => {
-    const isOwner = String(c.userId) === String(userId);
-    const isMuxClass = Boolean(c.mux_playback_id || c.playback_url);
-    const isZegoClass = Boolean(c.isZegoCloud && !isMuxClass);
-
-    if (isZegoClass) {
-      if (isOwner) {
-        return `/live/${c.id}/room`;
-      }
-      return `/live/join/${c.id}`;
-    }
-
-    if (isOwner) {
-      return `/live/creator/${c.id}`;
-    }
-
-    return `/live/${c.id}`;
-  };
+  const getLiveClassHref = (c: LiveClass) => liveClassHref(c, userId);
 
   // Live Classes Content
   const liveClassesContent = isLoadingClasses ? (
@@ -269,7 +253,7 @@ export function ScheduleTabsClient() {
               description={c.description || ""}
               instructor={c.creatorName || "Unknown Instructor"}
               thumbnail={c.thumbnailUrl || "/images/video-placeholder.svg"}
-              avatar={"/avatars/alex-chapman.jpg"}
+              avatar={c.creatorAvatarUrl || ""}
               price={
                 typeof c.price === "number" ? c.price : Number(c.price) || 0
               }
@@ -328,7 +312,7 @@ export function ScheduleTabsClient() {
                   : "Unknown Instructor"
               }
               thumbnail={s.thumbnailUrl || "/images/video-placeholder.svg"}
-              avatar={"/avatars/alex-chapman.jpg"}
+              avatar={s.creator?.avatarUrl || ""}
               price={seriesPrice}
               currency={baseCurrency}
               href={`/series/${s.id}`}
@@ -433,7 +417,7 @@ export function ScheduleTabsClient() {
                       : "Unknown Instructor"
                   }
                   thumbnail={s.thumbnailUrl || "/images/video-placeholder.svg"}
-                  avatar={"/avatars/alex-chapman.jpg"}
+                  avatar={s.creator?.avatarUrl || ""}
                   price={seriesPrice}
                   currency={baseCurrency}
                   href={`/series/${s.id}`}

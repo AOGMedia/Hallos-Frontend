@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { LiveEventState } from '@/types/liveEvent';
 import { CurrencyCode } from '@/types/videoUpload';
+import { DEFAULT_LIVE_PROVIDER, isLiveProvider, type LiveProvider } from '@/lib/live/providers';
 
 interface LiveEventStore extends LiveEventState {
   // Live event actions
@@ -10,7 +11,7 @@ interface LiveEventStore extends LiveEventState {
   setLiveEventPrice: (price: string) => void;
   setLiveEventCurrency: (currency: CurrencyCode) => void;
   setLiveEventPrivacy: (privacy: 'public' | 'private') => void;
-  setLiveEventStreamingProvider: (provider: 'mux' | 'zegocloud') => void;
+  setLiveEventStreamingProvider: (provider: LiveProvider) => void;
   setLiveEventMaxParticipants: (maxParticipants: string) => void;
   setLiveEventCategory: (category: string) => void;
   setScheduleClass: (enabled: boolean) => void;
@@ -31,7 +32,7 @@ const initialState: LiveEventState = {
   liveEventPrice: '',
   liveEventCurrency: CurrencyCode.NGN,
   liveEventPrivacy: 'public',
-  liveEventStreamingProvider: 'zegocloud',
+  liveEventStreamingProvider: DEFAULT_LIVE_PROVIDER,
   liveEventMaxParticipants: '50',
   liveEventCategory: '',
   scheduleClass: false,
@@ -108,6 +109,16 @@ export const useLiveEventStore = create<LiveEventStore>()(
     }),
     {
       name: 'live-event-storage',
+      // v1: retired providers (e.g. a saved 'mux' from before OBS streaming
+      // was removed) are reset to the default so they're never sent on create.
+      version: 1,
+      migrate: (persisted) => {
+        const state = (persisted ?? {}) as Partial<LiveEventState>;
+        if (!isLiveProvider(state.liveEventStreamingProvider)) {
+          state.liveEventStreamingProvider = DEFAULT_LIVE_PROVIDER;
+        }
+        return state as LiveEventStore;
+      },
       partialize: (state) => ({
         liveEventTitle: state.liveEventTitle,
         liveEventDescription: state.liveEventDescription,

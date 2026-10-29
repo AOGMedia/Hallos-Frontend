@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { TitleField, DescriptionField, PriceField, CategoryField, PrivacyField, MaxParticipantsField, ThumbnailSection } from "@/components/videoUpload/steps/GoLiveParts";
+import { TitleField, DescriptionField, PriceField, CategoryField, PrivacyField, MaxParticipantsField, StreamingProviderField, ThumbnailSection } from "@/components/videoUpload/steps/GoLiveParts";
+import { DEFAULT_LIVE_PROVIDER, isLiveProvider, type LiveProvider } from "@/lib/live/providers";
 import { CurrencyCode } from "@/types/videoUpload";
 import { SeriesDateRangeField } from "./SeriesDateRangeField";
 import { RecurrencePatternField } from "./RecurrencePatternField";
@@ -48,6 +49,7 @@ export function SeriesForm() {
   const [category, setCategory] = useState('');
   const [privacy, setPrivacy] = useState<'public' | 'private'>('public');
   const [maxParticipants, setMaxParticipants] = useState('50');
+  const [streamingProvider, setStreamingProvider] = useState<LiveProvider>(DEFAULT_LIVE_PROVIDER);
   const [thumbnail, setThumbnail] = useState<File | null>(null);
   const [thumbnailPreview, setThumbnailPreview] = useState<string | null>(null);
 
@@ -103,6 +105,7 @@ export function SeriesForm() {
         set(d.duration, setDuration);
         if (Object.values(CurrencyCode).includes(d.currency as CurrencyCode)) setCurrency(d.currency as CurrencyCode);
         if (d.privacy === "public" || d.privacy === "private") setPrivacy(d.privacy);
+        if (isLiveProvider(d.streamingProvider)) setStreamingProvider(d.streamingProvider);
         if (Array.isArray(d.recurrenceDays)) {
           setRecurrenceDays(d.recurrenceDays.filter((x): x is string => typeof x === "string"));
         }
@@ -137,6 +140,7 @@ export function SeriesForm() {
           category,
           privacy,
           maxParticipants,
+          streamingProvider,
           startDate,
           endDate,
           recurrenceDays,
@@ -145,7 +149,7 @@ export function SeriesForm() {
         })
       );
     } catch {}
-  }, [draftReady, title, description, price, currency, category, privacy, maxParticipants, startDate, endDate, recurrenceDays, startTime, duration]);
+  }, [draftReady, title, description, price, currency, category, privacy, maxParticipants, streamingProvider, startDate, endDate, recurrenceDays, startTime, duration]);
 
   const handleThumbnailSelect = (file: File, preview: string) => {
     setThumbnail(file);
@@ -220,7 +224,8 @@ export function SeriesForm() {
           duration: parseInt(duration)
         },
         privacy,
-        maxParticipants: parseInt(maxParticipants)
+        maxParticipants: parseInt(maxParticipants),
+        streamingProvider,
       };
 
       console.log('Submitting series creation:', requestBody);
@@ -324,16 +329,18 @@ export function SeriesForm() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <PrivacyField value={privacy} onChange={setPrivacy} />
-            <MaxParticipantsField 
-              value={maxParticipants} 
-              onChange={setMaxParticipants} 
-              streamingProvider="zegocloud"
+            <MaxParticipantsField
+              value={maxParticipants}
+              onChange={setMaxParticipants}
+              streamingProvider={streamingProvider}
             />
           </div>
 
+          <StreamingProviderField kind="series" value={streamingProvider} onChange={setStreamingProvider} />
+
           <div className="border-t border-border/20 pt-6">
             <p className="text-sm text-text-primary/70 mb-6">
-              Series are always scheduled and use In-App for streaming
+              Series are always scheduled. Every session uses the streaming method above.
             </p>
           </div>
 
