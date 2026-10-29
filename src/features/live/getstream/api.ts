@@ -105,6 +105,103 @@ export async function listGetStreamRecordings(target: GetStreamTarget): Promise<
   return res.data.data.recordings;
 }
 
+// ---------------------------------------------------------------------------
+// Gifts
+// ---------------------------------------------------------------------------
+
+export type WalletCurrency = "NGN" | "USD";
+export type Balances = Record<WalletCurrency, number>;
+
+export interface GiftDefinition {
+  code: string;
+  name: string;
+  emoji: string;
+  animation: string;
+  prices: Balances;
+}
+
+export interface GiftOverview {
+  gifts: GiftDefinition[];
+  /** The class/series currency — tried first when paying. */
+  currency: WalletCurrency;
+  balances: Balances;
+  /** False for the host (can't gift themselves). */
+  canGift: boolean;
+  /** Host only: what they've received here, after the platform fee. */
+  received?: { totals: Balances; count: number };
+}
+
+export interface SentGift {
+  id: string;
+  code: string;
+  name: string;
+  emoji: string;
+  currency: WalletCurrency;
+  amount: number;
+}
+
+export async function getGiftOverview(target: GetStreamTarget): Promise<GiftOverview> {
+  const res = await apiClient.get(`${basePath(target)}/gifts-getstream`);
+  return res.data.data;
+}
+
+/** Thrown when no wallet has enough for the gift (HTTP 402). */
+export class InsufficientFundsError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "InsufficientFundsError";
+  }
+}
+
+/**
+ * Send a gift — attendees to the host (no recipientId), hosts/co-hosts to the
+ * participant they pick. The server picks the wallet and the price; the
+ * idempotency key (one per tap) makes a retried request safe.
+ */
+export async function sendGift(
+  target: GetStreamTarget,
+  giftCode: string,
+  idempotencyKey: string,
+  recipientId?: string
+): Promise<{ gift: SentGift; replay: boolean; balances: Balances }> {
+  try {
+    const res = await apiClient.post(`${basePath(target)}/gift-getstream`, {
+      giftCode,
+      idempotencyKey,
+      ...(recipientId ? { recipientId } : {}),
+    });
+    return res.data.data;
+  } catch (error) {
+    const status = (error as { response?: { status?: number } })?.response?.status;
+    if (status === 402) throw new InsufficientFundsError(serverMessage(error, "Not enough money in your wallet"));
+    throw error;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Chat photos
+// ---------------------------------------------------------------------------
+
+/** Upload a photo to the class chat; the server stores and announces it. */
+export async function shareChatPhoto(
+  target: GetStreamTarget,
+  photo: Blob,
+  { caption, clientId, onProgress }: { caption?: string; clientId: string; onProgress?: (fraction: number) => void }
+): Promise<{ id: string; url: string }> {
+  const form = new FormData();
+  form.append("photo", photo, photo instanceof File ? photo.name : "photo.jpg");
+  form.append("clientId", clientId);
+  if (caption) form.append("caption", caption);
+  const res = await apiClient.post(`${basePath(target)}/chat-photo-getstream`, form, {
+    headers: { "Content-Type": "multipart/form-data" },
+    timeout: 60_000,
+    onUploadProgress: (e) => {
+      if (onProgress && e.total) onProgress(e.loaded / e.total);
+    },
+  });
+  return res.data.data;
+}
+
 /** The server's message for a failed request, if it sent one. */
 export function serverMessage(error: unknown, fallback: string): string {
   const msg = (error as { response?: { data?: { message?: string } } })?.response?.data?.message;

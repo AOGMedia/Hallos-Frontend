@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useRef } from "react";
-import type { FloatingReaction } from "../hooks/useReactions";
+import { memo, useEffect, useRef } from "react";
+import { useFloatingReactions, type FloatingReaction, type ReactionBus } from "../hooks/useReactions";
 
 /** One emoji drifting up and fading out (Web Animations API — no global CSS needed). */
 function Floater({ reaction, durationMs }: { reaction: FloatingReaction; durationMs: number }) {
@@ -38,12 +38,26 @@ function Floater({ reaction, durationMs }: { reaction: FloatingReaction; duratio
   );
 }
 
-export function ReactionsOverlay({ reactions, durationMs }: { reactions: FloatingReaction[]; durationMs: number }) {
+/**
+ * Floating emoji reactions. Owns its own state and event subscription, so a
+ * room full of people spamming hearts only re-renders this overlay — never
+ * the video stage or controls.
+ */
+export const ReactionsOverlay = memo(function ReactionsOverlay({
+  bus,
+  selfId,
+  selfName,
+}: {
+  bus: ReactionBus;
+  selfId: string;
+  selfName: string;
+}) {
+  const { floating, durationMs } = useFloatingReactions({ bus, selfId, selfName });
   return (
     <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 h-80 overflow-hidden" aria-hidden>
-      {reactions.map((r) => (
+      {floating.map((r) => (
         <Floater key={r.id} reaction={r} durationMs={durationMs} />
       ))}
     </div>
   );
-}
+});
