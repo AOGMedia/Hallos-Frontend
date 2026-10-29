@@ -2,7 +2,8 @@
 
 import { memo, useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { AlertCircle, ImagePlus, MessageCircle, SendHorizontal, X } from "lucide-react";
-import { MAX_CHAT_LENGTH, initialsOf } from "../lib/events";
+import { MAX_CHAT_LENGTH } from "../lib/events";
+import { RoomAvatar } from "./RoomAvatar";
 import { ACCEPTED_PHOTO_TYPES } from "../lib/image";
 import type { ChatMessage } from "../hooks/useClassChat";
 import { Sheet } from "./Sheet";
@@ -97,11 +98,7 @@ const MessageRow = memo(function MessageRow({
 
   return (
     <div className={`flex gap-2 ${m.mine ? "flex-row-reverse" : ""}`}>
-      {!m.mine && (
-        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/25 text-[11px] font-semibold">
-          {initialsOf(m.name)}
-        </div>
-      )}
+      {!m.mine && <RoomAvatar name={m.name} image={m.image} className="h-8 w-8 text-[11px]" />}
       <div className={`flex max-w-[80%] flex-col ${m.mine ? "items-end" : "items-start"}`}>
         {!m.mine && <span className="mb-0.5 text-[11px] font-medium text-white/60">{m.name}</span>}
         {m.photoUrl && (

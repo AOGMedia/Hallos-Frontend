@@ -177,7 +177,7 @@ export function PopularClasses() {
                     description={c.description || "Join this live class"}
                     instructor={c.creatorName || "Hallbs Creator"}
                     thumbnail={c.thumbnailUrl || "https://res.cloudinary.com/dblsgkbk4/image/upload/v1770673636/how_w8f44h.png"}
-                    avatar="/avatars/alex-chapman.jpg"
+                    avatar={c.creatorAvatarUrl || ""}
                     price={typeof c.price === "number" ? c.price : Number(c.price) || 0}
                     duration={formatDuration(c.startTime, c.endTime)}
                     posted={c.createdAt ? new Date(c.createdAt).toLocaleDateString() : "Recently"}
@@ -213,7 +213,7 @@ export function PopularClasses() {
                           : "Hallbs Creator"
                       }
                       thumbnail={s.thumbnailUrl || "https://res.cloudinary.com/dblsgkbk4/image/upload/v1770673636/how_w8f44h.png"}
-                      avatar="/avatars/alex-chapman.jpg"
+                      avatar={s.creator?.avatarUrl || ""}
                       price={seriesPrice}
                       currency={seriesCurrency}
                       href={`/series/${s.id}`}

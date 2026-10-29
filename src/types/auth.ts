@@ -32,6 +32,8 @@ export interface User {
   firstname: string;
   lastname: string;
   role?: string;
+  /** Profile picture (uploaded, or from Google sign-in). Null => show the initial. */
+  avatarUrl?: string | null;
 }
 
 export interface ForgotPasswordRequest {

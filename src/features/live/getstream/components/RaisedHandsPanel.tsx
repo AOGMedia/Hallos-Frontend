@@ -3,7 +3,7 @@
 import { memo, useEffect, useState } from "react";
 import { Hand } from "lucide-react";
 import type { RaisedHand } from "../hooks/useRaisedHands";
-import { initialsOf } from "../lib/events";
+import { RoomAvatar } from "./RoomAvatar";
 import { Sheet } from "./Sheet";
 
 function sinceLabel(raisedAt: number, now: number) {
@@ -66,9 +66,7 @@ export const RaisedHandsPanel = memo(function RaisedHandsPanel({
             {queue.map((hand, index) => (
               <li key={hand.userId} className="flex items-center gap-3 rounded-2xl bg-white/5 px-3 py-2.5">
                 <span className="w-5 text-center text-sm font-bold text-amber-300">{index + 1}</span>
-                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/25 text-xs font-semibold">
-                  {initialsOf(hand.name)}
-                </div>
+                <RoomAvatar name={hand.name} image={hand.image} className="h-9 w-9 text-xs" />
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-medium">{hand.name}</p>
                   <p className="text-[11px] text-white/50">{sinceLabel(hand.raisedAt, now)}</p>

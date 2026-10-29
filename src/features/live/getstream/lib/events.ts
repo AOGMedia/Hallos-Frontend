@@ -31,7 +31,7 @@ export interface PhotoEventPayload {
   id: string;
   text?: string;
   photo: { url: string };
-  from: { id: string; name: string };
+  from: { id: string; name: string; image?: string };
 }
 
 export interface HandEventPayload {

@@ -4,7 +4,7 @@ import { ProfilePictureUpload } from './ProfilePictureUpload';
 interface ProfileHeaderProps {
   fullName: string;
   email: string;
-  avatarUrl?: string;
+  avatarUrl?: string | null;
   isEditing: boolean;
   onEditProfile: () => void;
   onUploadPicture: (file: File) => Promise<void>;
@@ -17,6 +17,7 @@ export function ProfileHeader({ fullName, email, avatarUrl, isEditing, onEditPro
       <div className="flex items-center gap-4 flex-1">
         <ProfilePictureUpload
           currentPictureUrl={avatarUrl}
+          name={fullName}
           onUpload={onUploadPicture}
           isUploading={isUploadingPicture}
         />

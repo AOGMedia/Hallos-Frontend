@@ -22,6 +22,8 @@ export interface ChatMessage {
   text: string;
   sentAt: number;
   mine: boolean;
+  /** Sender's profile picture (null => their initial). */
+  image?: string | null;
   /** A shared photo (a local preview while our own upload is in flight). */
   photoUrl?: string;
   /** 0–1 while our own photo uploads. */
@@ -80,6 +82,7 @@ export function useClassChat({
           id: payload.id,
           userId: payload.from.id,
           name: payload.from.name || "Guest",
+          image: payload.from.image ?? null,
           text: String(payload.text || "").slice(0, MAX_CHAT_LENGTH),
           photoUrl: payload.photo.url,
           sentAt,
@@ -95,6 +98,7 @@ export function useClassChat({
         id: payload.id,
         userId: event.user?.id ?? "",
         name: (event.user as { name?: string } | undefined)?.name || "Guest",
+        image: event.user?.image ?? null,
         text: String(payload.text).slice(0, MAX_CHAT_LENGTH),
         sentAt,
         mine: false,

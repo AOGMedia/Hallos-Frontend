@@ -9,6 +9,7 @@ import { ModeToggle } from "@/components/series/form/ModeToggle";
 import { SeriesForm } from "@/components/series/form/SeriesForm";
 import { createLiveClass, type CreateLiveClassBody } from '@/services/liveClassService'
 import { startZegoLive } from "@/services/zegoService";
+import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { SuccessModal } from "@/components/ui/SuccessModal";
 import { AlertModal } from "@/components/ui/AlertModal";
 import {
@@ -37,11 +38,15 @@ interface GoLiveStepProps {
 }
 
 export const GoLiveStep = memo(function GoLiveStep({
-  currentUserAvatar = "https://i.pravatar.cc/150?img=12",
-  currentUserName = "You",
+  currentUserAvatar,
+  currentUserName,
   initialMode = 'single',
 }: GoLiveStepProps) {
   const router = useRouter();
+  // The signed-in creator, shown as the host (picture, or their initial).
+  const { user } = useCurrentUser();
+  const hostName = currentUserName || `${user?.firstname ?? ""} ${user?.lastname ?? ""}`.trim() || "You";
+  const hostAvatar = currentUserAvatar ?? user?.avatarUrl ?? "";
   const {
     liveEventTitle,
     liveEventDescription,
@@ -379,7 +384,7 @@ export const GoLiveStep = memo(function GoLiveStep({
           )}
 
           <div className="flex-1 live-event-card flex flex-col gap-4 bg-[#1F2636] shadow-2xl shadow-black/70 self-start">
-            <HostHeader name={currentUserName} avatar={currentUserAvatar} />
+            <HostHeader name={hostName} avatar={hostAvatar} />
             <LiveEventActionBtn
               handleGoLive={handleGoLive}
               scheduleClass={scheduleClass}

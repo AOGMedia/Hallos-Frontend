@@ -7,6 +7,8 @@ import { HAND_EVENT, type HandEventPayload } from "../lib/events";
 export interface RaisedHand {
   userId: string;
   name: string;
+  /** Profile picture (null => their initial). */
+  image?: string | null;
   raisedAt: number;
 }
 
@@ -80,6 +82,7 @@ export function useRaisedHands({
         const hand = {
           userId: fromId,
           name: (event.user as { name?: string } | undefined)?.name || "Someone",
+          image: event.user?.image ?? null,
           raisedAt: Date.parse(event.created_at) || Date.now(),
         };
         // Re-announcements keep their original place in the queue.

@@ -36,6 +36,8 @@ export interface LiveClass {
   userId?: number | string,
   username?: string,
   creatorName?: string
+  /** Creator's profile picture (null => show their initial). */
+  creatorAvatarUrl?: string | null
   // Helper fields
   isZegoCloud?: boolean
   category?: string
@@ -200,6 +202,7 @@ export async function getLiveClass(id: string): Promise<LiveClass> {
       updatedAt: data.updatedAt,
       userId: data.userId,
       creatorName: data.instructor?.name || data.creatorName || `${data.instructor?.firstname || ''} ${data.instructor?.lastname || ''}`.trim(),
+      creatorAvatarUrl: data.instructor?.avatarUrl ?? null,
       isZegoCloud: (data.streaming_provider || data.streamingProvider) === 'zegocloud',
       category: data.category,
       isRegistered: data.isRegistered,
@@ -292,6 +295,7 @@ export async function listLiveClasses(): Promise<LiveClass[]> {
         updatedAt: obj.updatedAt as string | undefined,
         userId,
         creatorName,
+        creatorAvatarUrl: ((obj.creatorAvatarUrl ?? user?.avatarUrl) as string | null | undefined) ?? null,
         isZegoCloud: streamingProvider === 'zegocloud',
       }
       return mapped
@@ -346,6 +350,7 @@ export async function listLiveClassesExternal(): Promise<LiveClass[]> {
         updatedAt: obj.updatedAt as string | undefined,
         userId,
         creatorName,
+        creatorAvatarUrl: ((obj.creatorAvatarUrl ?? user?.avatarUrl) as string | null | undefined) ?? null,
         isZegoCloud: streamingProvider === 'zegocloud',
         category: (obj.category || obj.Category) as string | undefined,
       }

@@ -397,7 +397,8 @@ export function InviteSection({ title, emails, onAdd, onRemove, copied, onCopy }
 
 interface HostHeaderProps {
   name: string
-  avatar: string
+  /** Profile picture; empty shows the host's initial. */
+  avatar?: string | null
 }
 
 export function HostHeader({ name, avatar }: HostHeaderProps) {

@@ -34,6 +34,7 @@ export function useCurrentUser() {
     userId: user?.id,
     userEmail: user?.email,
     userFirstName: user?.firstname,
-    userLastName: user?.lastname
+    userLastName: user?.lastname,
+    userAvatarUrl: user?.avatarUrl ?? null
   };
 }

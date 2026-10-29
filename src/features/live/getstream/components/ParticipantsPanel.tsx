@@ -9,7 +9,7 @@ import {
   type StreamVideoParticipant,
 } from "@stream-io/video-react-sdk";
 import { Gift, Hand, Mic, MicOff, Search, Users, Video, VideoOff } from "lucide-react";
-import { initialsOf } from "../lib/events";
+import { RoomAvatar } from "./RoomAvatar";
 import { friendlyError } from "../lib/errors";
 import { Sheet } from "./Sheet";
 
@@ -93,13 +93,7 @@ function ParticipantList({ hostUserIds, handPositions, canModerate, onNotice, on
             const host = isHost(p);
             return (
               <li key={p.sessionId} className="flex items-center gap-3 rounded-2xl px-2 py-2 hover:bg-white/5">
-                <div
-                  className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-xs font-semibold ${
-                    p.isSpeaking ? "bg-primary ring-2 ring-primary/50" : "bg-primary/25"
-                  }`}
-                >
-                  {initialsOf(p.name || p.userId)}
-                </div>
+                <RoomAvatar name={p.name || p.userId} image={p.image} speaking={p.isSpeaking} className="h-10 w-10 text-sm" />
                 <div className="min-w-0 flex-1">
                   <p className="flex items-center gap-1.5 text-sm font-medium">
                     <span className="truncate">{p.isLocalParticipant ? `${p.name || "You"} (You)` : p.name || "Guest"}</span>

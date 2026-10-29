@@ -19,6 +19,8 @@ export interface UserProfile {
   newsletterSubscribed?: boolean;
   role?: string;
   createdAt?: string;
+  /** Profile picture (uploaded, or from Google sign-in). Null => show the initial. */
+  avatarUrl?: string | null;
 }
 
 export interface ProfileResponse {

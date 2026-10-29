@@ -27,6 +27,8 @@ export interface SeriesCreator {
   firstname: string;
   lastname: string;
   email: string;
+  /** Profile picture (null => show their initial). */
+  avatarUrl?: string | null;
 }
 
 /**
@@ -123,6 +125,7 @@ export interface SessionSeriesInfo {
     id: number;
     firstname: string;
     lastname: string;
+    avatarUrl?: string | null;
   };
 }
 

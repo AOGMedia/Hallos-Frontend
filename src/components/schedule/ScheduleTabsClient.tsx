@@ -253,7 +253,7 @@ export function ScheduleTabsClient() {
               description={c.description || ""}
               instructor={c.creatorName || "Unknown Instructor"}
               thumbnail={c.thumbnailUrl || "/images/video-placeholder.svg"}
-              avatar={"/avatars/alex-chapman.jpg"}
+              avatar={c.creatorAvatarUrl || ""}
               price={
                 typeof c.price === "number" ? c.price : Number(c.price) || 0
               }
@@ -312,7 +312,7 @@ export function ScheduleTabsClient() {
                   : "Unknown Instructor"
               }
               thumbnail={s.thumbnailUrl || "/images/video-placeholder.svg"}
-              avatar={"/avatars/alex-chapman.jpg"}
+              avatar={s.creator?.avatarUrl || ""}
               price={seriesPrice}
               currency={baseCurrency}
               href={`/series/${s.id}`}
@@ -417,7 +417,7 @@ export function ScheduleTabsClient() {
                       : "Unknown Instructor"
                   }
                   thumbnail={s.thumbnailUrl || "/images/video-placeholder.svg"}
-                  avatar={"/avatars/alex-chapman.jpg"}
+                  avatar={s.creator?.avatarUrl || ""}
                   price={seriesPrice}
                   currency={baseCurrency}
                   href={`/series/${s.id}`}

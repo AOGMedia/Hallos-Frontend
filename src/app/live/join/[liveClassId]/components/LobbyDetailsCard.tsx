@@ -5,6 +5,7 @@ import { CouponInput } from "@/components/checkout/CouponInput";
 import { CouponValidationData } from "@/types/coupon";
 import { Button } from "@/components/ui/Button";
 import RedDotIcon from "@/components/icons/RedDotIcon";
+import { Avatar } from "@/components/ui/Avatar";
 
 interface CouponResult {
   discountAmount: number;
@@ -136,9 +137,12 @@ export default function LobbyDetailsCard({
           </div>
           <div className="p-4 bg-background-dark/50 rounded-xl border border-border/10">
             <p className="text-text-primary/40 text-sm mb-1">Host</p>
-            <p className="text-text-primary font-bold text-lg">
-              {liveClass.creatorName || "Instructor"}
-            </p>
+            <div className="flex items-center gap-3">
+              <Avatar src={liveClass.creatorAvatarUrl} alt={liveClass.creatorName || "Instructor"} size="md" />
+              <p className="text-text-primary font-bold text-lg truncate">
+                {liveClass.creatorName || "Instructor"}
+              </p>
+            </div>
           </div>
           <div className="p-4 bg-background-dark/50 rounded-xl border border-border/10 sm:col-span-2">
             <p className="text-text-primary/40 text-sm mb-1">Scheduled Time</p>

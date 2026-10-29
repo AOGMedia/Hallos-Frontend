@@ -62,8 +62,9 @@ export function transformPurchaseToCardProps(purchase: PurchaseRecord): Purchase
   // Provide default instructor name
   const instructor = 'Instructor'; // Could be enhanced with actual instructor data
   
-  // Provide default avatar
-  const avatar = '/avatars/alex-chapman.jpg';
+  // No instructor data on purchases yet: an empty picture shows the initial
+  // (never a stock photo of someone else).
+  const avatar = '';
   
   // Provide default metadata
   const duration = isLive ? 'Live Session' : '1h 30m';

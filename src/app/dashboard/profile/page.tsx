@@ -77,6 +77,7 @@ export default function ProfilePage() {
         const oldProfile = old as { socialLinks?: { profilePicture?: string } } | undefined;
         const updated = {
           ...oldProfile,
+          avatarUrl: profilePictureUrl,
           socialLinks: {
             ...oldProfile?.socialLinks,
             profilePicture: profilePictureUrl,
@@ -230,7 +231,7 @@ export default function ProfilePage() {
         <ProfileHeader
           fullName={fullName}
           email={email}
-          avatarUrl={profile?.socialLinks?.profilePicture}
+          avatarUrl={profile?.avatarUrl ?? profile?.socialLinks?.profilePicture}
           isEditing={isEditing}
           onEditProfile={handleEditProfile}
           onUploadPicture={handleUploadPicture}

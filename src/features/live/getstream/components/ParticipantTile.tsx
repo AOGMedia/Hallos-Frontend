@@ -9,14 +9,21 @@ import {
   type VideoPlaceholderProps,
 } from "@stream-io/video-react-sdk";
 import { Hand, MicOff, MonitorUp } from "lucide-react";
-import { initialsOf } from "../lib/events";
+import { RoomAvatar } from "./RoomAvatar";
 
+/**
+ * Camera off, Google Meet style: their profile picture (or initial) as a big
+ * circle in the middle of a dark tile, glowing while they speak.
+ */
 function Placeholder({ participant }: VideoPlaceholderProps) {
   return (
-    <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-[#262f45] to-[#151a27]">
-      <div className="flex aspect-square w-[28%] min-w-12 max-w-28 items-center justify-center rounded-full bg-primary/25 text-lg font-semibold text-white ring-1 ring-white/10 sm:text-2xl">
-        {initialsOf(participant.name || participant.userId)}
-      </div>
+    <div className="absolute inset-0 flex items-center justify-center bg-[#1b2030]">
+      <RoomAvatar
+        name={participant.name || participant.userId}
+        image={participant.image}
+        speaking={participant.isSpeaking}
+        className="aspect-square w-[34%] min-w-12 max-w-36 text-xl ring-1 ring-white/10 sm:text-3xl"
+      />
     </div>
   );
 }

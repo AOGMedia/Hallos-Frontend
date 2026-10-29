@@ -1,6 +1,7 @@
 import { RefreshCw } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { Avatar } from '@/components/ui/Avatar';
 
 interface SeriesScheduleCardProps {
   id: string;
@@ -8,7 +9,8 @@ interface SeriesScheduleCardProps {
   description: string;
   instructor: string;
   thumbnail: string;
-  avatar: string;
+  /** Creator's profile picture; empty => their initial. */
+  avatar?: string | null;
   price: number;
   currency?: string;
   href: string;
@@ -83,13 +85,8 @@ export function SeriesScheduleCard({
             </div>
 
             <div className="flex-shrink-0">
-              <Image
-                src={avatar}
-                alt={instructor}
-                width={40}
-                height={40}
-                className="w-10 h-10 rounded-full object-cover border-none"
-              />
+              {/* The creator's picture, or their initial when they have none */}
+              <Avatar src={avatar} alt={instructor} size="md" />
             </div>
           </div>
         </div>

@@ -14,7 +14,8 @@ interface CourseCardProps {
   description: string;
   instructor: string;
   thumbnail: string;
-  avatar: string;
+  /** Instructor's profile picture; empty => their initial. */
+  avatar?: string | null;
   price?: number ;
   currency?: string;
   duration: string;
@@ -176,18 +177,10 @@ export function CourseCard({
               </div>
             </div>
             
-            {/* Profile Picture */}
-            {avatar && avatar.trim() !== '' && (
-              <div className="flex-shrink-0">
-                <Image 
-                  src={avatar} 
-                  alt={instructor}
-                  width={40}
-                  height={40}
-                  className="w-10 h-10 rounded-full object-cover border-none"
-                />
-              </div>
-            )}
+            {/* Profile picture, or the instructor's initial when they have none */}
+            <div className="flex-shrink-0">
+              <Avatar src={avatar} alt={instructor} size="md" />
+            </div>
           </div>
         </div>
         
