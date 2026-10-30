@@ -1,9 +1,9 @@
 import HostClient from "./HostClient";
 
 interface PageProps {
-  params: {
+  params: Promise<{
     id: string;
-  };
+  }>;
 }
 
 export default async function ZegoHostPage({ params }: PageProps) {

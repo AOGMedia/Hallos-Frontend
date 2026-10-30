@@ -1,9 +1,9 @@
 import RoomClient from "./RoomClient";
 
 interface PageProps {
-  params: {
+  params: Promise<{
     id: string;
-  };
+  }>;
 }
 
 export default async function ZegoRoomPage({ params }: PageProps) {
