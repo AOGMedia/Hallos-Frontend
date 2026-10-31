@@ -13,7 +13,12 @@ import { RegistrationModal } from './RegistrationModal';
 import { Footer } from '../sections/Footer';
 import { MOCK_VIDEO_CHAPTERS } from './video-journey/constants';
 
-export function EventLandingPage() {
+interface EventLandingPageProps {
+  /** Rendered at the public /events route (site header above it) rather than inside the dashboard. */
+  isPublicPage?: boolean;
+}
+
+export function EventLandingPage({ isPublicPage = false }: EventLandingPageProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const handleRegister = () => setIsModalOpen(true);
@@ -21,7 +26,7 @@ export function EventLandingPage() {
 
   return (
     <main className="w-full overflow-x-hidden">
-      <EventLandingHero onRegister={handleRegister} />
+      <EventLandingHero onRegister={handleRegister} isPublicPage={isPublicPage} />
       <EventVideoJourney
         chapters={MOCK_VIDEO_CHAPTERS}
         sectionTitle="Event Journey"

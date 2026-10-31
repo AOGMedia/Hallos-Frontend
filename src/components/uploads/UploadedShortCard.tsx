@@ -24,7 +24,7 @@ export function UploadedShortCard({ short }: UploadedShortCardProps) {
         {/* Thumbnail */}
         <div className="relative w-full aspect-video">
           <Image
-            src={short.thumbnailUrl || '/images/video-placeholder.svg'}
+            src={short.thumbnailUrl || '/images/video-placeholder.webp'}
             alt={short.title}
             fill
             className="object-cover"

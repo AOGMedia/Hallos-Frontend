@@ -1,4 +1,5 @@
-import { Button } from "@/components/ui/Button";
+import Link from "next/link";
+import { buttonClasses } from "@/components/ui/Button";
 import { CreatorTourButton } from "@/components/tour/CreatorTourButton";
 import Image from "next/image";
 
@@ -37,13 +38,16 @@ export function Hero() {
 
             {/* CTAs */}
             <div className="flex flex-col sm:flex-row gap-4">
-              <Button 
-                variant="primary" 
-                size="lg" 
-                className="w-full sm:w-auto text-base font-bold"
+              <Link
+                href="#popular-classes"
+                className={buttonClasses({
+                  variant: "primary",
+                  size: "lg",
+                  className: "inline-block text-center w-full sm:w-auto text-base font-bold",
+                })}
               >
-                <a href="#searchSection">Explore Classes</a>
-              </Button>
+                Explore Classes
+              </Link>
               <CreatorTourButton className="w-full sm:w-auto" />
             </div>
           </div>
@@ -52,9 +56,10 @@ export function Hero() {
           <div className="w-full lg:w-auto lg:flex-1 flex justify-center lg:justify-end">
             <div className="relative w-full max-w-[400px] sm:max-w-[500px] lg:max-w-[600px] aspect-square">
               <Image
-                src="/images/hero-student.svg"
-                alt="Student learning with headphones"
+                src="/images/hero-student.webp"
+                alt="Student smiling while learning in a Hallos live class with headphones"
                 fill
+                sizes="(min-width: 1024px) 600px, (min-width: 640px) 500px, 100vw"
                 className="object-contain"
                 priority
               />

@@ -201,7 +201,7 @@ function EventVideoJourneyInner({
       >
         {/* Mesh texture overlay */}
         <Image
-          src="/images/event/bg-mesh-slots.svg"
+          src="/images/event/bg-mesh-slots.webp"
           alt=""
           aria-hidden="true"
           width={800}
@@ -236,7 +236,7 @@ function EventVideoJourneyInner({
     >
       {/* Mesh texture overlay */}
       <Image
-        src="/images/event/bg-mesh-slots.svg"
+        src="/images/event/bg-mesh-slots.webp"
         alt=""
         aria-hidden="true"
         width={800}

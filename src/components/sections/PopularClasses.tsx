@@ -1,6 +1,6 @@
 'use client';
 
-import { Button } from "@/components/ui/Button";
+import { buttonClasses } from "@/components/ui/Button";
 import LiveDotIcon from "@/components/icons/LiveDotIcon";
 import ArrowRightIcon from "@/components/icons/ArrowRightIcon";
 import Link from "next/link";
@@ -141,7 +141,7 @@ export function PopularClasses() {
   }
 
   return (
-    <section className="py-8 sm:py-12 px-4 sm:px-6 lg:px-10">
+    <section id="popular-classes" className="scroll-mt-24 py-8 sm:py-12 px-4 sm:px-6 lg:px-10">
       <div className="max-w-[1440px] mx-auto">
         <div className="flex items-center justify-center lg:justify-center sm:justify-start gap-4 mb-8 sm:mb-12">
           <LiveDotIcon
@@ -175,7 +175,7 @@ export function PopularClasses() {
                     id={c.id}
                     title={c.title}
                     description={c.description || "Join this live class"}
-                    instructor={c.creatorName || "Hallbs Creator"}
+                    instructor={c.creatorName || "Hallos Creator"}
                     thumbnail={c.thumbnailUrl || "https://res.cloudinary.com/dblsgkbk4/image/upload/v1770673636/how_w8f44h.png"}
                     avatar={c.creatorAvatarUrl || ""}
                     price={typeof c.price === "number" ? c.price : Number(c.price) || 0}
@@ -210,7 +210,7 @@ export function PopularClasses() {
                       instructor={
                         s.creator
                           ? `${s.creator.firstname} ${s.creator.lastname}`
-                          : "Hallbs Creator"
+                          : "Hallos Creator"
                       }
                       thumbnail={s.thumbnailUrl || "https://res.cloudinary.com/dblsgkbk4/image/upload/v1770673636/how_w8f44h.png"}
                       avatar={s.creator?.avatarUrl || ""}
@@ -233,16 +233,17 @@ export function PopularClasses() {
         </div>
 
         <div className="flex justify-center">
-          <Button
-            variant="primary"
-            size="lg"
-            className="flex items-center gap-2 w-full sm:w-auto justify-center "
+          <Link
+            href="/dashboard/schedule"
+            className={buttonClasses({
+              variant: "primary",
+              size: "lg",
+              className: "flex items-center gap-2 w-full sm:w-auto justify-center",
+            })}
           >
-            <Link href="/dashboard/schedule" className="flex items-center gap-2">
-              View all
-              <ArrowRightIcon width={18} height={14} color="#FFFFFF" />
-            </Link>
-          </Button>
+            View all
+            <ArrowRightIcon width={18} height={14} color="#FFFFFF" />
+          </Link>
         </div>
       </div>
     </section>

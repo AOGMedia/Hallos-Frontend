@@ -9,7 +9,7 @@ export function EventAboutSection() {
     >
       {/* Background mesh decoration */}
       <Image
-        src="/images/event/bg-mesh-slots.svg"
+        src="/images/event/bg-mesh-slots.webp"
         alt=""
         aria-hidden="true"
         width={800}
@@ -142,7 +142,7 @@ export function EventAboutSection() {
           <div className="event-about-card-register relative overflow-hidden">
             {/* Mesh texture overlay – matching hero */}
             <Image
-              src="/images/event/bg-vector.svg"
+              src="/images/event/bg-vector.webp"
               alt=""
               aria-hidden="true"
               fill

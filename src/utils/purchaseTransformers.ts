@@ -40,7 +40,7 @@ export function transformPurchaseToCardProps(purchase: PurchaseRecord): Purchase
   // Provide fallback values for missing content data
   const content = purchase.content;
   const title = content?.title || `${purchase.contentType} Content`;
-  const thumbnail = content?.thumbnailUrl || '/images/video-placeholder.svg';
+  const thumbnail = content?.thumbnailUrl || '/images/video-placeholder.webp';
   
   // Determine if content is live based on content type
   const isLive = purchase.contentType === 'live_class' || purchase.contentType === 'live';

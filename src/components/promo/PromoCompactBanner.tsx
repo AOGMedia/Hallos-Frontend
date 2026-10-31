@@ -22,7 +22,7 @@ export function PromoCompactBanner({ onDismiss, onOpenModal }: PromoCompactBanne
     >
       {/* Icon */}
       <Image
-        src="/icons/promo-gift-percent.svg"
+        src="/icons/promo-gift-percent.webp"
         width={30}
         height={30}
         alt=""

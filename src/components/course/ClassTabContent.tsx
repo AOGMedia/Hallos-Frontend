@@ -167,7 +167,7 @@ export function ClassTabContent({ activeTab }: ClassTabContentProps) {
                 title={c.title}
                 description={c.description || ''}
                 instructor={c.creatorName || 'Unknown Instructor'}
-                thumbnail={c.thumbnailUrl || '/images/video-placeholder.svg'} 
+                thumbnail={c.thumbnailUrl || '/images/video-placeholder.webp'} 
                 avatar={c.creatorAvatarUrl || ''}
                 price={typeof c.price === 'number' ? c.price : Number(c.price) || 0}
                 duration={formatDuration(c.startTime, c.endTime)}

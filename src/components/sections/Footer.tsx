@@ -1,5 +1,6 @@
 
 import Image from 'next/image';
+import Link from 'next/link';
 import { Instagram, Facebook, Linkedin } from 'lucide-react';
 import { ComponentType } from 'react';
 
@@ -69,6 +70,8 @@ const SOCIAL_LINKS: SocialLink[] = [
 ];
 
 const FOOTER_LINKS: FooterLink[] = [
+  { label: 'Courses', href: '/course' },
+  { label: 'Blog', href: '/blog' },
   { label: 'Investor Relations', href: '/investor-relations' },
   { label: 'Terms of Service', href: '/terms' },
   { label: 'Privacy Policy', href: '/privacy' },
@@ -90,7 +93,7 @@ const SocialIcon = ({ social }: { social: SocialLink }) => {
       target="_blank" 
       rel="noopener noreferrer"
       className="w-10 h-10 bg-gray-800 rounded-full flex items-center justify-center hover:bg-gray-700 transition-colors"
-      aria-label={`Follow us on ${social.name}`}
+      aria-label={`Follow ${COMPANY_INFO.name} on ${social.name}`}
     >
       <IconComponent className="w-5 h-5 text-gray-300" />
     </a>
@@ -143,13 +146,13 @@ export function Footer() {
           
           <div className="flex flex-wrap justify-center gap-6">
             {FOOTER_LINKS.map((link) => (
-              <a 
+              <Link
                 key={link.label}
-                href={link.href} 
+                href={link.href}
                 className="text-sm font-bold text-black  hover:opacity-80 transition-opacity"
               >
                 {link.label}
-              </a>
+              </Link>
             ))}
           </div>
         </div>

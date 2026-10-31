@@ -1,4 +1,12 @@
 import { LegalPageLayout, Section } from '@/components/legal/LegalPageLayout';
+import { buildMetadata } from '@/lib/metadata';
+
+export const metadata = buildMetadata({
+  title: 'Privacy Policy',
+  description:
+    'How Hallos collects, uses, protects and shares your personal information when you learn, teach or create on our live learning platform.',
+  path: '/privacy',
+});
 
 export default function PrivacyPage() {
   return (

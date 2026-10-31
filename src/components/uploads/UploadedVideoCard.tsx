@@ -24,7 +24,7 @@ export function UploadedVideoCard({ video }: UploadedVideoCardProps) {
         {/* Thumbnail */}
         <div className="relative w-full aspect-video">
           <Image
-            src={video.thumbnailUrl || '/images/video-placeholder.svg'}
+            src={video.thumbnailUrl || '/images/video-placeholder.webp'}
             alt={video.title}
             fill
             className="object-cover"

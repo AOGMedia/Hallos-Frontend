@@ -69,7 +69,7 @@ export function RegistrationModal({ isOpen, onClose }: RegistrationModalProps) {
           <div className="relative w-full flex-shrink-0 aspect-[21/9] sm:aspect-[3.5/1] bg-gradient-to-br from-[#4C2D82] via-[#2D3E8E] to-[#1F2636] border-b border-white/10">
             {/* Background mesh decoration */}
             <Image
-              src="/images/event/bg-mesh-slots.svg"
+              src="/images/event/bg-mesh-slots.webp"
               alt=""
               aria-hidden="true"
               fill
@@ -126,7 +126,7 @@ export function RegistrationModal({ isOpen, onClose }: RegistrationModalProps) {
               <div className="flex-1 flex justify-center pl-10">
                 <Image
                   src="/transparentlogo.svg"
-                  alt="Learning247"
+                  alt="Hallos"
                   width={183}
                   height={45}
                   className="w-[140px] sm:w-[183px] h-auto"

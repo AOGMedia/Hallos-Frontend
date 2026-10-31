@@ -47,7 +47,7 @@ export function EventWhoCanApplySection({ onRegister }: EventWhoCanApplySectionP
               }}
             >
               <Image
-                src="/images/event/who-can-apply-hero.svg"
+                src="/images/event/who-can-apply-hero.webp"
                 alt="A person with headphones using a laptop, representing event attendees"
                 width={500}
                 height={500}

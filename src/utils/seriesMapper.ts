@@ -79,7 +79,7 @@ export function seriesToLiveSeriesData(series: Series): LiveSeriesData {
   return {
     id: series.id,
     className: series.title,
-    thumbnail: series.thumbnailUrl || '/images/video-placeholder.svg',
+    thumbnail: series.thumbnailUrl || '/images/video-placeholder.webp',
     host: {
       name: series.creator ? `${series.creator.firstname} ${series.creator.lastname}` : 'Unknown',
       // Creator's picture; empty shows their initial.

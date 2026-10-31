@@ -10,6 +10,7 @@ import { Search, Loader2, ChevronLeft, ChevronRight, ArrowLeft } from "lucide-re
 import { useCurrencyPreference } from "@/hooks/useCurrencyPreference";
 import { useScrollArrows } from "@/hooks/useScrollArrows";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
+import { coursePath } from "@/lib/courses/catalog";
 
 interface Department {
   id: string;
@@ -218,6 +219,12 @@ export const CoursesPageClient = memo(function CoursesPageClient({
 
   // Handle course card click with context preservation
   const handleCourseClick = (courseId: string) => {
+    // Visitors get the public course page; the dashboard version needs sign-in.
+    if (!user) {
+      router.push(coursePath(courseId));
+      return;
+    }
+
     const currentDept = departments.find(d => d.id === activeDepartment);
     const deptSlug = currentDept ? currentDept.name.toLowerCase().replace(/\s+/g, '-').replace(/&/g, '').replace(/[^a-z0-9-]/g, '') : 'all';
     
@@ -255,14 +262,15 @@ export const CoursesPageClient = memo(function CoursesPageClient({
             <div className="flex items-center gap-2.5">
               <Image
                 src="/navIcon.png"
-                alt="Special Courses"
+                alt=""
                 width={24}
                 height={24}
                 className="w-6 h-6"
               />
-              <h2 className="text-[#f2f2f2] text-lg sm:text-xl font-bold leading-5">
+              {/* The /course page's main heading (this component only renders there). */}
+              <h1 className="text-[#f2f2f2] text-lg sm:text-xl font-bold leading-5">
                 Self-Paced Courses
-              </h2>
+              </h1>
             </div>
           </div>
 

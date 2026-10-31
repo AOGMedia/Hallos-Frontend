@@ -14,12 +14,16 @@ export async function generateMetadata({ params }: PageProps) {
       title: liveClass.title,
       description: liveClass.description ?? `Join ${liveClass.title} — a live class on Hallos`,
       thumbnail: liveClass.thumbnailUrl ?? '',
+      path: `/live/join/${liveClassId}`,
+      noIndex: true,
     });
   } catch {
     return buildMetadata({
       title: 'Live Class',
       description: 'Join a live class on Hallos',
       thumbnail: '',
+      path: `/live/join/${liveClassId}`,
+      noIndex: true,
     });
   }
 }

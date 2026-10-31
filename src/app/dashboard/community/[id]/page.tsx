@@ -33,6 +33,8 @@ export async function generateMetadata({ params }: PageProps) {
     title: community?.name || 'Community',
     description: community?.description || 'Join this community on Hallos',
     thumbnail: community?.thumbnail || '',
+    path: `/dashboard/community/${id}`,
+    noIndex: true,
   });
 }
 
