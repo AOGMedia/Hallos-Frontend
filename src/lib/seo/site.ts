@@ -9,7 +9,6 @@ export const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL || 'https://www.hallos
 
 export const SITE = {
   name: 'Hallos',
-  legalName: 'Hallos Inc.',
   url: SITE_URL,
   title: 'Hallos — Learn Live from the Best Creators',
   tagline: 'Learn live from the best creators',

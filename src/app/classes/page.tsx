@@ -9,6 +9,7 @@ import { breadcrumbSchema } from '@/lib/seo/jsonLd';
 import { fetchPublicLiveClasses, fetchPublicSeries } from '@/lib/seo/publicApi';
 import { toDescription } from '@/lib/seo/site';
 import { formatClassTime, formatPrice } from '@/lib/live/publicFormat';
+import { seriesPath } from '@/lib/live/seriesUrl';
 
 /**
  * Public live-class listing: upcoming public live classes and live series,
@@ -85,7 +86,7 @@ export default async function ClassesPage() {
               {series.map((s, i) => (
                 <PublicClassCard
                   key={s.id}
-                  href={`/series/${s.id}`}
+                  href={seriesPath(s)}
                   title={s.title}
                   description={toDescription(s.description, 140)}
                   thumbnailUrl={s.thumbnailUrl}

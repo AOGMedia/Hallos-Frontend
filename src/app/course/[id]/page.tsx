@@ -159,15 +159,17 @@ export default async function PublicCoursePage({ params }: PageProps) {
               <p className="text-sm text-text-secondary">
                 Learn at your own pace, on any device, and earn a certificate when you finish.
               </p>
+              {/* nofollow: sign-in/checkout URLs, one per course — no value to crawlers */}
               <Link
                 href={enrollHref}
+                rel="nofollow"
                 className={buttonClasses({ variant: 'primary', size: 'lg', className: 'flex items-center justify-center gap-2 w-full' })}
               >
                 Enroll now <ArrowRight size={18} aria-hidden="true" />
               </Link>
               <p className="text-xs text-text-secondary text-center">
                 New to Hallos?{' '}
-                <Link href={`/signup?redirect=${encodeURIComponent(enrollHref)}`} className="text-accent-cyan hover:underline">
+                <Link href={`/signup?redirect=${encodeURIComponent(enrollHref)}`} rel="nofollow" className="text-accent-cyan hover:underline">
                   Create a free account
                 </Link>
               </p>

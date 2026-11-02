@@ -61,7 +61,9 @@ export function Hero() {
                 fill
                 sizes="(min-width: 1024px) 600px, (min-width: 640px) 500px, 100vw"
                 className="object-contain"
-                priority
+                // Sits below the event hero, so it no longer competes with the
+                // above-the-fold images for the first bytes.
+                loading="lazy"
               />
             </div>
           </div>

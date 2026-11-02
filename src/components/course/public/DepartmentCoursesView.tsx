@@ -44,9 +44,30 @@ export function DepartmentCoursesView({ data }: { data: DepartmentPageData }) {
             <PageLink href={page > 1 ? departmentPagePath(slug, page - 1) : null} label="Previous page">
               <ChevronLeft size={18} />
             </PageLink>
-            <span className="text-sm text-text-secondary">
-              Page {page} of {totalPages}
-            </span>
+            {/* Every page number is a plain link, so each page is a couple of clicks
+                from the department root rather than a long next/next chain. */}
+            <ol className="flex flex-wrap items-center justify-center gap-1.5">
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map((n) => (
+                <li key={n}>
+                  {n === page ? (
+                    <span
+                      aria-current="page"
+                      className="inline-flex min-w-9 h-9 items-center justify-center rounded-lg bg-primary px-2 text-sm font-semibold text-white"
+                    >
+                      {n}
+                    </span>
+                  ) : (
+                    <Link
+                      href={departmentPagePath(slug, n)}
+                      aria-label={`Page ${n}`}
+                      className="inline-flex min-w-9 h-9 items-center justify-center rounded-lg border border-border px-2 text-sm text-text-secondary hover:text-text-primary hover:border-accent-cyan/50 transition-colors"
+                    >
+                      {n}
+                    </Link>
+                  )}
+                </li>
+              ))}
+            </ol>
             <PageLink href={page < totalPages ? departmentPagePath(slug, page + 1) : null} label="Next page">
               <ChevronRight size={18} />
             </PageLink>

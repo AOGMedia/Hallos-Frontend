@@ -4,7 +4,9 @@ import { Hero } from "@/components/sections/Hero";
 import { EventLandingHero } from "@/components/event/EventLandingHero";
 // import { SearchSection } from '@/components/sections/SearchSection';
 import { GamersSection } from "@/components/sections/GamersSection";
-import { PopularClasses } from "@/components/sections/PopularClasses";
+import { Suspense } from "react";
+import { PopularClassesSkeleton } from "@/components/sections/PopularClasses";
+import { PopularClassesSection } from "@/components/sections/PopularClassesSection";
 import { LiveClassShowSection } from "@/components/sections/LiveClassShowSection";
 import { Features } from "@/components/sections/Features";
 import { Testimonials } from "@/components/sections/Testimonials";
@@ -20,8 +22,10 @@ import { eventSchema, faqSchema } from "@/lib/seo/jsonLd";
 import { HOME_FAQS } from "@/data/faqs";
 import { FEATURED_EVENT, isFeaturedEventUpcoming } from "@/data/featuredEvent";
 
-// Re-render daily so the event schema drops off on its own once the event ends.
-export const revalidate = 86400;
+// Re-rendered every 5 minutes: keeps the server-rendered "Popular Live Classes"
+// current (its data is cached for the same window), and drops the event schema
+// on its own once the event ends.
+export const revalidate = 300;
 
 export const metadata = {
   ...buildMetadata({
@@ -63,7 +67,10 @@ export default function Home() {
         <Hero />
         {/* <SearchSection header1='Find your ' header2='next class'/> */}
 
-        <PopularClasses />
+        {/* Streams in when its data arrives — the slow classes API never blocks the page */}
+        <Suspense fallback={<PopularClassesSkeleton />}>
+          <PopularClassesSection />
+        </Suspense>
 
         <GamersSection />
 

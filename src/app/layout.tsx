@@ -22,7 +22,7 @@ export const metadata: Metadata = {
   keywords: [...SITE.keywords],
   authors: [{ name: SITE.name, url: SITE.url }],
   creator: SITE.name,
-  publisher: SITE.legalName,
+  publisher: SITE.name,
   category: "education",
   formatDetection: { telephone: false, address: false, email: false },
   robots: {

@@ -1,6 +1,9 @@
 import type { Metadata } from 'next';
 import { SITE, absoluteUrl, toDescription } from '@/lib/seo/site';
 
+const TITLE_SUFFIX = ` | ${SITE.name}`;
+const MAX_TITLE_LENGTH = 60;
+
 /**
  * For signed-in or transactional areas (dashboard, admin, checkout, auth).
  * `follow: true` still lets crawlers pass through links they find there.
@@ -68,7 +71,9 @@ export function buildMetadata({
     : { url: absoluteUrl(SITE.ogImage.path), width: SITE.ogImage.width, height: SITE.ogImage.height, alt: SITE.ogImage.alt };
 
   return {
-    title,
+    // Google shows ~60 characters. When "<title> | Hallos" would be cut off,
+    // drop the suffix rather than lose the end of the page's own title.
+    title: title.length + TITLE_SUFFIX.length > MAX_TITLE_LENGTH ? { absolute: title } : title,
     description: desc,
     ...(path ? { alternates: { canonical: path } } : {}),
     ...(noIndex ? { robots: NO_INDEX } : {}),

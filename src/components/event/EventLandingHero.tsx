@@ -27,6 +27,7 @@ export function EventLandingHero({
         <div className={isLandingPage || isPublicPage ? "hidden" : "flex"}>
           <Link
             href="/dashboard"
+            rel="nofollow"
             aria-label="go to dashboard"
             className="inline-block bg-primary text-xs text-white px-2 py-1 mt-1 rounded-full border-2 shadow-2xl border-secondary font-bold animate-pulse hover:opacity-90 transition-opacity"
           >
@@ -40,6 +41,10 @@ export function EventLandingHero({
           alt=""
           aria-hidden="true"
           fill
+          // Decorative texture at 20% opacity, and the page's LCP element:
+          // full-width, low quality is visually identical and much smaller.
+          sizes="100vw"
+          quality={45}
           className="w-full h-full object-cover opacity-20 pointer-events-none select-none"
           priority
         />
@@ -92,6 +97,9 @@ export function EventLandingHero({
               alt="Event speakers and hosts"
               width={878}
               height={400}
+              sizes="(min-width: 910px) 878px, 100vw"
+              // Above the fold on every page that shows this hero: load it first.
+              priority
               className="w-full max-w-[878px] h-auto"
             />
           </div>

@@ -3,6 +3,7 @@
 import { usePathname, useRouter } from 'next/navigation';
 import { Header } from "@/components/dashboard/Header";
 import { Sidebar } from "@/components/dashboard/Sidebar";
+import { DashboardShellSkeleton } from "@/components/dashboard/DashboardShellSkeleton";
 import { mockRootProps } from "@/app/dashboard/dashboardMockData";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { useEffect, useState, useMemo } from 'react';
@@ -67,11 +68,12 @@ export function DashboardLayoutClient({ children }: DashboardLayoutClientProps) 
     }
   }, [user, userLoading, router]);
 
-  // Show nothing until redirect or user is loaded
- if (userLoading || !user) return null;
- 
+  // Until the user is loaded (or a redirect happens), show the dashboard frame
+  // rather than a blank screen — loading the user waits on the backend.
+  if (userLoading || !user) return <DashboardShellSkeleton />;
+
   // Don't render dashboard for admin users (they'll be redirected)
-  if (user.role === 'admin') return null;
+  if (user.role === 'admin') return <DashboardShellSkeleton />;
   
   // Check if we're on a video page
   const isVideoPage = pathname?.startsWith('/dashboard/video/') || pathname?.startsWith('/dashboard/events') || pathname?.startsWith('/dashboard/campaign/quiz');

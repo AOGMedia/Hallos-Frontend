@@ -21,6 +21,10 @@ export default function robots(): MetadataRoute.Robots {
           '/live/room/',
           '/live/host-zego/',
           '/dashboard/room/',
+          // Sign-in/sign-up links carry a per-page ?redirect= (one per course or
+          // class), which would otherwise mint thousands of duplicate URLs.
+          '/*?redirect=',
+          '/*&redirect=',
         ],
       },
     ],

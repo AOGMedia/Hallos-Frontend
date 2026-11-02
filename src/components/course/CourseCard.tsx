@@ -20,8 +20,9 @@ interface CourseCardProps {
   currency?: string;
   duration: string;
   posted: string;
-  rating: number;
-  reviews: string;
+  /** Omit to hide the star rating (e.g. on public pages without real reviews). */
+  rating?: number;
+  reviews?: string;
   isLive?: boolean;
   scheduledFor?: string; // ISO date string for scheduled classes
   isLandingPage?: boolean; 
@@ -89,11 +90,12 @@ export function CourseCard({
       }
 
       if (diffDays > 0 && diffDays < 7) {
-        const weekday = date.toLocaleDateString([], { weekday: 'short' });
+        // Fixed locale so server and browser render the same text (no hydration mismatch).
+        const weekday = date.toLocaleDateString('en-US', { weekday: 'short', timeZone: 'UTC' });
         return `${weekday} ${timeStr}`;
       }
 
-      const month = date.toLocaleDateString([], { month: 'short' });
+      const month = date.toLocaleDateString('en-US', { month: 'short', timeZone: 'UTC' });
       const day = date.getUTCDate();
       return `${month} ${day}, ${timeStr}`;
     } catch {
@@ -272,10 +274,12 @@ export function CourseCard({
             </div>
           </div>
           
-          <div className="flex items-center gap-2">
-            <StarIcon width={21} height={21} color="#FFD42A" />
-            <span className="text-small">{rating} ({reviews})</span>
-          </div>
+          {rating !== undefined && (
+            <div className="flex items-center gap-2">
+              <StarIcon width={21} height={21} color="#FFD42A" />
+              <span className="text-small">{rating} ({reviews})</span>
+            </div>
+          )}
         </div>
       </div>
     </Card>

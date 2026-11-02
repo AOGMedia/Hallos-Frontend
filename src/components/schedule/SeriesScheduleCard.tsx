@@ -43,7 +43,8 @@ export function SeriesScheduleCard({
         return `£${num.toFixed(2)}`;
       case 'NGN':
       default:
-        return `₦${num.toLocaleString()}`;
+        // Fixed locale so server-rendered and browser output match.
+        return `₦${num.toLocaleString('en-US')}`;
     }
   };
 

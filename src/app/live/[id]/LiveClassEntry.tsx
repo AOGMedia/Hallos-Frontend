@@ -141,10 +141,10 @@ function PreviewActions({
     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
       <p className="text-text-secondary text-sm">Sign in to register, pay and join this class.</p>
       <div className="flex flex-wrap gap-3">
-        <Link href={`/signin?redirect=${redirect}`} className={buttonClasses({ variant: 'primary', className: 'text-center' })}>
+        <Link href={`/signin?redirect=${redirect}`} rel="nofollow" className={buttonClasses({ variant: 'primary', className: 'text-center' })}>
           Sign in to join
         </Link>
-        <Link href={`/signup?redirect=${redirect}`} className={buttonClasses({ variant: 'outline', className: 'text-center' })}>
+        <Link href={`/signup?redirect=${redirect}`} rel="nofollow" className={buttonClasses({ variant: 'outline', className: 'text-center' })}>
           Create free account
         </Link>
       </div>

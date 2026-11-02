@@ -1,4 +1,5 @@
 import type { BlogPost } from '@/services/blogService';
+import type { Series, SeriesCreator } from '@/types/series';
 import { isLegacyLiveClass } from '@/lib/live/providers';
 
 /**
@@ -17,17 +18,28 @@ const API_URL = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080').rep
 const REVALIDATE_SECONDS = 300;
 const TIMEOUT_MS = 8000;
 
-async function getJson<T>(path: string, revalidate = REVALIDATE_SECONDS): Promise<{ status: number; data: T | null }> {
+async function getJson<T>(
+  path: string,
+  revalidate = REVALIDATE_SECONDS,
+  timeoutMs = TIMEOUT_MS
+): Promise<{ status: number; data: T | null }> {
+  // A cleared timer rather than AbortSignal.timeout(): the latter keeps its
+  // timer alive after the response arrives, and the dev server waits for it,
+  // turning a ~1s fetch into a full-timeout page load.
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
     const res = await fetch(`${API_URL}${path}`, {
       next: { revalidate },
-      signal: AbortSignal.timeout(TIMEOUT_MS),
+      signal: controller.signal,
       headers: { Accept: 'application/json' },
     });
     if (!res.ok) return { status: res.status, data: null };
     return { status: res.status, data: (await res.json()) as T };
   } catch {
     return { status: 0, data: null };
+  } finally {
+    clearTimeout(timer);
   }
 }
 
@@ -97,11 +109,28 @@ export async function fetchPublicSeries(): Promise<PublicSeries[]> {
   return data?.success ? data.series : [];
 }
 
-export async function fetchSeries(id: string): Promise<PublicSeries | null> {
-  const { data } = await getJson<{ success: boolean; series: PublicSeries }>(
-    `/api/live/series/${encodeURIComponent(id)}`
-  );
-  return data?.success ? data.series : null;
+/**
+ * A series as safe to put in page HTML: the creator's email is removed (the
+ * API returns it) and per-viewer access flags are dropped, because this is an
+ * anonymous server fetch — the signed-in view gets those from the client query.
+ */
+export type PublicSeriesDetail = Omit<Series, 'creator' | 'hasAccess' | 'accessReason' | 'requiresPayment' | 'isRegistered'> & {
+  creator?: Omit<SeriesCreator, 'email'> | null;
+};
+
+const SERIES_PRIVATE_FIELDS = ['idempotencyKey', 'hasAccess', 'accessReason', 'requiresPayment', 'isRegistered'];
+
+export async function fetchSeries(id: string): Promise<PublicSeriesDetail | null> {
+  const { data } = await getJson<{ success: boolean; series: Series }>(`/api/live/series/${encodeURIComponent(id)}`);
+  if (!data?.success || !data.series) return null;
+
+  const copy: Record<string, unknown> = { ...data.series };
+  for (const key of SERIES_PRIVATE_FIELDS) delete copy[key];
+  const creator = data.series.creator;
+  copy.creator = creator
+    ? { id: creator.id, firstname: creator.firstname, lastname: creator.lastname, avatarUrl: creator.avatarUrl ?? null }
+    : null;
+  return copy as PublicSeriesDetail;
 }
 
 // ── Live classes ────────────────────────────────────────────────────────────
@@ -184,7 +213,13 @@ function toPublicLiveClass(raw: RawLiveClass): PublicLiveClass {
 
 /** Upcoming/ongoing public live classes (the same feed the homepage uses). */
 export async function fetchPublicLiveClasses(): Promise<PublicLiveClass[]> {
-  const { data } = await getJson<{ liveClasses?: RawLiveClass[]; classes?: RawLiveClass[] }>('/live/getLive');
+  // /live/getLive takes ~9s on the current backend; with the default 8s timeout
+  // it would fail (and never be cached) on every render.
+  const { data } = await getJson<{ liveClasses?: RawLiveClass[]; classes?: RawLiveClass[] }>(
+    '/live/getLive',
+    REVALIDATE_SECONDS,
+    20_000
+  );
   const raw = data?.liveClasses ?? data?.classes ?? [];
   return raw
     .map(toPublicLiveClass)

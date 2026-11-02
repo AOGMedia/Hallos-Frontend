@@ -19,7 +19,8 @@ export function organizationSchema(): Schema {
     '@type': 'Organization',
     '@id': ORG_ID,
     name: SITE.name,
-    legalName: SITE.legalName,
+    // No legalName until it's confirmed: the footer says "Hallos Inc." but the
+    // Terms say "Cubed Square Ltd" — a wrong legal name is worse than none.
     url: SITE.url,
     logo: absoluteUrl(SITE.logoPath),
     description: SITE.description,

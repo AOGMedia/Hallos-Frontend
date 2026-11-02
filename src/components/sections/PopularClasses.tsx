@@ -5,11 +5,8 @@ import LiveDotIcon from "@/components/icons/LiveDotIcon";
 import ArrowRightIcon from "@/components/icons/ArrowRightIcon";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
-import { listLiveClassesExternal
-  // , type LiveClass
- } from '@/services/liveClassService';
-import { listSeries } from '@/services/seriesService';
-// import type { Series } from '@/types/series';
+import { fetchLandingLiveContent, type LandingLiveContent } from '@/lib/live/landingContent';
+import { seriesPath } from '@/lib/live/seriesUrl';
 import { CourseCard } from "@/components/course/CourseCard";
 import { SeriesScheduleCard } from "@/components/schedule/SeriesScheduleCard";
 
@@ -25,8 +22,6 @@ const MOCK_COURSES = [
     avatar: "/avatars/alex-chapman.jpg",
     duration: "1hr",
     posted: "2d ago",
-    rating: 4.8,
-    reviews: "20k",
     isLive: false,
   },
   {
@@ -40,8 +35,6 @@ const MOCK_COURSES = [
     avatar: "/avatars/alex-chapman.jpg",
     duration: "2hr",
     posted: "10d ago",
-    rating: 4.8,
-    reviews: "20k",
     isLive: false,
   },
   {
@@ -54,8 +47,6 @@ const MOCK_COURSES = [
     avatar: "/avatars/alex-chapman.jpg",
     duration: "22hr",
     posted: "4d ago",
-    rating: 4.8,
-    reviews: "20k",
     isLive: false,
   },
 ];
@@ -76,47 +67,41 @@ function formatDuration(startTime?: string, endTime?: string): string {
   return minutes > 0 ? `${minutes}min` : "1hr";
 }
 
-// Fetch live content
-async function fetchLiveContent() {
-  try {
-    console.log('[PopularClasses] Starting to fetch live content...');
-    
-    // Fetch without filters first to see all series
-    const [liveClasses, allSeries] = await Promise.all([
-      listLiveClassesExternal(),
-      listSeries(), // Try without filters
-    ]);
-
-    console.log('[PopularClasses] Fetched live classes:', liveClasses.length, liveClasses);
-    console.log('[PopularClasses] Fetched ALL series (no filters):', allSeries.length, allSeries);
-
-    // Filter valid classes (not ended/recorded, public only)
-    const validClasses = liveClasses.filter(
-      (c) => c.status !== 'ended' && c.status !== 'recorded' && c.privacy !== 'private'
-    );
-
-    // Filter series manually to ensure we get public active ones
-    const validSeries = allSeries.filter(
-      (s) => s.status === 'active' && s.privacy === 'public'
-    );
-
-    console.log('[PopularClasses] Valid classes after filtering:', validClasses.length);
-    console.log('[PopularClasses] Valid series after filtering:', validSeries.length, validSeries);
-    console.log('[PopularClasses] Returning data:', { classes: validClasses, series: validSeries });
-
-    return { classes: validClasses, series: validSeries };
-  } catch (error) {
-    console.error('[PopularClasses] Error fetching live content:', error);
-    return { classes: [], series: [] };
-  }
+/** Placeholder while the server streams the section in (same heading and grid). */
+export function PopularClassesSkeleton() {
+  return (
+    <section aria-busy="true" className="py-8 sm:py-12 px-4 sm:px-6 lg:px-10">
+      <div className="max-w-[1440px] mx-auto">
+        <div className="flex items-center justify-center gap-4 mb-8 sm:mb-12">
+          <h2 className="text-3xl sm:text-4xl lg:text-6xl font-extrabold leading-tight">
+            Popular <span className="text-accent-red">Live</span> Classes
+          </h2>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-8">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <div key={i} className="h-[350px] rounded-2xl bg-white/5 animate-pulse" />
+          ))}
+        </div>
+      </div>
+    </section>
+  );
 }
 
-export function PopularClasses() {
+/**
+ * `initialData` comes from the homepage server render, so the real classes are
+ * in the HTML (for search engines and first paint). The browser still fetches
+ * on mount and switches to its own data when it arrives.
+ *
+ * It is deliberately NOT passed to useQuery as `initialData`: the app's
+ * QueryClient is a module singleton, which on the server outlives a request,
+ * so a seeded cache entry would pin the first render's data for later renders.
+ */
+export function PopularClasses({ initialData }: { initialData?: LandingLiveContent }) {
 
   // Fetch live content with React Query
-  const { data, isLoading, isError, error } = useQuery({
+  const { data: fetched, isError, error } = useQuery({
     queryKey: ['landing-live-classes'],
-    queryFn: fetchLiveContent,
+    queryFn: fetchLandingLiveContent,
     staleTime: 60000, // 60 seconds
     gcTime: 300000, // 5 minutes
     refetchOnMount: true,
@@ -129,16 +114,13 @@ export function PopularClasses() {
     console.error('Error fetching live content for landing page:', error);
   }
 
+  // The fetch never throws (it returns empty lists on failure), so an empty
+  // result shouldn't wipe out real classes the server already rendered.
+  const hasContent = (c?: LandingLiveContent) => !!c && (c.classes.length > 0 || c.series.length > 0);
+  const data = hasContent(fetched) ? fetched : (initialData ?? fetched);
   const liveClasses = data?.classes || [];
   const liveSeries = data?.series || [];
   const hasLiveContent = liveClasses.length > 0 || liveSeries.length > 0;
-
-  // Log for debugging
-
-
-  if (!isLoading && !isError) {
-    console.log('[PopularClasses] Using', hasLiveContent ? 'live' : 'mock', 'data');
-  }
 
   return (
     <section id="popular-classes" className="scroll-mt-24 py-8 sm:py-12 px-4 sm:px-6 lg:px-10">
@@ -180,9 +162,8 @@ export function PopularClasses() {
                     avatar={c.creatorAvatarUrl || ""}
                     price={typeof c.price === "number" ? c.price : Number(c.price) || 0}
                     duration={formatDuration(c.startTime, c.endTime)}
-                    posted={c.createdAt ? new Date(c.createdAt).toLocaleDateString() : "Recently"}
-                    rating={4.8}
-                    reviews="20k"
+                    // Fixed locale/timezone: this renders on the server too, and must match the browser.
+                    posted={c.createdAt ? new Date(c.createdAt).toLocaleDateString('en-GB', { timeZone: 'Africa/Lagos' }) : "Recently"}
                     isLive={Boolean(isLiveNow)}
                     scheduledFor={scheduledFor}
                     isPurchased={false}
@@ -216,7 +197,7 @@ export function PopularClasses() {
                       avatar={s.creator?.avatarUrl || ""}
                       price={seriesPrice}
                       currency={seriesCurrency}
-                      href={`/series/${s.id}`}
+                      href={seriesPath(s)}
                       isLive={isLive}
                       matchCourseCardHeight={liveClasses.slice(0, 2).length > 0}
                     />
@@ -225,16 +206,16 @@ export function PopularClasses() {
               })}
             </>
           ) : (
-            /* Show mock data when no live content */
+            /* No live content: promote the public course catalog instead */
             MOCK_COURSES.map((course) => (
-              <CourseCard key={course.id} {...course} isLandingPage={true} />
+              <CourseCard key={course.id} {...course} href="/course" />
             ))
           )}
         </div>
 
         <div className="flex justify-center">
           <Link
-            href="/dashboard/schedule"
+            href="/classes"
             className={buttonClasses({
               variant: "primary",
               size: "lg",

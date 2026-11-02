@@ -14,6 +14,8 @@ interface Department {
   id: string;
   name: string;
   slug: string;
+  /** Returned by the API; lets us tell "request failed" from "really empty". */
+  courseCount?: number;
   description?: string;
   createdAt?: string;
   updatedAt?: string;
@@ -34,6 +36,10 @@ export const SpecialCoursesSection = memo(function SpecialCoursesSection({
   const [loading, setLoading] = useState(true);
   const [deptLoading, setDeptLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+  // The service turns request failures into empty lists, so a timeout used to
+  // look like "No courses found". These let us say so and offer a retry.
+  const [loadFailed, setLoadFailed] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
   const { currency, isLoaded } = useCurrencyPreference();
   
   // Scroll arrows for department tabs
@@ -96,7 +102,19 @@ export const SpecialCoursesSection = memo(function SpecialCoursesSection({
       setDeptLoading(false);
     };
     fetchDepartments();
-  }, []);
+  }, [reloadKey]);
+
+  // The default department ("IT & Software") sits far along the scrolling row;
+  // bring the active chip into view so it's clear which one is selected.
+  // Scrolls the row only (not the page), so it never jumps the dashboard.
+  useEffect(() => {
+    if (deptLoading) return;
+    const row = deptScrollRef.current;
+    const chip = row?.querySelector<HTMLElement>(`[data-dept-id="${activeDepartment}"]`);
+    if (!row || !chip) return;
+    row.scrollTo({ left: chip.offsetLeft - row.clientWidth / 2 + chip.clientWidth / 2, behavior: 'smooth' });
+    setTimeout(() => checkDeptScroll(), 400);
+  }, [activeDepartment, deptLoading, deptScrollRef, checkDeptScroll]);
 
   // Check scroll arrows after departments are loaded
   useEffect(() => {
@@ -135,6 +153,7 @@ export const SpecialCoursesSection = memo(function SpecialCoursesSection({
 
     const fetchCourses = async () => {
       setLoading(true);
+      setLoadFailed(false);
       try {
         let results: Course[] = [];
         // Only search if query is long enough
@@ -164,8 +183,18 @@ export const SpecialCoursesSection = memo(function SpecialCoursesSection({
           );
         }
         setCourses(results);
+
+        // Empty where the API says there are courses = the request failed (the
+        // service swallows errors). Search results can legitimately be empty.
+        if (results.length === 0 && searchQuery.trim().length < 2) {
+          const activeDept = departments.find((d) => d.id === activeDepartment);
+          const expectedCourses =
+            activeDepartment === "all" ? departments.length > 0 : (activeDept?.courseCount ?? 0) > 0;
+          setLoadFailed(expectedCourses || departments.length === 0);
+        }
       } catch (err) {
         console.error(err);
+        setLoadFailed(true);
       } finally {
         setLoading(false);
       }
@@ -183,6 +212,7 @@ export const SpecialCoursesSection = memo(function SpecialCoursesSection({
     deptLoading,
     currency,
     isLoaded,
+    reloadKey,
   ]);
 
   // No need to split courses into rows - using single column layout
@@ -252,6 +282,7 @@ export const SpecialCoursesSection = memo(function SpecialCoursesSection({
               {/* Link to enrollments page */}
               <Link
                 href="/dashboard/courses/enrollments"
+                rel="nofollow"
                 className="text-[#6a57e5] text-sm font-medium hover:underline"
               >
                 My Enrollments
@@ -294,6 +325,7 @@ export const SpecialCoursesSection = memo(function SpecialCoursesSection({
                 <div ref={deptScrollRef} className="flex gap-2 overflow-x-auto pb-4 mb-2 scrollbar-hide">
                   {/* 'All' button - resets to default view (First Dept) */}
                   <button
+                    data-dept-id="all"
                     onClick={() => {
                       setActiveDepartment("all");
                       setSearchQuery("");
@@ -317,6 +349,7 @@ export const SpecialCoursesSection = memo(function SpecialCoursesSection({
                     : departments.map((dept) => (
                         <button
                           key={dept.id}
+                          data-dept-id={dept.id}
                           onClick={() => {
                             setActiveDepartment(dept.id);
                             setSearchQuery("");
@@ -403,6 +436,16 @@ export const SpecialCoursesSection = memo(function SpecialCoursesSection({
                 </button>
               </div>
             )}
+          </div>
+        ) : loadFailed ? (
+          <div className="text-center py-10 text-gray-400">
+            <p className="mb-3">Couldn&apos;t load courses right now.</p>
+            <button
+              onClick={() => setReloadKey((k) => k + 1)}
+              className="px-4 py-2 rounded-full text-sm font-medium bg-[#6a57e5] text-white hover:opacity-90 transition-opacity"
+            >
+              Try again
+            </button>
           </div>
         ) : (
           <div className="text-center py-10 text-gray-400">

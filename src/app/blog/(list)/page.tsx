@@ -34,7 +34,7 @@ export async function generateMetadata({ searchParams }: PageProps) {
   const data = await fetchBlogPage(page);
   const isEmptyExtraPage = page > 1 && (!data || data.posts.length === 0);
   return buildMetadata({
-    title: page > 1 ? `Blog — Page ${page}` : 'Blog: guides on online learning, courses and the creator economy',
+    title: page > 1 ? `Blog — Page ${page}` : 'Blog: Online Learning & Creator Guides',
     description:
       'Guides, tips and news from Hallos on online courses, live classes, building skills and earning as a creator.',
     path: pageHref(page),
