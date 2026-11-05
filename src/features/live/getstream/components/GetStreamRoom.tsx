@@ -56,6 +56,7 @@ import { TileActionsContext, type TileActionsValue } from "./TileActions";
 import { CaptionsOverlay, ChatPreview, EmptyRoomCard, RaisedHandsChip } from "./RoomOverlays";
 import { AutoLowerHand, ConnectionBanner, JoinSounds, RecordingNotice } from "./RoomWatchers";
 import { ClassEndedScreen, HostLeftDialog, LeaveChoiceDialog } from "./RoomDialogs";
+import { BrandGlide } from "./BrandGlide";
 
 export interface GetStreamRoomProps {
   /** The live class, or the series session, in this room. */
@@ -187,18 +188,21 @@ const RoomHeader = memo(function RoomHeader({
   earned,
   onBack,
   onOpenParticipants,
+  glidePaused,
 }: {
   title: string;
   subtitle: string;
   earned: string | null;
   onBack: () => void;
   onOpenParticipants: () => void;
+  glidePaused: boolean;
 }) {
   const { useParticipantCount, useIsCallRecordingInProgress } = useCallStateHooks();
   const count = useParticipantCount();
   const recording = useIsCallRecordingInProgress();
   return (
-    <div className="flex items-center gap-2.5 px-3 pb-2 pt-[max(env(safe-area-inset-top),10px)] sm:gap-3 sm:px-4">
+    <div className="relative isolate flex items-center gap-2.5 px-3 pb-2 pt-[max(env(safe-area-inset-top),10px)] sm:gap-3 sm:px-4">
+      <BrandGlide paused={glidePaused} />
       <button
         type="button"
         onClick={onBack}
@@ -569,6 +573,7 @@ function RoomLayout({ target, credentials, title, backHref }: GetStreamRoomProps
             earned={earned}
             onBack={leave}
             onOpenParticipants={openPeople}
+            glidePaused={hide}
           />
           {(callingState === CallingState.RECONNECTING || callingState === CallingState.OFFLINE) && (
             <div className="mx-3 mb-1 flex items-center justify-center gap-2 rounded-full bg-amber-400/15 py-1.5 text-xs font-medium text-amber-200">
