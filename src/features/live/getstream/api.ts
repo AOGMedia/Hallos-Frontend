@@ -45,16 +45,19 @@ export type GetStreamJoinResult =
   | { action: "PAY"; data: { paymentRequired: true; amount: number; liveClassId: string } }
   | { action: "INVITE"; data: { invitationRequired: true; liveClassId: string } };
 
+/** Start/join also set up the call on GetStream: allow for a slow moment instead of failing at 10s. */
+const ROOM_SETUP_TIMEOUT_MS = 30_000;
+
 /** Creator starts (or rejoins) the class or session. Safe to repeat. */
 export async function startGetStreamLive(target: GetStreamTarget): Promise<GetStreamCredentials> {
-  const res = await apiClient.post(`${basePath(target)}/start-getstream`);
+  const res = await apiClient.post(`${basePath(target)}/start-getstream`, undefined, { timeout: ROOM_SETUP_TIMEOUT_MS });
   return res.data.data;
 }
 
 /** Join: payment, privacy and co-host rules are enforced on the server. */
 export async function joinGetStreamCall(target: GetStreamTarget, invitationCode?: string): Promise<GetStreamJoinResult> {
   try {
-    const res = await apiClient.post(`${basePath(target)}/join-getstream`, { invitationCode });
+    const res = await apiClient.post(`${basePath(target)}/join-getstream`, { invitationCode }, { timeout: ROOM_SETUP_TIMEOUT_MS });
     return { action: "JOIN", data: res.data.data };
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (error: any) {
@@ -97,6 +100,12 @@ export async function sendGetStreamHeartbeat(
 export async function setGetStreamRecording(target: GetStreamTarget, action: "start" | "stop") {
   const res = await apiClient.post(`${basePath(target)}/recording-getstream`, { action });
   return res.data.data as { recording: boolean };
+}
+
+/** Turn live captions on or off for everyone (hosts; done server-side). */
+export async function setGetStreamCaptions(target: GetStreamTarget, action: "start" | "stop") {
+  const res = await apiClient.post(`${basePath(target)}/captions-getstream`, { action });
+  return res.data.data as { captions: boolean };
 }
 
 /** Recordings (creator; co-hosts too for live classes). */

@@ -1,74 +1,131 @@
 "use client";
 
 import { memo, useMemo, useState } from "react";
-import {
-  hasAudio,
-  hasVideo,
-  useCall,
-  useCallStateHooks,
-  type StreamVideoParticipant,
-} from "@stream-io/video-react-sdk";
-import { Gift, Hand, Mic, MicOff, Search, Users, Video, VideoOff } from "lucide-react";
+import { hasAudio, hasVideo, useCallStateHooks, type StreamVideoParticipant } from "@stream-io/video-react-sdk";
+import { Gift, Hand, Mic, MicOff, Search, UserX, Users, Video, VideoOff } from "lucide-react";
+import type { RaisedHand } from "../hooks/useRaisedHands";
 import { RoomAvatar } from "./RoomAvatar";
-import { friendlyError } from "../lib/errors";
+import { SpeakingBars } from "./RoomIndicators";
 import { Sheet } from "./Sheet";
 
 interface ParticipantsPanelProps {
   open: boolean;
   onClose: () => void;
   hostUserIds: ReadonlySet<string>;
+  handQueue: RaisedHand[];
   handPositions: ReadonlyMap<string, number>;
-  /** Creator / co-host: can mute others and gift participants. */
+  /** Creator / co-host: can mute, remove, lower hands and gift participants. */
   canModerate: boolean;
-  onNotice: (message: string, tone: "success" | "error") => void;
+  onMute: (p: StreamVideoParticipant) => Promise<void>;
+  onMuteAll: () => Promise<number>;
+  onRemove: (p: StreamVideoParticipant) => Promise<void>;
+  onLowerHand: (userId: string) => void;
+  onLowerAll: () => void;
   /** Host: open the gift sheet for this participant. */
   onGift?: (person: { id: string; name: string }) => void;
 }
 
 const SEARCH_FROM = 8;
+const iconBtn =
+  "flex h-9 w-9 shrink-0 touch-manipulation items-center justify-center rounded-full transition active:scale-95 disabled:opacity-50";
+
+function sinceLabel(raisedAt: number) {
+  const secs = Math.max(0, Math.round((Date.now() - raisedAt) / 1000));
+  if (secs < 60) return "just now";
+  const mins = Math.floor(secs / 60);
+  return mins === 1 ? "1 min ago" : `${mins} mins ago`;
+}
+
+/** Meet's "Raised hands" section: first raised first, lower one or all. */
+function RaisedHandsSection({
+  queue,
+  canModerate,
+  onLowerHand,
+  onLowerAll,
+}: {
+  queue: RaisedHand[];
+  canModerate: boolean;
+  onLowerHand: (userId: string) => void;
+  onLowerAll: () => void;
+}) {
+  if (queue.length === 0) return null;
+  return (
+    <section className="mb-4 rounded-2xl bg-amber-400/[0.07] p-2 ring-1 ring-amber-400/20">
+      <header className="flex items-center justify-between px-2 pb-1 pt-1">
+        <h3 className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-amber-200">
+          <Hand className="h-3.5 w-3.5" /> Raised hands ({queue.length})
+        </h3>
+        {canModerate && queue.length > 1 && (
+          <button type="button" onClick={onLowerAll} className="rounded-full px-3 py-1.5 text-xs font-semibold text-amber-200 hover:bg-amber-400/10">
+            Lower all
+          </button>
+        )}
+      </header>
+      <ol className="space-y-1">
+        {queue.map((hand, index) => (
+          <li key={hand.userId} className="flex items-center gap-3 rounded-xl px-2 py-2">
+            <span className="w-4 text-center text-sm font-bold text-amber-300">{index + 1}</span>
+            <RoomAvatar name={hand.name} image={hand.image} className="h-9 w-9 text-xs" />
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-medium">{hand.name}</p>
+              <p className="text-[11px] text-white/50">{sinceLabel(hand.raisedAt)}</p>
+            </div>
+            {canModerate && (
+              <button
+                type="button"
+                onClick={() => onLowerHand(hand.userId)}
+                className="shrink-0 rounded-full bg-white/10 px-3 py-2 text-xs font-semibold transition hover:bg-white/15 active:scale-95"
+              >
+                Lower
+              </button>
+            )}
+          </li>
+        ))}
+      </ol>
+    </section>
+  );
+}
 
 /**
  * The list itself. Mounted only while the panel is open, so the participant
  * subscription (which updates as people speak) costs nothing when it's closed.
  */
-function ParticipantList({ hostUserIds, handPositions, canModerate, onNotice, onGift }: Omit<ParticipantsPanelProps, "open" | "onClose">) {
-  const call = useCall();
+function ParticipantList(props: Omit<ParticipantsPanelProps, "open" | "onClose" | "onMuteAll">) {
+  const { hostUserIds, handQueue, handPositions, canModerate, onMute, onRemove, onGift } = props;
   const { useParticipants } = useCallStateHooks();
   const participants = useParticipants();
   const [query, setQuery] = useState("");
-  const [muting, setMuting] = useState<string | null>(null);
+  const [busy, setBusy] = useState<string | null>(null);
 
   const isHost = (p: StreamVideoParticipant) => hostUserIds.has(p.userId) || Boolean(p.roles?.includes("admin"));
 
   const rows = useMemo(() => {
     const q = query.trim().toLowerCase();
-    const rank = (p: StreamVideoParticipant) => (isHost(p) ? 0 : handPositions.has(p.userId) ? 1 : p.isLocalParticipant ? 2 : 3);
+    const rank = (p: StreamVideoParticipant) => (isHost(p) ? 0 : p.isLocalParticipant ? 1 : 2);
     return participants
       .filter((p) => !q || (p.name || "").toLowerCase().includes(q))
-      .sort(
-        (a, b) =>
-          rank(a) - rank(b) ||
-          (handPositions.get(a.userId) ?? 0) - (handPositions.get(b.userId) ?? 0) ||
-          (a.name || "").localeCompare(b.name || "")
-      );
+      .sort((a, b) => rank(a) - rank(b) || (a.name || "").localeCompare(b.name || ""));
     // eslint-disable-next-line react-hooks/exhaustive-deps -- isHost only reads hostUserIds
-  }, [participants, query, hostUserIds, handPositions]);
+  }, [participants, query, hostUserIds]);
 
-  const mute = async (p: StreamVideoParticipant) => {
-    if (!call) return;
-    setMuting(p.sessionId);
+  const run = async (key: string, action: () => Promise<void>) => {
+    setBusy(key);
     try {
-      await call.muteUser(p.userId, "audio");
-      onNotice(`${p.name || "They"} ${p.name ? "is" : "are"} muted`, "success");
-    } catch (error) {
-      onNotice(friendlyError(error, "We couldn't mute them. Please try again."), "error");
+      await action();
     } finally {
-      setMuting(null);
+      setBusy(null);
     }
   };
 
   return (
     <div className="px-4 pb-[max(env(safe-area-inset-bottom),16px)]">
+      <RaisedHandsSection
+        queue={handQueue}
+        canModerate={canModerate}
+        onLowerHand={props.onLowerHand}
+        onLowerAll={props.onLowerAll}
+      />
+
       {participants.length >= SEARCH_FROM && (
         <label className="mb-3 flex items-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-3">
           <Search className="h-4 w-4 shrink-0 text-white/40" />
@@ -82,6 +139,7 @@ function ParticipantList({ hostUserIds, handPositions, canModerate, onNotice, on
         </label>
       )}
 
+      <h3 className="px-2 pb-1 text-xs font-semibold uppercase tracking-wide text-white/50">In the class</h3>
       {rows.length === 0 ? (
         <p className="py-8 text-center text-sm text-white/50">No one matches “{query}”.</p>
       ) : (
@@ -98,9 +156,7 @@ function ParticipantList({ hostUserIds, handPositions, canModerate, onNotice, on
                   <p className="flex items-center gap-1.5 text-sm font-medium">
                     <span className="truncate">{p.isLocalParticipant ? `${p.name || "You"} (You)` : p.name || "Guest"}</span>
                     {host && (
-                      <span className="shrink-0 rounded-full bg-primary px-1.5 py-px text-[10px] font-semibold uppercase tracking-wide">
-                        Host
-                      </span>
+                      <span className="shrink-0 rounded-full bg-primary px-1.5 py-px text-[10px] font-semibold uppercase tracking-wide">Host</span>
                     )}
                   </p>
                   {hand !== undefined && (
@@ -109,18 +165,27 @@ function ParticipantList({ hostUserIds, handPositions, canModerate, onNotice, on
                     </p>
                   )}
                 </div>
-                <span className="flex shrink-0 items-center gap-1.5 text-white/50" aria-label={`${micOn ? "Mic on" : "Mic off"}, ${camOn ? "camera on" : "camera off"}`}>
+                <span
+                  className="flex shrink-0 items-center gap-1.5 text-white/50"
+                  aria-label={`${micOn ? "Mic on" : "Mic off"}, ${camOn ? "camera on" : "camera off"}`}
+                >
                   {camOn ? <Video className="h-4 w-4" /> : <VideoOff className="h-4 w-4" />}
-                  {micOn ? <Mic className="h-4 w-4 text-white" /> : <MicOff className="h-4 w-4 text-red-400" />}
+                  {!micOn ? (
+                    <MicOff className="h-4 w-4 text-red-400" />
+                  ) : p.isSpeaking ? (
+                    <SpeakingBars className="text-primary" />
+                  ) : (
+                    <Mic className="h-4 w-4 text-white" />
+                  )}
                 </span>
                 {canModerate && !p.isLocalParticipant && micOn && (
                   <button
                     type="button"
-                    disabled={muting === p.sessionId}
-                    onClick={() => void mute(p)}
+                    disabled={busy === `mute-${p.sessionId}`}
+                    onClick={() => void run(`mute-${p.sessionId}`, () => onMute(p))}
                     aria-label={`Mute ${p.name || "this person"}`}
                     title="Mute"
-                    className="flex h-9 w-9 shrink-0 touch-manipulation items-center justify-center rounded-full bg-white/10 transition hover:bg-white/15 active:scale-95 disabled:opacity-50"
+                    className={`${iconBtn} bg-white/10 hover:bg-white/15`}
                   >
                     <MicOff className="h-4 w-4" />
                   </button>
@@ -131,9 +196,25 @@ function ParticipantList({ hostUserIds, handPositions, canModerate, onNotice, on
                     onClick={() => onGift({ id: p.userId, name: p.name || "this participant" })}
                     aria-label={`Send ${p.name || "this person"} a gift`}
                     title="Send a gift"
-                    className="flex h-9 w-9 shrink-0 touch-manipulation items-center justify-center rounded-full bg-gradient-to-br from-amber-400 to-pink-500 text-white transition active:scale-95"
+                    className={`${iconBtn} bg-gradient-to-br from-amber-400 to-pink-500 text-white`}
                   >
                     <Gift className="h-4 w-4" />
+                  </button>
+                )}
+                {canModerate && !p.isLocalParticipant && !host && (
+                  <button
+                    type="button"
+                    disabled={busy === `remove-${p.sessionId}`}
+                    onClick={() => {
+                      if (window.confirm(`Remove ${p.name || "this person"} from the class?`)) {
+                        void run(`remove-${p.sessionId}`, () => onRemove(p));
+                      }
+                    }}
+                    aria-label={`Remove ${p.name || "this person"}`}
+                    title="Remove from class"
+                    className={`${iconBtn} hidden bg-white/10 text-red-300 hover:bg-red-500/15 sm:flex`}
+                  >
+                    <UserX className="h-4 w-4" />
                   </button>
                 )}
               </li>
@@ -145,21 +226,16 @@ function ParticipantList({ hostUserIds, handPositions, canModerate, onNotice, on
   );
 }
 
-/** Everyone in the class. Hosts can mute people (one at a time or all at once). */
+/** Everyone in the class, raised hands first. Hosts can mute (one or all), remove and gift. */
 export const ParticipantsPanel = memo(function ParticipantsPanel(props: ParticipantsPanelProps) {
-  const call = useCall();
   const { useParticipantCount } = useCallStateHooks();
   const count = useParticipantCount();
   const [mutingAll, setMutingAll] = useState(false);
 
   const muteAll = async () => {
-    if (!call) return;
     setMutingAll(true);
     try {
-      await call.muteAllUsers("audio");
-      props.onNotice("Everyone is muted. They can unmute themselves when they need to speak.", "success");
-    } catch (error) {
-      props.onNotice(friendlyError(error, "We couldn't mute everyone. Please try again."), "error");
+      await props.onMuteAll();
     } finally {
       setMutingAll(false);
     }
@@ -171,29 +247,21 @@ export const ParticipantsPanel = memo(function ParticipantsPanel(props: Particip
       onClose={props.onClose}
       title={`People (${count})`}
       icon={<Users className="h-4 w-4 text-primary" />}
-      mobileHeight="h-[70dvh]"
+      mobileHeight="h-[72dvh]"
       headerAction={
         props.canModerate && count > 1 ? (
           <button
             type="button"
             disabled={mutingAll}
             onClick={() => void muteAll()}
-            className="rounded-full px-3 py-2 text-xs font-semibold text-white/80 transition hover:bg-white/10 disabled:opacity-50"
+            className="flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-2 text-xs font-semibold text-white transition hover:bg-white/15 active:scale-95 disabled:opacity-50"
           >
-            Mute all
+            <MicOff className="h-3.5 w-3.5" /> {mutingAll ? "Muting…" : "Mute all"}
           </button>
         ) : null
       }
     >
-      {props.open && (
-        <ParticipantList
-          hostUserIds={props.hostUserIds}
-          handPositions={props.handPositions}
-          canModerate={props.canModerate}
-          onNotice={props.onNotice}
-          onGift={props.onGift}
-        />
-      )}
+      {props.open && <ParticipantList {...props} />}
     </Sheet>
   );
 });

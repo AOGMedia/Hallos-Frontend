@@ -26,14 +26,17 @@ const LOWER_ALL = "*";
 export function useRaisedHands({
   selfId,
   selfName,
+  selfImage,
   hostUserIds,
   onRaised,
   onLoweredByHost,
 }: {
   selfId: string;
   selfName: string;
+  /** Your own profile picture, for your entry in the queue. */
+  selfImage?: string | null;
   hostUserIds: ReadonlySet<string>;
-  /** Someone else raised their hand (hosts use it for a sound + toast). */
+  /** Someone else raised their hand (sound for everyone; hosts also get a toast). */
   onRaised?: (hand: RaisedHand) => void;
   /** A host lowered this user's hand. */
   onLoweredByHost?: () => void;
@@ -131,21 +134,29 @@ export function useRaisedHands({
     [call]
   );
 
+  const ownHand = useCallback(
+    (): RaisedHand => ({ userId: selfId, name: selfName, image: selfImage ?? null, raisedAt: Date.now() }),
+    [selfId, selfName, selfImage]
+  );
+
   /** Raise or lower your own hand. Returns false if it couldn't be sent. */
   const toggleHand = useCallback(async () => {
     const up = !isRaised;
-    update((next) =>
-      up ? void next.set(selfId, { userId: selfId, name: selfName, raisedAt: Date.now() }) : void next.delete(selfId)
-    );
+    update((next) => (up ? void next.set(selfId, ownHand()) : void next.delete(selfId)));
     const ok = await send({ kind: HAND_EVENT, raised: up });
     if (!ok) {
       // Put it back the way it was; the caller tells the user.
-      update((next) =>
-        up ? void next.delete(selfId) : void next.set(selfId, { userId: selfId, name: selfName, raisedAt: Date.now() })
-      );
+      update((next) => (up ? void next.delete(selfId) : void next.set(selfId, ownHand())));
     }
     return ok;
-  }, [isRaised, selfId, selfName, send, update]);
+  }, [isRaised, selfId, ownHand, send, update]);
+
+  /** Lower your own hand if it's up (e.g. after you've spoken). */
+  const lowerOwnHand = useCallback(async () => {
+    if (!handsRef.current.has(selfId)) return false;
+    update((next) => void next.delete(selfId));
+    return send({ kind: HAND_EVENT, raised: false });
+  }, [selfId, send, update]);
 
   /** Host: lower one person's hand. */
   const lowerHand = useCallback(
@@ -167,5 +178,5 @@ export function useRaisedHands({
   /** userId -> place in the queue (1-based). */
   const positions = useMemo(() => new Map(queue.map((h, i) => [h.userId, i + 1])), [queue]);
 
-  return { queue, positions, isRaised, toggleHand, lowerHand, lowerAll };
+  return { queue, positions, isRaised, toggleHand, lowerOwnHand, lowerHand, lowerAll };
 }
