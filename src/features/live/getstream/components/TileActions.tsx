@@ -11,10 +11,17 @@ import type { StreamVideoParticipant } from "@stream-io/video-react-sdk";
 export interface TileActionsValue {
   canModerate: boolean;
   spotlightUserId: string | null;
+  /** Host or co-host right now (follows live role changes). */
+  isHostUser?: (p: StreamVideoParticipant) => boolean;
   onPin: (p: StreamVideoParticipant) => void;
   onSpotlight: (p: StreamVideoParticipant) => void;
   onMute: (p: StreamVideoParticipant) => void;
   onRemove: (p: StreamVideoParticipant) => void;
+  /** Creator only: make someone a co-host or remove the role. Absent for everyone else. */
+  cohost?: {
+    isCohost: (p: StreamVideoParticipant) => boolean;
+    set: (p: StreamVideoParticipant, makeHost: boolean) => void;
+  };
 }
 
 export const TileActionsContext = createContext<TileActionsValue | null>(null);

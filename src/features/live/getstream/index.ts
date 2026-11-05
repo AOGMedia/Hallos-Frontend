@@ -8,7 +8,7 @@
 export { GetStreamRoomClient } from "./GetStreamRoomClient";
 export { RecordingsList } from "./components/RecordingsList";
 export { PastClassesRecordings } from "./components/PastClassesRecordings";
-export { useEndedGetStreamClasses } from "./hooks/useEndedGetStreamClasses";
+export { useRecordedGetStreamClasses } from "./hooks/useRecordedGetStreamClasses";
 export {
   endGetStreamLive,
   joinGetStreamCall,

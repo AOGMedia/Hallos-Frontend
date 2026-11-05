@@ -2,22 +2,22 @@
 
 import Link from "next/link";
 import { ChevronRight, Film } from "lucide-react";
-import { recordingsHref, type EndedGetStreamClass } from "../api";
+import { recordingsHref, type RecordedGetStreamClass } from "../api";
 
-const dateLabel = (c: EndedGetStreamClass) => {
+const dateLabel = (c: RecordedGetStreamClass) => {
   const when = c.startTime || c.updatedAt;
   return when ? new Date(when).toLocaleDateString([], { dateStyle: "medium" }) : "";
 };
 
 /**
- * The creator's finished Interactive Classroom classes, each opening its
- * recordings (download, or publish for sale).
+ * The creator's finished Interactive Classroom classes that were recorded,
+ * each opening its recordings (download, or publish for sale).
  */
-export function PastClassesRecordings({ classes }: { classes: EndedGetStreamClass[] }) {
+export function PastClassesRecordings({ classes }: { classes: RecordedGetStreamClass[] }) {
   if (!classes.length) return null;
   return (
     <div>
-      <h3 className="mb-1 text-lg font-semibold text-text-primary">Past classes ({classes.length})</h3>
+      <h3 className="mb-1 text-lg font-semibold text-text-primary">Recorded classes ({classes.length})</h3>
       <p className="mb-4 text-sm text-white/50">Download your class recordings or publish them for sale.</p>
       <ul className="divide-y divide-white/5 overflow-hidden rounded-xl border border-white/5 bg-[#1F2636]">
         {classes.map((c) => (

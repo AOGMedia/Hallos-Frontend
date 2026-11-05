@@ -27,7 +27,7 @@ import { useCurrentUser } from "@/hooks/useCurrentUser";
 import LiveDotIcon from "@/components/icons/LiveDotIcon";
 import ScheduledSummary from "@/components/liveEvents/ScheduledSummary";
 import RegistrationsModal from "@/components/liveEvents/RegistrationsModal";
-import { PastClassesRecordings, useEndedGetStreamClasses } from "@/features/live/getstream";
+import { PastClassesRecordings, useRecordedGetStreamClasses } from "@/features/live/getstream";
 
 import { useCurrencyPreference } from "@/hooks/useCurrencyPreference";
 
@@ -88,8 +88,8 @@ export function ScheduleTabsClient() {
     refetchOnMount: "always",
   });
 
-  // The creator's finished Interactive Classroom classes, for their recordings.
-  const { data: endedClassesData } = useEndedGetStreamClasses(Boolean(userId));
+  // The creator's finished Interactive Classroom classes that were recorded.
+  const { data: endedClassesData } = useRecordedGetStreamClasses(Boolean(userId));
 
   const classes = useMemo(() => liveClassesData || [], [liveClassesData]);
   const series = useMemo(() => seriesData || [], [seriesData]);

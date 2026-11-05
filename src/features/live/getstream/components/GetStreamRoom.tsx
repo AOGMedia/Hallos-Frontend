@@ -21,6 +21,7 @@ import { ArrowLeft, Gift, Loader2, SmilePlus, Users, Volume2, WifiOff } from "lu
 import {
   endGetStreamLive,
   setGetStreamCaptions,
+  setGetStreamCohost,
   setGetStreamRecording,
   type GetStreamCredentials,
   type GetStreamTarget,
@@ -257,6 +258,7 @@ function RoomLayout({ target, credentials, title, backHref }: GetStreamRoomProps
     useIsAutoplayBlocked,
     useHasOngoingScreenShare,
     useIsCallCaptioningInProgress,
+    useCallCreatedBy,
   } = useCallStateHooks();
   const callingState = useCallCallingState();
   const endedAt = useCallEndedAt();
@@ -265,11 +267,41 @@ function RoomLayout({ target, credentials, title, backHref }: GetStreamRoomProps
   const autoplayBlocked = useIsAutoplayBlocked();
   const presenting = useHasOngoingScreenShare();
   const captioning = useIsCallCaptioningInProgress();
+  const createdBy = useCallCreatedBy();
 
   const isCreator = credentials.userType === "creator";
-  const isHost = credentials.userType !== "participant";
   const selfId = credentials.userId;
   const selfName = credentials.userName || "You";
+  const creatorId = isCreator ? selfId : createdBy?.id;
+
+  // Creator and co-hosts are call members with the host role.
+  const hostKey = members
+    .filter((m) => m.role === HOST_CALL_ROLE)
+    .map((m) => m.user_id)
+    .sort()
+    .join(",");
+  const hostUserIds = useMemo(() => new Set(hostKey ? hostKey.split(",") : []), [hostKey]);
+  // Everyone's live call role, so a co-host made (or unmade) mid-class shows at once.
+  const memberRoleKey = members
+    .map((m) => `${m.user_id}:${m.role ?? ""}`)
+    .sort()
+    .join(",");
+  const memberRoles = useMemo(
+    () => new Map(memberRoleKey ? memberRoleKey.split(",").map((pair) => pair.split(":") as [string, string]) : []),
+    [memberRoleKey]
+  );
+  const isHostUser = useCallback(
+    (p: StreamVideoParticipant) => {
+      const role = memberRoles.get(p.userId);
+      return role ? role === HOST_CALL_ROLE : Boolean(p.roles?.includes(HOST_CALL_ROLE));
+    },
+    [memberRoles]
+  );
+  // Creator always; everyone else follows their live call role, so host tools
+  // appear (or go) as soon as the creator changes it. Until the member list
+  // has them, the role they joined with is used.
+  const selfRole = memberRoles.get(selfId);
+  const isHost = isCreator || (selfRole ? selfRole === HOST_CALL_ROLE : credentials.userType === "cohost");
 
   const [chatOpen, setChatOpen] = useState(false);
   const [giftsOpen, setGiftsOpen] = useState(false);
@@ -291,13 +323,18 @@ function RoomLayout({ target, credentials, title, backHref }: GetStreamRoomProps
   const [reactionBus] = useState<ReactionBus>(() => new EventTarget());
   const { toasts, show: toast, dismiss } = useToasts();
 
-  // Creator and co-hosts are call members with the host role.
-  const hostKey = members
-    .filter((m) => m.role === HOST_CALL_ROLE)
-    .map((m) => m.user_id)
-    .sort()
-    .join(",");
-  const hostUserIds = useMemo(() => new Set(hostKey ? hostKey.split(",") : []), [hostKey]);
+  // Tell someone when the creator makes them a co-host, or removes the role.
+  const wasHost = useRef(isHost);
+  useEffect(() => {
+    if (wasHost.current === isHost) return;
+    wasHost.current = isHost;
+    if (isCreator) return;
+    tapHaptic(15);
+    toast(
+      isHost ? "You're now a co-host — you can mute, spotlight and manage people." : "You're no longer a co-host",
+      isHost ? "success" : "info"
+    );
+  }, [isHost, isCreator, toast]);
 
   const chat = useClassChat({ target, selfId, selfName, isOpen: chatOpen });
   const sendReaction = useSendReaction(reactionBus);
@@ -473,11 +510,39 @@ function RoomLayout({ target, credentials, title, backHref }: GetStreamRoomProps
     // eslint-disable-next-line react-hooks/exhaustive-deps -- only when readiness changes
   }, [effects?.isLoading]);
 
-  // ---- Tiles: pin / spotlight / mute / remove ---------------------------------
+  // ---- Co-hosts (creator only) ------------------------------------------------
+  const setCohost = useCallback(
+    async (p: StreamVideoParticipant, makeHost: boolean) => {
+      const name = p.name || "They";
+      try {
+        await setGetStreamCohost(target, p.userId, makeHost);
+        tapHaptic(15);
+        toast(makeHost ? `${name} is now a co-host` : `${name} is no longer a co-host`, "success");
+      } catch (error) {
+        toast(friendlyError(error, "We couldn't change their role. Please try again."), "error");
+      }
+    },
+    [target, toast]
+  );
+
+  // ---- Tiles: pin / spotlight / mute / co-host / remove ------------------------
   const tileActions = useMemo<TileActionsValue>(
     () => ({
       canModerate: isHost,
       spotlightUserId,
+      isHostUser,
+      cohost: isCreator
+        ? {
+            isCohost: (p: StreamVideoParticipant) => isHostUser(p) && p.userId !== creatorId,
+            set: (p: StreamVideoParticipant, makeHost: boolean) => {
+              const name = p.name || "this person";
+              const ask = makeHost
+                ? `Make ${name} a co-host? They'll be able to mute, spotlight and manage people in this class.`
+                : `Remove ${name} as co-host?`;
+              if (window.confirm(ask)) void setCohost(p, makeHost);
+            },
+          }
+        : undefined,
       onPin: (p: StreamVideoParticipant) => {
         if (!call) return;
         if (p.pin) call.unpin(p.sessionId);
@@ -493,7 +558,7 @@ function RoomLayout({ target, credentials, title, backHref }: GetStreamRoomProps
         if (window.confirm(`Remove ${p.name || "this person"} from the class?`)) void moderation.remove(p);
       },
     }),
-    [call, isHost, spotlightUserId, spotlight, moderation, toast]
+    [call, isHost, isCreator, creatorId, isHostUser, setCohost, spotlightUserId, spotlight, moderation, toast]
   );
 
   // ---- Panels & chrome ---------------------------------------------------------
@@ -712,6 +777,9 @@ function RoomLayout({ target, credentials, title, backHref }: GetStreamRoomProps
           onLowerHand={lowerHand}
           onLowerAll={lowerAll}
           onGift={isHost ? giftParticipant : undefined}
+          creatorId={creatorId}
+          isHostUser={isHostUser}
+          onSetCohost={isCreator ? setCohost : undefined}
         />
 
         <SettingsSheet

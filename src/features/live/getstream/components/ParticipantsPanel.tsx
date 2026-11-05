@@ -2,7 +2,7 @@
 
 import { memo, useMemo, useState } from "react";
 import { hasAudio, hasVideo, useCallStateHooks, type StreamVideoParticipant } from "@stream-io/video-react-sdk";
-import { Gift, Hand, Mic, MicOff, Search, UserX, Users, Video, VideoOff } from "lucide-react";
+import { Gift, Hand, Mic, MicOff, Search, ShieldCheck, ShieldOff, UserX, Users, Video, VideoOff } from "lucide-react";
 import type { RaisedHand } from "../hooks/useRaisedHands";
 import { RoomAvatar } from "./RoomAvatar";
 import { SpeakingBars } from "./RoomIndicators";
@@ -23,6 +23,12 @@ interface ParticipantsPanelProps {
   onLowerAll: () => void;
   /** Host: open the gift sheet for this participant. */
   onGift?: (person: { id: string; name: string }) => void;
+  /** Who created the class, so co-hosts can be labelled as such. */
+  creatorId?: string;
+  /** Host or co-host right now (follows live role changes). */
+  isHostUser?: (p: StreamVideoParticipant) => boolean;
+  /** Creator only: make someone a co-host or remove the role. */
+  onSetCohost?: (p: StreamVideoParticipant, makeHost: boolean) => Promise<void>;
 }
 
 const SEARCH_FROM = 8;
@@ -91,13 +97,15 @@ function RaisedHandsSection({
  * subscription (which updates as people speak) costs nothing when it's closed.
  */
 function ParticipantList(props: Omit<ParticipantsPanelProps, "open" | "onClose" | "onMuteAll">) {
-  const { hostUserIds, handQueue, handPositions, canModerate, onMute, onRemove, onGift } = props;
+  const { hostUserIds, handQueue, handPositions, canModerate, onMute, onRemove, onGift, creatorId, isHostUser, onSetCohost } =
+    props;
   const { useParticipants } = useCallStateHooks();
   const participants = useParticipants();
   const [query, setQuery] = useState("");
   const [busy, setBusy] = useState<string | null>(null);
 
-  const isHost = (p: StreamVideoParticipant) => hostUserIds.has(p.userId) || Boolean(p.roles?.includes("admin"));
+  const isHost = (p: StreamVideoParticipant) =>
+    isHostUser ? isHostUser(p) : hostUserIds.has(p.userId) || Boolean(p.roles?.includes("admin"));
 
   const rows = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -105,8 +113,8 @@ function ParticipantList(props: Omit<ParticipantsPanelProps, "open" | "onClose" 
     return participants
       .filter((p) => !q || (p.name || "").toLowerCase().includes(q))
       .sort((a, b) => rank(a) - rank(b) || (a.name || "").localeCompare(b.name || ""));
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- isHost only reads hostUserIds
-  }, [participants, query, hostUserIds]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- isHost only reads hostUserIds / isHostUser
+  }, [participants, query, hostUserIds, isHostUser]);
 
   const run = async (key: string, action: () => Promise<void>) => {
     setBusy(key);
@@ -149,6 +157,8 @@ function ParticipantList(props: Omit<ParticipantsPanelProps, "open" | "onClose" 
             const camOn = hasVideo(p);
             const hand = handPositions.get(p.userId);
             const host = isHost(p);
+            const cohost = host && Boolean(creatorId) && p.userId !== creatorId;
+            const name = p.name || "this person";
             return (
               <li key={p.sessionId} className="flex items-center gap-3 rounded-2xl px-2 py-2 hover:bg-white/5">
                 <RoomAvatar name={p.name || p.userId} image={p.image} speaking={p.isSpeaking} className="h-10 w-10 text-sm" />
@@ -156,7 +166,13 @@ function ParticipantList(props: Omit<ParticipantsPanelProps, "open" | "onClose" 
                   <p className="flex items-center gap-1.5 text-sm font-medium">
                     <span className="truncate">{p.isLocalParticipant ? `${p.name || "You"} (You)` : p.name || "Guest"}</span>
                     {host && (
-                      <span className="shrink-0 rounded-full bg-primary px-1.5 py-px text-[10px] font-semibold uppercase tracking-wide">Host</span>
+                      <span
+                        className={`shrink-0 rounded-full px-1.5 py-px text-[10px] font-semibold uppercase tracking-wide ${
+                          cohost ? "bg-primary/25 text-primary" : "bg-primary"
+                        }`}
+                      >
+                        {cohost ? "Co-host" : "Host"}
+                      </span>
                     )}
                   </p>
                   {hand !== undefined && (
@@ -201,6 +217,23 @@ function ParticipantList(props: Omit<ParticipantsPanelProps, "open" | "onClose" 
                     <Gift className="h-4 w-4" />
                   </button>
                 )}
+                {onSetCohost && !p.isLocalParticipant && (cohost || !host) && (
+                  <button
+                    type="button"
+                    disabled={busy === `cohost-${p.sessionId}`}
+                    onClick={() => {
+                      const ask = cohost
+                        ? `Remove ${name} as co-host?`
+                        : `Make ${name} a co-host? They'll be able to mute, spotlight and manage people in this class.`;
+                      if (window.confirm(ask)) void run(`cohost-${p.sessionId}`, () => onSetCohost(p, !cohost));
+                    }}
+                    aria-label={cohost ? `Remove ${name} as co-host` : `Make ${name} a co-host`}
+                    title={cohost ? "Remove as co-host" : "Make co-host"}
+                    className={`${iconBtn} ${cohost ? "bg-primary/25 text-primary hover:bg-primary/35" : "bg-white/10 hover:bg-white/15"}`}
+                  >
+                    {cohost ? <ShieldOff className="h-4 w-4" /> : <ShieldCheck className="h-4 w-4" />}
+                  </button>
+                )}
                 {canModerate && !p.isLocalParticipant && !host && (
                   <button
                     type="button"
@@ -226,7 +259,7 @@ function ParticipantList(props: Omit<ParticipantsPanelProps, "open" | "onClose" 
   );
 }
 
-/** Everyone in the class, raised hands first. Hosts can mute (one or all), remove and gift. */
+/** Everyone in the class, raised hands first. Hosts can mute (one or all), remove and gift; the creator can make co-hosts. */
 export const ParticipantsPanel = memo(function ParticipantsPanel(props: ParticipantsPanelProps) {
   const { useParticipantCount } = useCallStateHooks();
   const count = useParticipantCount();

@@ -10,7 +10,7 @@ import {
   type StreamVideoParticipant,
   type VideoPlaceholderProps,
 } from "@stream-io/video-react-sdk";
-import { MicOff, MonitorUp, MoreVertical, Pin, PinOff, Sparkles, UserX } from "lucide-react";
+import { MicOff, MonitorUp, MoreVertical, Pin, PinOff, ShieldCheck, ShieldOff, Sparkles, UserX } from "lucide-react";
 import { RoomAvatar } from "./RoomAvatar";
 import { ConnectionBars, HandBadge, SpeakingBars } from "./RoomIndicators";
 import { useTileActions } from "./TileActions";
@@ -93,11 +93,13 @@ function TileOverlay({
   );
 }
 
-/** Pin / spotlight / mute / remove for one person. Desktop: small menu; phones: bottom sheet. */
+/** Pin / spotlight / mute / co-host / remove for one person. Desktop: small menu; phones: bottom sheet. */
 function TileMenu({ participant, open, onClose }: { participant: StreamVideoParticipant; open: boolean; onClose: () => void }) {
   const actions = useTileActions();
   if (!actions || !open) return null;
-  const isHostTile = Boolean(participant.roles?.includes(HOST_CALL_ROLE));
+  const isHostTile = actions.isHostUser
+    ? actions.isHostUser(participant)
+    : Boolean(participant.roles?.includes(HOST_CALL_ROLE));
   const name = participant.isLocalParticipant ? "You" : participant.name || "Guest";
   const spotlighted = actions.spotlightUserId === participant.userId;
 
@@ -118,6 +120,17 @@ function TileMenu({ participant, open, onClose }: { participant: StreamVideoPart
     });
     if (!participant.isLocalParticipant && hasAudio(participant)) {
       items.push({ key: "mute", label: `Mute ${name}`, icon: <MicOff className="h-4 w-4" />, run: () => actions.onMute(participant) });
+    }
+    if (actions.cohost && !participant.isLocalParticipant) {
+      const cohost = actions.cohost.isCohost(participant);
+      if (cohost || !isHostTile) {
+        items.push({
+          key: "cohost",
+          label: cohost ? "Remove as co-host" : "Make co-host",
+          icon: cohost ? <ShieldOff className="h-4 w-4" /> : <ShieldCheck className="h-4 w-4" />,
+          run: () => actions.cohost?.set(participant, !cohost),
+        });
+      }
     }
     if (!participant.isLocalParticipant && !isHostTile) {
       items.push({

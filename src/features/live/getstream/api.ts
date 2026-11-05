@@ -141,26 +141,41 @@ export async function listGetStreamRecordings(target: GetStreamTarget): Promise<
   return res.data.data.recordings;
 }
 
-/** One of the creator's finished GetStream classes (where recordings live). */
-export interface EndedGetStreamClass {
+/** One of the creator's finished GetStream classes that has recordings. */
+export interface RecordedGetStreamClass {
   id: string;
   title: string;
   startTime: string | null;
   updatedAt: string | null;
 }
 
-/** The signed-in creator's ended GetStream classes, newest first. */
-export async function listEndedGetStreamClasses(): Promise<EndedGetStreamClass[]> {
-  const res = await apiClient.get("/live/my-classes", { params: { status: "ended", limit: 100 } });
-  const rows = (res.data?.liveClasses ?? []) as Record<string, unknown>[];
-  return rows
-    .filter((c) => (c.streaming_provider ?? c.streamingProvider) === "getstream")
-    .map((c) => ({
+/**
+ * The signed-in creator's ended GetStream classes that were recorded, newest
+ * first. Empty on servers that don't have this endpoint yet.
+ */
+export async function listRecordedGetStreamClasses(): Promise<RecordedGetStreamClass[]> {
+  try {
+    const res = await apiClient.get("/live/getstream/recorded-classes", { timeout: ROOM_SETUP_TIMEOUT_MS });
+    const rows = (res.data?.data?.classes ?? []) as Record<string, unknown>[];
+    return rows.map((c) => ({
       id: String(c.id),
       title: String(c.title ?? "Live class"),
       startTime: (c.startTime as string | null) ?? null,
       updatedAt: (c.updatedAt as string | null) ?? null,
     }));
+  } catch (error) {
+    if ((error as { response?: { status?: number } })?.response?.status === 404) return [];
+    throw error;
+  }
+}
+
+/** Creator only: make someone a co-host (for this class / this session), or remove the role. */
+export async function setGetStreamCohost(target: GetStreamTarget, userId: string, makeHost: boolean) {
+  const res = await apiClient.post(`${basePath(target)}/cohost-getstream`, {
+    userId: Number(userId),
+    action: makeHost ? "add" : "remove",
+  });
+  return res.data.data as { userId: string; name: string; isCohost: boolean };
 }
 
 /** Recordings plus whether this viewer can publish them. */
