@@ -41,19 +41,11 @@ function StatTile({ label, value, icon, tone }: { label: string; value: string; 
   );
 }
 
-function UsageMeter({ label, used, cap }: { label: string; used: number; cap: number }) {
-  const pct = cap > 0 ? Math.min((used / cap) * 100, 100) : 0;
+function RecentVolume({ label, value }: { label: string; value: number }) {
   return (
-    <div>
-      <div className="mb-1.5 flex justify-between text-xs">
-        <span className="text-zinc-400">{label}</span>
-        <span className="font-mono text-zinc-300">
-          {formatNumber(used)} / {formatNumber(cap)}
-        </span>
-      </div>
-      <div className="h-2 overflow-hidden rounded-full bg-zinc-800">
-        <div className={`h-full rounded-full transition-all ${pct >= 100 ? 'bg-amber-500' : 'bg-violet-500'}`} style={{ width: `${pct}%` }} />
-      </div>
+    <div className="flex items-baseline justify-between text-sm">
+      <span className="text-zinc-400">{label}</span>
+      <span className="font-mono text-zinc-200">{formatNumber(value)}</span>
     </div>
   );
 }
@@ -138,12 +130,9 @@ export default function EmailPortalHomePage() {
       {limits && (
         <Card>
           <div className="grid gap-5 sm:grid-cols-2">
-            <UsageMeter label="Sent in the last hour" used={limits.sentLastHour} cap={limits.hourlyCap} />
-            <UsageMeter label="Sent today" used={limits.sentToday} cap={limits.dailyCap} />
+            <RecentVolume label="Sent in the last hour" value={limits.sentLastHour} />
+            <RecentVolume label="Sent today" value={limits.sentToday} />
           </div>
-          <p className="mt-3 text-xs text-zinc-500">
-            Emails are sent gradually to protect the mail account. Large campaigns continue automatically when the hourly or daily limit resets.
-          </p>
         </Card>
       )}
 

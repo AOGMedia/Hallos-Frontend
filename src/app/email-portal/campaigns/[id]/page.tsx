@@ -252,7 +252,7 @@ export default function CampaignDetailPage() {
             </div>
             {campaign.status === 'sending' && counts.pending > 0 && (
               <p className="mt-4 rounded-xl bg-amber-500/10 px-3.5 py-2.5 text-xs text-amber-200">
-                Emails are going out gradually. If the hourly or daily limit is reached, sending pauses and resumes on its own — you don&apos;t need to keep this page open.
+                Emails are going out now. If the mail provider pauses sending, it resumes on its own — you don&apos;t need to keep this page open.
               </p>
             )}
             {counts.skipped > 0 && (

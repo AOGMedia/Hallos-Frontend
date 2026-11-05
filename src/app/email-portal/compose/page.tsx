@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { CalendarClock, Loader2, Save, Send, TestTube2, Trash2 } from 'lucide-react';
 import { emailPortalService, portalErrorMessage } from '@/services/emailPortalService';
 import { emptyAudience } from '@/types/emailPortal';
-import type { Audience, Campaign, PortalStats, TestSendResult } from '@/types/emailPortal';
+import type { Audience, Campaign, TestSendResult } from '@/types/emailPortal';
 import { usePortal } from '@/components/email-portal/PortalProvider';
 import AudienceBuilder from '@/components/email-portal/AudienceBuilder';
 import EmailPreview from '@/components/email-portal/EmailPreview';
@@ -46,7 +46,6 @@ function ComposeForm() {
   const [bodyHtml, setBodyHtml] = useState(STARTER_BODY);
   const [audience, setAudience] = useState<Audience>(emptyAudience());
   const [total, setTotal] = useState<number | null>(null);
-  const [stats, setStats] = useState<PortalStats | null>(null);
   const [dirty, setDirty] = useState(false);
 
   const [saving, setSaving] = useState(false);
@@ -63,10 +62,6 @@ function ComposeForm() {
   const createdHereRef = useRef<string | null>(null);
 
   const markDirty = useCallback(() => setDirty(true), []);
-
-  useEffect(() => {
-    emailPortalService.stats().then(setStats).catch(() => undefined);
-  }, []);
 
   useEffect(() => {
     const sourceId = draftParam || copyParam;
@@ -206,15 +201,6 @@ function ComposeForm() {
     }
   };
 
-  const perHour = stats ? Math.min(stats.limits.hourlyCap, stats.limits.dailyCap) : 0;
-  const estimate = (() => {
-    if (!total || !stats || !perHour) return null;
-    const days = Math.ceil(total / stats.limits.dailyCap);
-    if (days > 1) return `about ${days} days`;
-    const hours = Math.ceil(total / perHour);
-    return hours <= 1 ? 'within the hour' : `about ${hours} hours`;
-  })();
-
   if (loading) return <Spinner label="Loading campaign..." />;
 
   return (
@@ -263,7 +249,7 @@ function ComposeForm() {
           <Card>
             <p className="text-xs font-bold uppercase tracking-widest text-zinc-500">Summary</p>
             <p className="mt-2 text-3xl font-bold text-zinc-100">{total === null ? '—' : formatNumber(total)}</p>
-            <p className="text-sm text-zinc-500">recipients{estimate ? ` · sends ${estimate}` : ''}</p>
+            <p className="text-sm text-zinc-500">recipients</p>
 
             <div className="mt-5 space-y-2">
               <button onClick={() => save()} disabled={saving} className={`${secondaryButton} w-full`}>
@@ -331,7 +317,7 @@ function ComposeForm() {
             <p className="text-xs uppercase tracking-widest text-zinc-500">Subject</p>
             <p className="mt-1 font-semibold text-zinc-100">{subject}</p>
             <p className="mt-3 text-xs uppercase tracking-widest text-zinc-500">Audience</p>
-            <p className="mt-1 font-semibold text-zinc-100">{total === null ? '—' : formatNumber(total)} people{estimate ? ` · delivered ${estimate}` : ''}</p>
+            <p className="mt-1 font-semibold text-zinc-100">{total === null ? '—' : formatNumber(total)} people</p>
           </div>
 
           <div className="flex gap-2">
