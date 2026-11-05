@@ -11,15 +11,18 @@ import {
   MonitorUp,
   MoreHorizontal,
   PhoneOff,
+  Settings,
   SmilePlus,
   SwitchCamera,
   Video,
   VideoOff,
 } from "lucide-react";
-import { REACTIONS } from "../lib/events";
 import { tapHaptic } from "../lib/haptics";
-import type { ReactionCode } from "../hooks/useReactions";
+import { SpeakingBars } from "./RoomIndicators";
 import { Sheet } from "./Sheet";
+
+/** Screen shares favour sharp text over motion (like Meet's "text" mode): fewer frames, more detail. */
+const SCREEN_SHARE_SETTINGS = { maxFramerate: 15, maxBitrate: 2_500_000 };
 
 /**
  * The familiar record symbol: a ring with a red dot to start; a red stop
@@ -89,6 +92,35 @@ function ControlButton({
   );
 }
 
+/**
+ * The mic button. Its own component because it follows your voice (speaking
+ * bars, "you're muted" hint) — those updates stay inside this button.
+ */
+const MicButton = memo(function MicButton({ onError }: { onError: (what: string) => void }) {
+  const call = useCall();
+  const { useMicrophoneState, useLocalParticipant } = useCallStateHooks();
+  const { optimisticIsMute: micOff, isSpeakingWhileMuted } = useMicrophoneState();
+  const me = useLocalParticipant();
+  const speaking = !micOff && Boolean(me?.isSpeaking);
+
+  return (
+    <div className="relative">
+      {isSpeakingWhileMuted && (
+        <span className="pointer-events-none absolute bottom-full left-1/2 mb-3 w-max -translate-x-1/2 rounded-full bg-[#1f2537] px-3 py-1.5 text-xs font-medium text-white shadow-xl ring-1 ring-white/10">
+          You&apos;re muted — tap to speak
+        </span>
+      )}
+      <ControlButton
+        label={micOff ? "Turn microphone on" : "Turn microphone off"}
+        active={!micOff}
+        onClick={() => call?.microphone.toggle().catch(() => onError("microphone"))}
+      >
+        {micOff ? <MicOff className="h-5 w-5" /> : speaking ? <SpeakingBars className="text-white" /> : <Mic className="h-5 w-5" />}
+      </ControlButton>
+    </div>
+  );
+});
+
 export interface ControlBarProps {
   /** Creator or co-host: sees raised hands instead of a raise-hand button. */
   isHost: boolean;
@@ -102,11 +134,13 @@ export interface ControlBarProps {
   raisedCount: number;
   recording: boolean;
   recordingBusy: boolean;
+  reactionsOpen: boolean;
   onToggleChat: () => void;
-  onReact: (code: ReactionCode) => void;
+  onToggleReactions: () => void;
   onToggleHand: () => void;
   onOpenHands: () => void;
   onOpenGifts: () => void;
+  onOpenSettings: () => void;
   onToggleRecording: () => void;
   onLeave: () => void;
   onDeviceError: (message: string) => void;
@@ -115,167 +149,179 @@ export interface ControlBarProps {
 /**
  * Bottom controls, sized and spaced for thumbs.
  * Phones: mic · camera · hand · gift · chat · more · leave (fits 360px wide).
- * Larger screens: everything inline, plus screen share and reactions.
+ * Larger screens: everything inline, plus screen share, reactions and settings.
  */
 export const ControlBar = memo(function ControlBar(props: ControlBarProps) {
   const call = useCall();
-  const { useCameraState, useMicrophoneState, useScreenShareState } = useCallStateHooks();
+  const { useCameraState, useScreenShareState } = useCallStateHooks();
   const { optimisticIsMute: camOff } = useCameraState();
-  const { optimisticIsMute: micOff } = useMicrophoneState();
   const { optimisticIsMute: notSharing } = useScreenShareState();
-  const [reactionsOpen, setReactionsOpen] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
 
-  const run = (action: Promise<void> | undefined, what: string) =>
-    action?.catch(() =>
-      props.onDeviceError(`We couldn't turn on your ${what}. Check that Hallos is allowed to use it in your browser settings.`)
-    );
+  const deviceError = (what: string) =>
+    props.onDeviceError(`We couldn't turn on your ${what}. Check that Hallos is allowed to use it in your browser settings.`);
 
-  const reactionButtons = (onPicked?: () => void) =>
-    REACTIONS.map((r) => (
-      <button
-        key={r.code}
-        type="button"
-        aria-label={r.label}
-        onClick={() => {
-          tapHaptic(8);
-          props.onReact(r.code);
-          onPicked?.();
-        }}
-        className="flex h-12 w-12 touch-manipulation items-center justify-center rounded-full text-[1.75rem] transition hover:bg-white/10 active:scale-125"
-      >
-        {r.emoji}
-      </button>
-    ));
+  const toggleScreenShare = () => {
+    if (!call) return;
+    if (notSharing) call.screenShare.setSettings(SCREEN_SHARE_SETTINGS);
+    call.screenShare.toggle().catch(() => deviceError("screen share"));
+  };
 
   return (
-    <div className="relative z-30 shrink-0 border-t border-white/5 bg-[#0d111b] px-2 pb-[max(env(safe-area-inset-bottom),10px)] pt-2.5 md:bg-[#0d111b]/90 md:backdrop-blur-xl">
-      {reactionsOpen && (
-        <div className="absolute bottom-full left-1/2 mb-3 hidden -translate-x-1/2 gap-1 rounded-full border border-white/10 bg-[#1b2234] p-1.5 shadow-2xl md:flex">
-          {reactionButtons()}
-        </div>
-      )}
-
+    <div className="relative z-30 shrink-0 px-2 pb-[max(env(safe-area-inset-bottom),10px)] pt-2.5 max-md:bg-gradient-to-t max-md:from-black/85 max-md:via-black/60 max-md:to-transparent max-md:pt-6 md:border-t md:border-white/5 md:bg-[#0d111b]/90 md:backdrop-blur-xl">
       {/* Centred when it fits; scrolls sideways on the narrowest phones instead of clipping. */}
       <div className="overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-      <div className="mx-auto flex w-max items-center gap-1 sm:gap-3">
-        <ControlButton
-          label={micOff ? "Turn microphone on" : "Turn microphone off"}
-          active={!micOff}
-          onClick={() => run(call?.microphone.toggle(), "microphone")}
-        >
-          {micOff ? <MicOff className="h-5 w-5" /> : <Mic className="h-5 w-5" />}
-        </ControlButton>
-        <ControlButton
-          label={camOff ? "Turn camera on" : "Turn camera off"}
-          active={!camOff}
-          onClick={() => run(call?.camera.toggle(), "camera")}
-        >
-          {camOff ? <VideoOff className="h-5 w-5" /> : <Video className="h-5 w-5" />}
-        </ControlButton>
-        <ControlButton
-          label={notSharing ? "Share your screen" : "Stop sharing"}
-          highlight={!notSharing}
-          className="!hidden md:!flex"
-          onClick={() => run(call?.screenShare.toggle(), "screen share")}
-        >
-          <MonitorUp className="h-5 w-5" />
-        </ControlButton>
-        <ControlButton
-          label="Reactions"
-          highlight={reactionsOpen}
-          className="!hidden md:!flex"
-          onClick={() => setReactionsOpen((v) => !v)}
-        >
-          <SmilePlus className="h-5 w-5" />
-        </ControlButton>
-
-        {props.isHost ? (
+        <div className="mx-auto flex w-max items-center gap-1 sm:gap-3">
+          <MicButton onError={deviceError} />
           <ControlButton
-            label={`Raised hands${props.raisedCount ? ` (${props.raisedCount})` : ""}`}
-            highlight={props.raisedCount > 0}
-            badge={props.raisedCount}
-            onClick={props.onOpenHands}
+            label={camOff ? "Turn camera on" : "Turn camera off"}
+            active={!camOff}
+            onClick={() => call?.camera.toggle().catch(() => deviceError("camera"))}
           >
-            <Hand className="h-5 w-5" />
+            {camOff ? <VideoOff className="h-5 w-5" /> : <Video className="h-5 w-5" />}
           </ControlButton>
-        ) : (
           <ControlButton
-            label={props.handRaised ? "Lower hand" : "Raise hand"}
-            highlight={props.handRaised}
-            onClick={props.onToggleHand}
+            label={notSharing ? "Share your screen" : "Stop sharing"}
+            highlight={!notSharing}
+            className="!hidden md:!flex"
+            onClick={toggleScreenShare}
           >
-            <Hand className="h-5 w-5" />
+            <MonitorUp className="h-5 w-5" />
           </ControlButton>
-        )}
-
-        {props.canGift && (
-          <ControlButton label="Send a gift" onClick={props.onOpenGifts} className="!bg-gradient-to-br !from-amber-400 !to-pink-500 !text-white">
-            <Gift className="h-5 w-5" />
+          <ControlButton label="Reactions" highlight={props.reactionsOpen} className="!hidden md:!flex" onClick={props.onToggleReactions}>
+            <SmilePlus className="h-5 w-5" />
           </ControlButton>
-        )}
 
-        {props.canRecord && (
-          <ControlButton
-            label={props.recording ? "Stop recording" : "Start recording"}
-            disabled={props.recordingBusy}
-            className={`!hidden md:!flex ${props.recording ? "!bg-red-500/15 ring-2 ring-red-500/60" : ""}`}
-            onClick={props.onToggleRecording}
-          >
-            <RecordIcon recording={props.recording} />
+          {props.isHost ? (
+            <ControlButton
+              label={`Raised hands${props.raisedCount ? ` (${props.raisedCount})` : ""}`}
+              highlight={props.raisedCount > 0}
+              badge={props.raisedCount}
+              onClick={props.onOpenHands}
+            >
+              <Hand className="h-5 w-5" />
+            </ControlButton>
+          ) : (
+            <ControlButton
+              label={props.handRaised ? "Lower hand" : "Raise hand"}
+              highlight={props.handRaised}
+              className={props.handRaised ? "!bg-amber-400 !text-black" : ""}
+              onClick={props.onToggleHand}
+            >
+              <Hand className={`h-5 w-5 ${props.handRaised ? "hallos-wave" : ""}`} />
+            </ControlButton>
+          )}
+
+          {props.canGift && (
+            <ControlButton label="Send a gift" onClick={props.onOpenGifts} className="!bg-gradient-to-br !from-amber-400 !to-pink-500 !text-white">
+              <Gift className="h-5 w-5" />
+            </ControlButton>
+          )}
+
+          {props.canRecord && (
+            <ControlButton
+              label={props.recording ? "Stop recording" : "Start recording"}
+              disabled={props.recordingBusy}
+              className={`!hidden md:!flex ${props.recording ? "!bg-red-500/15 ring-2 ring-red-500/60" : ""}`}
+              onClick={props.onToggleRecording}
+            >
+              <RecordIcon recording={props.recording} />
+            </ControlButton>
+          )}
+
+          <ControlButton label="Chat" highlight={props.chatOpen} badge={props.chatOpen ? 0 : props.unread} onClick={props.onToggleChat}>
+            <MessageCircle className="h-5 w-5" />
           </ControlButton>
-        )}
 
-        <ControlButton label="Chat" highlight={props.chatOpen} badge={props.chatOpen ? 0 : props.unread} onClick={props.onToggleChat}>
-          <MessageCircle className="h-5 w-5" />
-        </ControlButton>
+          <ControlButton label="Settings" className="!hidden md:!flex" onClick={props.onOpenSettings}>
+            <Settings className="h-5 w-5" />
+          </ControlButton>
 
-        <ControlButton label="More" className="md:!hidden" onClick={() => setMoreOpen(true)}>
-          <MoreHorizontal className="h-5 w-5" />
-        </ControlButton>
+          <ControlButton label="More" className="md:!hidden" onClick={() => setMoreOpen(true)}>
+            <MoreHorizontal className="h-5 w-5" />
+          </ControlButton>
 
-        <ControlButton label="Leave class" danger className="!w-12 sm:!w-20" onClick={props.onLeave}>
-          <PhoneOff className="h-5 w-5" />
-        </ControlButton>
-      </div>
+          <ControlButton label="Leave class" danger className="!w-12 sm:!w-20" onClick={props.onLeave}>
+            <PhoneOff className="h-5 w-5" />
+          </ControlButton>
+        </div>
       </div>
 
       {/* Phones: everything that doesn't fit in the bar */}
       <Sheet open={moreOpen} onClose={() => setMoreOpen(false)} title="More" mobileHeight="max-h-[70dvh]">
-        <div className="px-4 pb-[max(env(safe-area-inset-bottom),16px)]">
-          <p className="mb-2 text-[11px] uppercase tracking-wide text-white/50">React</p>
-          <div className="mb-4 flex flex-wrap justify-between">{reactionButtons(() => setMoreOpen(false))}</div>
-
-          <div className="space-y-2">
-            <button
-              type="button"
-              disabled={camOff}
+        <div className="space-y-2 px-4 pb-[max(env(safe-area-inset-bottom),16px)]">
+          <MoreItem
+            icon={<SmilePlus className="h-5 w-5" />}
+            label="Reactions"
+            onClick={() => {
+              setMoreOpen(false);
+              props.onToggleReactions();
+            }}
+          />
+          <MoreItem
+            icon={<SwitchCamera className="h-5 w-5" />}
+            label="Switch camera"
+            hint={camOff ? "Camera is off" : undefined}
+            disabled={camOff}
+            onClick={() => {
+              call?.camera.flip().catch(() => deviceError("camera"));
+              setMoreOpen(false);
+            }}
+          />
+          {props.canRecord && (
+            <MoreItem
+              icon={<RecordIcon recording={props.recording} />}
+              label={props.recording ? "Stop recording" : "Start recording"}
+              disabled={props.recordingBusy}
               onClick={() => {
-                run(call?.camera.flip(), "camera");
+                props.onToggleRecording();
                 setMoreOpen(false);
               }}
-              className="flex w-full items-center gap-3 rounded-2xl bg-white/5 px-4 py-3.5 text-left text-sm font-medium disabled:opacity-40"
-            >
-              <SwitchCamera className="h-5 w-5" /> Switch camera
-              {camOff && <span className="ml-auto text-xs text-white/40">Camera is off</span>}
-            </button>
-            {props.canRecord && (
-              <button
-                type="button"
-                disabled={props.recordingBusy}
-                onClick={() => {
-                  props.onToggleRecording();
-                  setMoreOpen(false);
-                }}
-                className="flex w-full items-center gap-3 rounded-2xl bg-white/5 px-4 py-3.5 text-left text-sm font-medium disabled:opacity-40"
-              >
-                <RecordIcon recording={props.recording} />
-                {props.recording ? "Stop recording" : "Start recording"}
-              </button>
-            )}
-          </div>
+            />
+          )}
+          <MoreItem
+            icon={<Settings className="h-5 w-5" />}
+            label="Settings"
+            hint="Devices, background, layout, captions"
+            onClick={() => {
+              setMoreOpen(false);
+              props.onOpenSettings();
+            }}
+          />
         </div>
       </Sheet>
     </div>
   );
 });
+
+function MoreItem({
+  icon,
+  label,
+  hint,
+  disabled,
+  onClick,
+}: {
+  icon: ReactNode;
+  label: string;
+  hint?: string;
+  disabled?: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      disabled={disabled}
+      onClick={() => {
+        tapHaptic(8);
+        onClick();
+      }}
+      className="flex w-full touch-manipulation items-center gap-3 rounded-2xl bg-white/5 px-4 py-3.5 text-left text-sm font-medium transition active:scale-[0.99] disabled:opacity-40"
+    >
+      {icon}
+      <span className="min-w-0 flex-1">
+        <span className="block">{label}</span>
+        {hint && <span className="block text-xs font-normal text-white/50">{hint}</span>}
+      </span>
+    </button>
+  );
+}

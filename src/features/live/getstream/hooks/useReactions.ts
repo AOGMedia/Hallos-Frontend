@@ -18,7 +18,8 @@ export type ReactionCode = (typeof REACTIONS)[number]["code"];
 export type ReactionBus = EventTarget;
 const LOCAL_REACTION = "local-reaction";
 
-const FLOAT_MS = 2600;
+// Meet keeps reactions on screen for a few seconds as they drift up.
+const FLOAT_MS = 3800;
 // Fewer simultaneous emojis on phones keeps animation smooth on low-end devices.
 const maxOnScreen = () =>
   typeof window !== "undefined" && window.matchMedia("(max-width: 767px)").matches ? 10 : 20;

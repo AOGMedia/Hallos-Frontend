@@ -14,7 +14,23 @@ export const HAND_EVENT = "hallos.hand";
 // participants Stream's create-reaction permission, but it does grant send-event.
 export const REACTION_EVENT = "hallos.reaction";
 export const GIFT_EVENT = "hallos.gift";
+/** A host muted people (sent alongside GetStream's own mute, so muted people are told why). */
+export const MUTE_EVENT = "hallos.mute";
+/** A host spotlighted someone for everyone (or cleared it). */
+export const SPOTLIGHT_EVENT = "hallos.spotlight";
 export const MAX_CHAT_LENGTH = 500;
+
+export interface MuteEventPayload {
+  kind: typeof MUTE_EVENT;
+  /** userIds muted, or "*" for everyone except hosts. */
+  targets: string[] | "*";
+}
+
+export interface SpotlightEventPayload {
+  kind: typeof SPOTLIGHT_EVENT;
+  /** userId to spotlight, or null to clear. */
+  userId: string | null;
+}
 
 /** Server-side sender of gift and photo announcements (backend getStreamService). */
 export const SYSTEM_USER_ID = "hallos-system";

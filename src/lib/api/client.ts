@@ -127,10 +127,40 @@ apiClient.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
+/**
+ * Reads (GET) are retried when the server is briefly unreachable — a timeout,
+ * a dropped connection, or 502/503/504 while the backend restarts or wakes up.
+ * Each retry waits a little longer and allows more time. Writes are never
+ * retried, so nothing (payments, gifts, messages) can happen twice.
+ */
+const GET_RETRY_TIMEOUTS_MS = [20000, 30000];
+const GET_RETRY_DELAYS_MS = [800, 2000];
+const RETRYABLE_STATUSES = new Set([502, 503, 504]);
+
+type RetriableConfig = NonNullable<AxiosError['config']> & { __retryCount?: number };
+
+function shouldRetryGet(error: AxiosError): boolean {
+  const config = error.config as RetriableConfig | undefined;
+  if (!config || (config.method ?? 'get').toLowerCase() !== 'get') return false;
+  if (axios.isCancel(error) || error.code === 'ERR_CANCELED') return false;
+  if ((config.__retryCount ?? 0) >= GET_RETRY_TIMEOUTS_MS.length) return false;
+  const status = error.response?.status;
+  return status === undefined || RETRYABLE_STATUSES.has(status);
+}
+
 // Response interceptor for error handling
 apiClient.interceptors.response.use(
   (response) => response,
-  (error: AxiosError) => {
+  async (error: AxiosError) => {
+    if (shouldRetryGet(error)) {
+      const config = error.config as RetriableConfig;
+      const attempt = config.__retryCount ?? 0;
+      config.__retryCount = attempt + 1;
+      config.timeout = Math.max(config.timeout ?? 0, GET_RETRY_TIMEOUTS_MS[attempt]);
+      await new Promise((resolve) => setTimeout(resolve, GET_RETRY_DELAYS_MS[attempt]));
+      return apiClient.request(config);
+    }
+
     const status = error.response?.status;
     const url = error.config?.url ?? 'unknown url';
 

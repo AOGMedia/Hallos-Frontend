@@ -75,7 +75,8 @@ export const authApi = {
   me: async (): Promise<{ user: User }> => {
     const response = await apiClient.get('/auth/me');
     const data = response.data as unknown;
-    const raw = (data as { user?: unknown }).user ?? data;
+    // /auth/me answers { success, data: { id, ... } } — read the user from `data`.
+    const raw = (data as { data?: unknown }).data ?? (data as { user?: unknown }).user ?? data;
     const r = raw as Record<string, unknown>;
     const idVal = (r.id ?? r._id) as string | number | undefined;
     const email = r.email as string | undefined;

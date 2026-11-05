@@ -81,6 +81,62 @@ export function HostLeftDialog({ onRejoin, onEnd }: { onRejoin: () => void; onEn
   );
 }
 
+/**
+ * The host pressed leave — like Meet, ask first: just leave (the class keeps
+ * going for everyone) or end it for everyone.
+ */
+export function LeaveChoiceDialog({
+  onLeave,
+  onEnd,
+  onCancel,
+}: {
+  onLeave: () => void;
+  onEnd: () => Promise<void>;
+  onCancel: () => void;
+}) {
+  const [ending, setEnding] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const end = async () => {
+    setEnding(true);
+    setError(null);
+    try {
+      await onEnd();
+    } catch {
+      setError("Couldn't end the class. Please try again.");
+      setEnding(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-[64] flex items-end justify-center bg-black/60 p-4 sm:items-center" onClick={onCancel}>
+      <div className={panel} onClick={(e) => e.stopPropagation()} role="dialog" aria-labelledby="leave-title">
+        <h2 id="leave-title" className="text-xl font-bold text-white">Leave the class?</h2>
+        <p className="mt-2 text-sm text-white/70">
+          You can leave and let the class carry on, or end it for everyone.
+        </p>
+        {error && <p className="mt-3 text-sm text-red-400">{error}</p>}
+        <div className="mt-6 flex flex-col gap-3">
+          <button type="button" onClick={onLeave} disabled={ending} className={primaryBtn}>
+            Just leave
+          </button>
+          <button
+            type="button"
+            onClick={() => void end()}
+            disabled={ending}
+            className="w-full rounded-full bg-red-500 px-6 py-3.5 font-semibold text-white transition active:scale-[0.98] disabled:opacity-60"
+          >
+            {ending ? "Ending…" : "End class for everyone"}
+          </button>
+          <button type="button" onClick={onCancel} disabled={ending} className={ghostBtn}>
+            Cancel
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /** Shown when the class (or series session) has ended. Hosts also get its recordings. */
 export function ClassEndedScreen({
   target,
