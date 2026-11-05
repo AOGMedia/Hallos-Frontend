@@ -37,6 +37,33 @@ export interface GetStreamRecording {
   url: string;
   startTime: string;
   endTime: string;
+  /** Set once the creator has published this recording as a video. */
+  publication?: RecordingPublication | null;
+}
+
+/** A recording published as a Hallos video. `uploading` while Mux imports it. */
+export interface RecordingPublication {
+  videoId: string;
+  status: "uploading" | "processing" | "ready" | "failed";
+  title: string | null;
+}
+
+export interface GetStreamRecordingsResult {
+  recordings: GetStreamRecording[];
+  /** Only the creator can publish (co-hosts can watch). False on older servers. */
+  canPublish: boolean;
+  /** The class or session name, to suggest a video title. */
+  title: string | null;
+}
+
+export interface PublishRecordingDetails {
+  filename: string;
+  title: string;
+  description?: string;
+  price: number;
+  currency: "NGN" | "USD";
+  category?: string;
+  privacy: "public" | "unlisted" | "private";
 }
 
 /** Same result shape as joinZegoRoom, so the lobby treats both providers alike. */
@@ -112,6 +139,46 @@ export async function setGetStreamCaptions(target: GetStreamTarget, action: "sta
 export async function listGetStreamRecordings(target: GetStreamTarget): Promise<GetStreamRecording[]> {
   const res = await apiClient.get(`${basePath(target)}/recordings-getstream`);
   return res.data.data.recordings;
+}
+
+/** One of the creator's finished GetStream classes (where recordings live). */
+export interface EndedGetStreamClass {
+  id: string;
+  title: string;
+  startTime: string | null;
+  updatedAt: string | null;
+}
+
+/** The signed-in creator's ended GetStream classes, newest first. */
+export async function listEndedGetStreamClasses(): Promise<EndedGetStreamClass[]> {
+  const res = await apiClient.get("/live/my-classes", { params: { status: "ended", limit: 100 } });
+  const rows = (res.data?.liveClasses ?? []) as Record<string, unknown>[];
+  return rows
+    .filter((c) => (c.streaming_provider ?? c.streamingProvider) === "getstream")
+    .map((c) => ({
+      id: String(c.id),
+      title: String(c.title ?? "Live class"),
+      startTime: (c.startTime as string | null) ?? null,
+      updatedAt: (c.updatedAt as string | null) ?? null,
+    }));
+}
+
+/** Recordings plus whether this viewer can publish them. */
+export async function loadGetStreamRecordings(target: GetStreamTarget): Promise<GetStreamRecordingsResult> {
+  const res = await apiClient.get(`${basePath(target)}/recordings-getstream`);
+  const data = res.data.data ?? {};
+  return { recordings: data.recordings ?? [], canPublish: data.canPublish === true, title: data.title ?? null };
+}
+
+/** Publish a recording as a Hallos video (creator only). Mux imports it in the background. */
+export async function publishGetStreamRecording(
+  target: GetStreamTarget,
+  details: PublishRecordingDetails
+): Promise<{ video: { id: string; title: string; status: string }; alreadyPublished: boolean }> {
+  const res = await apiClient.post(`${basePath(target)}/recordings-getstream/publish`, details, {
+    timeout: ROOM_SETUP_TIMEOUT_MS,
+  });
+  return res.data.data;
 }
 
 // ---------------------------------------------------------------------------
