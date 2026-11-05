@@ -47,6 +47,84 @@
   will-change: transform;
 }
 
+/*
+ * "Hallos Live · Learn Live, from the Best" brand pass behind the header:
+ * drifts from fully off the left edge to fully off the right with a soft
+ * violet glow and a light trail, brightening briefly mid-way.
+ * The lane moves by the header's width and the track by its own width, with
+ * the same timing, so any text length enters and leaves cleanly.
+ * Transform/opacity only; the element exists only while a pass runs.
+ */
+@keyframes hallos-glide {
+  0% { transform: translate3d(0, 0, 0); opacity: 0; }
+  6% { opacity: 1; }
+  94% { opacity: 1; }
+  100% { transform: translate3d(100%, 0, 0); opacity: 0; }
+}
+@keyframes hallos-glide-track {
+  from { transform: translate3d(-100%, 0, 0); }
+  to { transform: translate3d(0, 0, 0); }
+}
+@keyframes hallos-glint {
+  0%, 30% { opacity: 0; }
+  50% { opacity: 1; }
+  70%, 100% { opacity: 0; }
+}
+@keyframes hallos-glide-fade {
+  0%, 100% { opacity: 0; }
+  25%, 75% { opacity: 1; }
+}
+.hallos-room .hallos-glide {
+  animation: hallos-glide 20s cubic-bezier(.45, .05, .55, .95) both;
+  will-change: transform, opacity;
+}
+.hallos-room .hallos-glide-track {
+  animation: hallos-glide-track 20s cubic-bezier(.45, .05, .55, .95) both;
+  will-change: transform;
+}
+.hallos-room .hallos-glide-mark {
+  color: rgba(220, 214, 255, 0.6);
+  text-shadow: 0 0 18px rgba(106, 87, 229, 0.6);
+}
+.hallos-room .hallos-glide-glint {
+  color: rgba(255, 255, 255, 0.4);
+  opacity: 0;
+  animation: hallos-glint 20s ease-in-out both;
+}
+.hallos-room .hallos-glide-glow {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 115%;
+  height: 64px;
+  transform: translate(-50%, -50%);
+  border-radius: 9999px;
+  background: radial-gradient(closest-side, rgba(106, 87, 229, 0.4), rgba(106, 87, 229, 0));
+}
+.hallos-room .hallos-glide-trail {
+  position: absolute;
+  right: 100%;
+  top: 50%;
+  width: 140px;
+  height: 1px;
+  margin-right: 14px;
+  background: linear-gradient(90deg, rgba(201, 193, 255, 0), rgba(201, 193, 255, 0.6));
+}
+@media (max-width: 767px) {
+  .hallos-room .hallos-glide,
+  .hallos-room .hallos-glide-track,
+  .hallos-room .hallos-glide-glint {
+    animation-duration: 15s;
+  }
+  .hallos-room .hallos-glide-glow {
+    height: 52px;
+  }
+  .hallos-room .hallos-glide-trail {
+    width: 80px;
+    margin-right: 10px;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .hallos-room .hallos-bars > span,
   .hallos-room .hallos-wave {
@@ -54,5 +132,16 @@
   }
   .hallos-room .hallos-chrome {
     transition: none;
+  }
+  .hallos-room .hallos-glide {
+    justify-content: center;
+    animation: hallos-glide-fade 8s ease-in-out both;
+  }
+  .hallos-room .hallos-glide-track {
+    animation: none;
+  }
+  .hallos-room .hallos-glide-glint,
+  .hallos-room .hallos-glide-trail {
+    display: none;
   }
 }
