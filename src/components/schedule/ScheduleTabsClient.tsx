@@ -27,6 +27,7 @@ import { useCurrentUser } from "@/hooks/useCurrentUser";
 import LiveDotIcon from "@/components/icons/LiveDotIcon";
 import ScheduledSummary from "@/components/liveEvents/ScheduledSummary";
 import RegistrationsModal from "@/components/liveEvents/RegistrationsModal";
+import { PastClassesRecordings, useRecordedGetStreamClasses } from "@/features/live/getstream";
 
 import { useCurrencyPreference } from "@/hooks/useCurrencyPreference";
 
@@ -87,8 +88,12 @@ export function ScheduleTabsClient() {
     refetchOnMount: "always",
   });
 
+  // The creator's finished Interactive Classroom classes that were recorded.
+  const { data: endedClassesData } = useRecordedGetStreamClasses(Boolean(userId));
+
   const classes = useMemo(() => liveClassesData || [], [liveClassesData]);
   const series = useMemo(() => seriesData || [], [seriesData]);
+  const endedClasses = useMemo(() => endedClassesData || [], [endedClassesData]);
 
   // Filter user's own classes and series
   const myClasses = useMemo(() => {
@@ -100,7 +105,7 @@ export function ScheduleTabsClient() {
   }, [series, userId]);
 
   // Check if user has any live classes or series
-  const hasMyContent = myClasses.length > 0 || mySeries.length > 0;
+  const hasMyContent = myClasses.length > 0 || mySeries.length > 0 || endedClasses.length > 0;
 
   // Dynamic tabs based on user content
   const dynamicTabs = useMemo(() => {
@@ -185,6 +190,12 @@ export function ScheduleTabsClient() {
           .includes(query),
     );
   }, [mySeries, searchQuery]);
+
+  const filteredEndedClasses = useMemo(() => {
+    if (!searchQuery.trim()) return endedClasses;
+    const query = searchQuery.toLowerCase();
+    return endedClasses.filter((c) => c.title.toLowerCase().includes(query));
+  }, [endedClasses, searchQuery]);
 
   const formatDuration = (startTime?: string, endTime?: string) => {
     if (!startTime || !endTime) return "TBA";
@@ -429,7 +440,9 @@ export function ScheduleTabsClient() {
         </div>
       )}
 
-      {filteredMyClasses.length === 0 && filteredMySeries.length === 0 && (
+      <PastClassesRecordings classes={filteredEndedClasses} />
+
+      {filteredMyClasses.length === 0 && filteredMySeries.length === 0 && filteredEndedClasses.length === 0 && (
         <div className="text-gray-400 text-center py-10 bg-[#1F2636] rounded-xl border border-white/5">
           <p>
             {searchQuery

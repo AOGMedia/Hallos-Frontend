@@ -7,9 +7,11 @@ import { useEffect, useState, useMemo, useCallback } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { getSeriesSessions, joinSession, endSession } from '@/services/sessionService';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
+import { Film } from 'lucide-react';
 import type { Session } from '@/types/series';
 import type { LiveProvider } from '@/lib/live/providers';
-import { endGetStreamLive } from '@/features/live/getstream';
+import { endGetStreamLive, recordingsHref } from '@/features/live/getstream';
 
 interface SessionListProps {
   seriesId: string;
@@ -301,6 +303,17 @@ const SessionCard = ({
                     )}
                   </button>
                 </>
+              )}
+
+              {/* Recordings: download, or publish for sale */}
+              {isGetStream && session.status === 'ended' && (
+                <Link
+                  href={recordingsHref({ kind: 'session', id: session.id })}
+                  className="w-full px-3 py-2 bg-white/5 border border-white/10 text-white rounded-lg hover:bg-white/10 transition-colors text-sm font-medium flex items-center justify-center gap-2"
+                >
+                  <Film className="w-4 h-4" />
+                  Recordings
+                </Link>
               )}
             </>
           )}
