@@ -105,11 +105,8 @@ export interface RecipientPage {
 }
 
 export interface SendLimits {
-  hourlyCap: number;
-  dailyCap: number;
   sentLastHour: number;
   sentToday: number;
-  remaining: number;
 }
 
 export interface PortalStats {
@@ -132,7 +129,7 @@ export interface PortalUser {
 
 export interface SendResult {
   campaign: Campaign;
-  estimate: { recipients: number; hourlyCap: number; dailyCap: number; estimatedHours: number; estimatedDays: number };
+  estimate: { recipients: number };
 }
 
 export interface TestSendResult {
