@@ -2,7 +2,7 @@
 import { memo, useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
 import Link from 'next/link'
-import { Button } from '@/components/ui/Button'
+import { buttonClasses } from '@/components/ui/Button'
 
 function NotFoundInner() {
   const [shapes, setShapes] = useState<Array<{ id: number; size: number; x: number; y: number; delay: number; duration: number; hue: number; alpha: number }>>([])
@@ -50,9 +50,16 @@ function NotFoundInner() {
           <div className="text-text-primary/70 max-w-xl">
             The page you are looking for doesn&apos;t exist or was moved.
           </div>
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.4, duration: 0.6 }}>
-            <Link href="/dashboard">
-              <Button variant="primary">Back to dashboard</Button>
+          {/* Public destinations first — /dashboard requires sign-in, which is a dead end for visitors and crawlers. */}
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.4, duration: 0.6 }} className="flex flex-wrap items-center justify-center gap-3">
+            <Link href="/" className={buttonClasses({ variant: 'primary' })}>
+              Go to homepage
+            </Link>
+            <Link href="/course" className={buttonClasses({ variant: 'outline' })}>
+              Browse courses
+            </Link>
+            <Link href="/dashboard" className={buttonClasses({ variant: 'outline' })}>
+              My dashboard
             </Link>
           </motion.div>
         </motion.div>

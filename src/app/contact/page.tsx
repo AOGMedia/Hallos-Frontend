@@ -95,6 +95,8 @@ export default function ContactPage() {
             <a
               key={index}
               href={method.action}
+              // Help centre/chat need sign-in; crawlers can't follow them usefully.
+              rel={method.action.startsWith('/dashboard') ? 'nofollow' : undefined}
               className="bg-background-dark border border-border/10 rounded-xl p-6 hover:border-primary/50 transition-all duration-300 group"
             >
               <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center text-primary mb-4 group-hover:bg-primary/20 transition-colors">

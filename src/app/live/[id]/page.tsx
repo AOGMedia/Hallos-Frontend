@@ -1,78 +1,34 @@
-"use client"
-import { useEffect, useState } from 'react'
-import Link from 'next/link'
-import { useParams, useRouter } from 'next/navigation'
-import { getLiveClass } from '@/services/liveClassService'
-import { useCurrentUser } from '@/hooks/useCurrentUser'
-import { isLegacyLiveClass } from '@/lib/live/providers'
+import { buildMetadata } from '@/lib/metadata'
+import { fetchLiveClass } from '@/lib/seo/publicApi'
+import { toDescription } from '@/lib/seo/site'
+import LiveClassEntry from './LiveClassEntry'
 
-type PageState = 'loading' | 'legacy' | 'not-found' | 'error'
+interface PageProps {
+  params: Promise<{ id: string }>
+}
 
-/**
- * /live/:id is a stable entry link (shared links, cards, purchases). It
- * forwards to the class lobby, which handles paying, registering and joining.
- * Classes created with the retired Mux/OBS streaming get a short notice.
- */
-export default function LiveClassPage() {
-  const params = useParams()
-  const router = useRouter()
-  const id = params.id as string
-  const { user, loading: userLoading } = useCurrentUser()
-  const [state, setState] = useState<PageState>('loading')
-  const [error, setError] = useState<string | null>(null)
+// Share previews (WhatsApp, X, LinkedIn) read these tags. noindex: live
+// classes are short-lived, so search engines get /classes instead.
+export async function generateMetadata({ params }: PageProps) {
+  const { id } = await params
+  const { liveClass } = await fetchLiveClass(id)
+  const isPublic = !!liveClass && liveClass.privacy !== 'private'
+  return buildMetadata({
+    title: isPublic ? liveClass.title : 'Live class',
+    description: isPublic
+      ? toDescription(liveClass.description) || `Join ${liveClass.title}, a live class on Hallos`
+      : 'Join a live class on Hallos',
+    thumbnail: isPublic ? liveClass.thumbnailUrl : null,
+    path: `/live/${id}`,
+    noIndex: true,
+  })
+}
 
-  useEffect(() => {
-    if (userLoading) return
-    if (!user) {
-      router.replace(`/signin?redirect=/live/${id}`)
-      return
-    }
-
-    let mounted = true
-    ;(async () => {
-      try {
-        const lc = await getLiveClass(id)
-        if (!mounted) return
-        if (isLegacyLiveClass(lc)) {
-          setState('legacy')
-          return
-        }
-        router.replace(`/live/join/${id}`)
-      } catch (e) {
-        if (!mounted) return
-        const msg = e instanceof Error ? e.message : 'Failed to load class'
-        if (/not found/i.test(msg)) {
-          setState('not-found')
-        } else {
-          setError(msg)
-          setState('error')
-        }
-      }
-    })()
-    return () => {
-      mounted = false
-    }
-  }, [id, user, userLoading, router])
-
-  const message =
-    state === 'legacy'
-      ? 'This class used a streaming method that is no longer supported.'
-      : state === 'not-found'
-        ? 'Class Not Found'
-        : state === 'error'
-          ? error
-          : !userLoading && !user
-            ? 'Redirecting to login...'
-            : 'Loading...'
-
-  return (
-    <div className="min-h-screen bg-background-darker flex flex-col items-center justify-center gap-4 px-4 text-center">
-      <div className="text-text-primary">{message}</div>
-      {(state === 'legacy' || state === 'not-found') && (
-        <Link href="/dashboard" className="text-sm text-primary hover:underline">
-          Back to dashboard
-        </Link>
-      )}
-    </div>
-  )
+export default async function LiveClassPage({ params }: PageProps) {
+  const { id } = await params
+  // Same cached request as generateMetadata. Only public fields of PUBLIC
+  // classes reach the client; a private class sends nothing.
+  const { liveClass } = await fetchLiveClass(id)
+  const preview = liveClass && liveClass.privacy !== 'private' ? liveClass : null
+  return <LiveClassEntry id={id} preview={preview} />
 }

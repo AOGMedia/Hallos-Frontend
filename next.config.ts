@@ -2,6 +2,10 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   images: {
+    // AVIF first (smallest), WebP as the fallback; browsers pick what they support.
+    formats: ["image/avif", "image/webp"],
+    // 75 is the default; 45 is for faint decorative textures (e.g. the event hero mesh).
+    qualities: [45, 75],
     remotePatterns: [
       {
         protocol: "https",

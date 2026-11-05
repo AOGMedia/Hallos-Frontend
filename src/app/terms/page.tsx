@@ -1,4 +1,12 @@
 import { LegalPageLayout, Section } from "@/components/legal/LegalPageLayout";
+import { buildMetadata } from "@/lib/metadata";
+
+export const metadata = buildMetadata({
+  title: "Terms of Use",
+  description:
+    "The terms that govern your use of Hallos — accounts, live classes, courses, payments, creator content and community guidelines.",
+  path: "/terms",
+});
 
 export default function TermsPage() {
   return (

@@ -15,7 +15,8 @@ export function TeamSection() {
 
         {/* Heading block */}
         <div className="flex flex-col gap-4 text-center px-4 sm:px-6 lg:px-10">
-          <h2
+          {/* Page heading of /investor-relations (the only page that renders this section) */}
+          <h1
             className="font-extrabold leading-tight"
             style={{ fontSize: 'clamp(36px, 5vw, 64px)', lineHeight: 'clamp(44px, 6vw, 80px)' }}
           >
@@ -23,7 +24,7 @@ export function TeamSection() {
             <span style={{ color: 'var(--primary)' }}>future </span>
             <span className="opacity-50">of creators is in </span>
             <span className="gradient-text">safe hands</span>
-          </h2>
+          </h1>
           {/* <p className="text-sm sm:text-base font-normal" style={{ color: '#888c94' }}>
             Meet our Team Members
           </p> */}

@@ -252,7 +252,7 @@ export function ScheduleTabsClient() {
               title={c.title}
               description={c.description || ""}
               instructor={c.creatorName || "Unknown Instructor"}
-              thumbnail={c.thumbnailUrl || "/images/video-placeholder.svg"}
+              thumbnail={c.thumbnailUrl || "/images/video-placeholder.webp"}
               avatar={c.creatorAvatarUrl || ""}
               price={
                 typeof c.price === "number" ? c.price : Number(c.price) || 0
@@ -311,7 +311,7 @@ export function ScheduleTabsClient() {
                   ? `${s.creator.firstname} ${s.creator.lastname}`
                   : "Unknown Instructor"
               }
-              thumbnail={s.thumbnailUrl || "/images/video-placeholder.svg"}
+              thumbnail={s.thumbnailUrl || "/images/video-placeholder.webp"}
               avatar={s.creator?.avatarUrl || ""}
               price={seriesPrice}
               currency={baseCurrency}
@@ -416,7 +416,7 @@ export function ScheduleTabsClient() {
                       ? `${s.creator.firstname} ${s.creator.lastname}`
                       : "Unknown Instructor"
                   }
-                  thumbnail={s.thumbnailUrl || "/images/video-placeholder.svg"}
+                  thumbnail={s.thumbnailUrl || "/images/video-placeholder.webp"}
                   avatar={s.creator?.avatarUrl || ""}
                   price={seriesPrice}
                   currency={baseCurrency}

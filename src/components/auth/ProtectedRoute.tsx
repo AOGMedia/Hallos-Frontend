@@ -6,7 +6,19 @@ import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/store/authStore";
 import { apiClient } from "@/lib/api/client";
 import type { User } from "@/types/auth";
+import { DashboardShellSkeleton } from "@/components/dashboard/DashboardShellSkeleton";
 type PersistApi = { persist?: { hasHydrated?: () => boolean } };
+
+/**
+ * Dashboard pages that now have a public equivalent. Older links (promos,
+ * WhatsApp shares, search results) point at the dashboard versions; visitors
+ * without a session go to the public page instead of a sign-in wall.
+ * Signed-in users never reach this — it only applies when auth fails.
+ */
+const PUBLIC_VERSIONS: Record<string, string> = {
+  '/dashboard/events': '/events',
+  '/dashboard/classes': '/classes',
+};
 
 // Helper to read cookie by name
 function getCookie(name: string): string | null {
@@ -96,6 +108,12 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
     }
 
     // ❌ AUTH FAILED — DO NOT UNLOCK UI
+    const publicVersion = PUBLIC_VERSIONS[window.location.pathname];
+    if (publicVersion) {
+      router.replace(publicVersion);
+      return;
+    }
+
     const currentPath = window.location.pathname + window.location.search;
     const redirectUrl = currentPath !== '/signin' && currentPath !== '/signup' ? `?redirect=${encodeURIComponent(currentPath)}` : '';
     // console.log('ProtectedRoute: Auth failed, redirecting from:', currentPath);
@@ -108,6 +126,12 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
     
     router.replace(`/signin${redirectUrl}`);
   } catch {
+    const publicVersion = PUBLIC_VERSIONS[window.location.pathname];
+    if (publicVersion) {
+      router.replace(publicVersion);
+      return;
+    }
+
     const currentPath = window.location.pathname + window.location.search;
     const redirectUrl = currentPath !== '/signin' && currentPath !== '/signup' ? `?redirect=${encodeURIComponent(currentPath)}` : '';
     console.log('ProtectedRoute: Auth check failed, redirecting from:', currentPath);
@@ -126,12 +150,10 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
     verify();
   }, [hasHydrated, isAuthenticated, router, setAuth, setCookieAuth]);
 
+  // Only the dashboard uses this guard, so show its frame while the session is
+  // checked (the same skeleton DashboardLayoutClient shows while loading the user).
   if (!hasHydrated || loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-text-primary">Loading...</div>
-      </div>
-    );
+    return <DashboardShellSkeleton />;
   }
 
   return <>{children}</>;

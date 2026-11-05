@@ -37,7 +37,7 @@ export function EventWhyJoinSection() {
     >
       {/* Background mesh decoration */}
       <Image
-        src="/images/event/bg-mesh-slots.svg"
+        src="/images/event/bg-mesh-slots.webp"
         alt=""
         aria-hidden="true"
         width={800}
@@ -151,7 +151,7 @@ export function EventWhyJoinSection() {
             >
               {/* Background decorative SVGs */}
               <Image
-              src="/images/event/bg-detail-left.svg"
+              src="/images/event/bg-detail-left.webp"
               alt=""
               aria-hidden="true"
               width={200}
@@ -159,7 +159,7 @@ export function EventWhyJoinSection() {
               className="absolute left-0 top-0 h-full w-auto pointer-events-none select-none"
             />
               <Image
-              src="/images/event/bg-detail-right.svg"
+              src="/images/event/bg-detail-right.webp"
               alt=""
               aria-hidden="true"
               width={200}

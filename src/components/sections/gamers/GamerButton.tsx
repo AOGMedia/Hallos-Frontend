@@ -30,6 +30,8 @@ export function GamerButton({ label, variant = 'outline', onClick, href }: Gamer
     return (
       <motion.a
         href={href}
+        // Signed-in destinations: crawlers can't use them, so don't send link equity there.
+        rel={href.startsWith('/dashboard') ? 'nofollow' : undefined}
         className={styles}
         whileHover={{ scale: 1.03 }}
         whileTap={{ scale: 0.97 }}

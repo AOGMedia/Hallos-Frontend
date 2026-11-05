@@ -90,7 +90,7 @@ export function AuthForm({ mode, onSubmit, isLoading, error }: AuthFormProps) {
 
   <Image
             src="/transparentlogo.svg"
-            alt="aahbibi Logo"
+            alt="Hallos logo"
             width={120}
             height={30}
             // fill

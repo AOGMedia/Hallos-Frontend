@@ -27,7 +27,7 @@ const COMPANY_LINKS: CompanyLink[] = [
   {
     label: "Events",
     description: "Live sessions, cohorts, and community meetups",
-    href: "/dashboard/events",
+    href: "/events",
     icon: CalendarDays,
   },
 ];
@@ -80,7 +80,7 @@ export function Header() {
         <Link href="/">
           <Image
             src="/transparentlogo.svg"
-            alt="Learning247"
+            alt="Hallos"
             width={120}
             height={30}
             className="flex-shrink-0 lg:w-[183px] lg:h-[45px]"
@@ -96,7 +96,7 @@ export function Header() {
             Home
           </Link>
           <Link
-            href="/dashboard/classes"
+            href="/classes"
             className="text-nav hover:text-accent-cyan transition-colors"
           >
             Classes
@@ -193,7 +193,7 @@ export function Header() {
                         </p>
                       </div>
                       <Link
-                        href="/dashboard/events"
+                        href="/events"
                         onClick={() => setCompanyOpen(false)}
                         className="inline-flex items-center gap-1 text-[13px] font-medium text-accent-cyan hover:underline mt-4"
                       >
@@ -298,7 +298,7 @@ export function Header() {
                 Home
               </Link>
               <Link
-                href="/dashboard/classes"
+                href="/classes"
                 onClick={() => setMobileMenuOpen(false)}
                 className="text-nav hover:text-accent-cyan transition-colors py-2"
               >

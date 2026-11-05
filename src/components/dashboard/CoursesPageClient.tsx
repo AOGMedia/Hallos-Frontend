@@ -10,11 +10,14 @@ import { Search, Loader2, ChevronLeft, ChevronRight, ArrowLeft } from "lucide-re
 import { useCurrencyPreference } from "@/hooks/useCurrencyPreference";
 import { useScrollArrows } from "@/hooks/useScrollArrows";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
+import { coursePath } from "@/lib/courses/catalog";
 
 interface Department {
   id: string;
   name: string;
   slug: string;
+  /** Returned by the API; lets us tell "request failed" from "really empty". */
+  courseCount?: number;
   description?: string;
   createdAt?: string;
   updatedAt?: string;
@@ -34,6 +37,10 @@ export const CoursesPageClient = memo(function CoursesPageClient({
   const [loading, setLoading] = useState(true);
   const [deptLoading, setDeptLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+  // The service turns request failures into empty lists, so a timeout used to
+  // look like "No courses found". These let us say so and offer a retry.
+  const [loadFailed, setLoadFailed] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
   const { user } = useCurrentUser();
   const { currency, isLoaded } = useCurrencyPreference();
   const scrollRestorationAttempted = useRef(false);
@@ -94,7 +101,19 @@ export const CoursesPageClient = memo(function CoursesPageClient({
       setDeptLoading(false);
     };
     fetchDepartments();
-  }, [initialDepartment]);
+  }, [initialDepartment, reloadKey]);
+
+  // The default department ("IT & Software") sits far along the scrolling row;
+  // bring the active chip into view so it's clear which one is selected.
+  // Scrolls the row only (not the page).
+  useEffect(() => {
+    if (deptLoading) return;
+    const row = scrollContainerRef.current;
+    const chip = row?.querySelector<HTMLElement>(`[data-dept-id="${activeDepartment}"]`);
+    if (!row || !chip) return;
+    row.scrollTo({ left: chip.offsetLeft - row.clientWidth / 2 + chip.clientWidth / 2, behavior: 'smooth' });
+    setTimeout(() => checkScroll(), 400);
+  }, [activeDepartment, deptLoading, scrollContainerRef, checkScroll]);
 
   // Check scroll arrows after departments are loaded
   useEffect(() => {
@@ -116,6 +135,7 @@ export const CoursesPageClient = memo(function CoursesPageClient({
 
     const fetchCourses = async () => {
       setLoading(true);
+      setLoadFailed(false);
       try {
         let results: Course[] = [];
         if (searchQuery.trim().length >= 2) {
@@ -143,8 +163,18 @@ export const CoursesPageClient = memo(function CoursesPageClient({
           );
         }
         setCourses(results);
+
+        // Empty where the API says there are courses = the request failed (the
+        // service swallows errors). Search results can legitimately be empty.
+        if (results.length === 0 && searchQuery.trim().length < 2) {
+          const activeDept = departments.find((d) => d.id === activeDepartment);
+          const expectedCourses =
+            activeDepartment === "all" ? departments.length > 0 : (activeDept?.courseCount ?? 0) > 0;
+          setLoadFailed(expectedCourses || departments.length === 0);
+        }
       } catch (err) {
         console.error(err);
+        setLoadFailed(true);
       } finally {
         setLoading(false);
       }
@@ -162,6 +192,7 @@ export const CoursesPageClient = memo(function CoursesPageClient({
     deptLoading,
     currency,
     isLoaded,
+    reloadKey,
   ]);
 
   // Scroll restoration logic
@@ -218,6 +249,12 @@ export const CoursesPageClient = memo(function CoursesPageClient({
 
   // Handle course card click with context preservation
   const handleCourseClick = (courseId: string) => {
+    // Visitors get the public course page; the dashboard version needs sign-in.
+    if (!user) {
+      router.push(coursePath(courseId));
+      return;
+    }
+
     const currentDept = departments.find(d => d.id === activeDepartment);
     const deptSlug = currentDept ? currentDept.name.toLowerCase().replace(/\s+/g, '-').replace(/&/g, '').replace(/[^a-z0-9-]/g, '') : 'all';
     
@@ -255,14 +292,15 @@ export const CoursesPageClient = memo(function CoursesPageClient({
             <div className="flex items-center gap-2.5">
               <Image
                 src="/navIcon.png"
-                alt="Special Courses"
+                alt=""
                 width={24}
                 height={24}
                 className="w-6 h-6"
               />
-              <h2 className="text-[#f2f2f2] text-lg sm:text-xl font-bold leading-5">
+              {/* The /course page's main heading (this component only renders there). */}
+              <h1 className="text-[#f2f2f2] text-lg sm:text-xl font-bold leading-5">
                 Self-Paced Courses
-              </h2>
+              </h1>
             </div>
           </div>
 
@@ -294,6 +332,7 @@ export const CoursesPageClient = memo(function CoursesPageClient({
             {/* Link to enrollments page */}
             <Link
               href="/dashboard/courses/enrollments"
+              rel="nofollow"
               className="text-[#6a57e5] text-sm font-medium hover:underline"
             >
               My Enrollments
@@ -333,6 +372,7 @@ export const CoursesPageClient = memo(function CoursesPageClient({
             <div ref={scrollContainerRef} className="flex gap-2 overflow-x-auto pb-4 mb-2 scrollbar-hide">
               {/* 'All' button */}
               <button
+                data-dept-id="all"
                 onClick={() => handleDepartmentChange("all")}
                 className={`flex-shrink-0 px-4 py-2 rounded-full text-sm font-medium transition-all ${
                   activeDepartment === "all" && !searchQuery
@@ -352,6 +392,7 @@ export const CoursesPageClient = memo(function CoursesPageClient({
                 : departments.map((dept) => (
                     <button
                       key={dept.id}
+                      data-dept-id={dept.id}
                       onClick={() => handleDepartmentChange(dept.id)}
                       className={`flex-shrink-0 px-4 py-2 rounded-full text-sm font-medium transition-all ${
                         activeDepartment === dept.id && !searchQuery
@@ -412,6 +453,16 @@ export const CoursesPageClient = memo(function CoursesPageClient({
                 </div>
               )
             ))}
+          </div>
+        ) : loadFailed ? (
+          <div className="text-center py-10 text-gray-400">
+            <p className="mb-3">Couldn&apos;t load courses right now.</p>
+            <button
+              onClick={() => setReloadKey((k) => k + 1)}
+              className="px-4 py-2 rounded-full text-sm font-medium bg-[#6a57e5] text-white hover:opacity-90 transition-opacity"
+            >
+              Try again
+            </button>
           </div>
         ) : (
           <div className="text-center py-10 text-gray-400">

@@ -29,7 +29,7 @@ export function EventHeroCard({
       <div className="absolute flex justify-center top-6 right-6 sm:top-10 sm:right-60 z-10 mx-auto">
         <Image
           src={backgroundImage}
-          alt="Learning247 Logo"
+          alt="Hallos logo"
           width={120}
           height={30}
           // fill

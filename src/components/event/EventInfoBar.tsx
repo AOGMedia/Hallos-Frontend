@@ -15,7 +15,7 @@ export function EventInfoBar({ date, time, location, className = '' }: EventInfo
     <div className={`event-info-bar ${className}`}>
       {/* Background decorative SVGs */}
       <Image
-        src="/images/event/bg-detail-left.svg"
+        src="/images/event/bg-detail-left.webp"
         alt=""
         aria-hidden="true"
         width={200}
@@ -23,7 +23,7 @@ export function EventInfoBar({ date, time, location, className = '' }: EventInfo
         className="absolute left-0 top-0 h-full w-auto pointer-events-none select-none"
       />
       <Image
-        src="/images/event/bg-detail-right.svg"
+        src="/images/event/bg-detail-right.webp"
         alt=""
         aria-hidden="true"
         width={200}

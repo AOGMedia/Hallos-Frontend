@@ -6,7 +6,7 @@ export const PROMO = {
 } as const;
 
 export async function handleShare() {
-  const eventUrl = 'https://www.hallos.net/dashboard/events';
+  const eventUrl = 'https://www.hallos.net/events';
   const shareData = {
     title: PROMO.headline,
     text: PROMO.bodyParts.join(''),

@@ -11,14 +11,24 @@ import { SessionList } from '@/components/series/details/SessionList';
 import { SeriesPricingCard } from '@/components/series/SeriesPricingCard';
 import { usePaymentStore } from '@/store/paymentStore';
 import { trackReferralClick } from '@/lib/api/referral';
+import { seriesIdFromParam } from '@/lib/live/seriesUrl';
 import { Share2, Check } from 'lucide-react';
 import { RegistrationSuccess } from '@/components/event/RegistrationSuccess';
 import type { Series } from '@/types/series';
+import type { PublicSeriesDetail } from '@/lib/seo/publicApi';
 
-export default function SeriesDetailPage() {
+/**
+ * `initialSeries` is the public (anonymous) copy fetched on the server, so the
+ * title, description and sessions render immediately and are crawlable. Anything
+ * that depends on the viewer — price/enrol buttons, access, registration — waits
+ * for the signed-in query, exactly as before, so nobody is ever shown a "buy"
+ * button for something they already own.
+ */
+export default function SeriesDetailPage({ initialSeries = null }: { initialSeries?: PublicSeriesDetail | null }) {
   const params = useParams();
   const router = useRouter();
-  const id = params.id as string;
+  // The route param may be "<title-slug>-<uuid>"; every API call uses the bare id.
+  const id = seriesIdFromParam(params.id as string);
   const { user, userId, loading: userLoading } = useCurrentUser();
 
   const { hasAccess: hasStoredAccess, markContentAsPurchased, cleanupGlobalPurchases } = usePaymentStore();
@@ -84,7 +94,11 @@ export default function SeriesDetailPage() {
     }
   }, [refetch, markContentAsPurchased, id, userId]);
 
-  const isLoading = isSeriesLoading || userLoading;
+  // What the page shows: the viewer's own data once loaded, the public copy until then.
+  const display = series ?? initialSeries;
+  // Viewer-specific controls (price, enrol, register) only once the signed-in data is in.
+  const viewerReady = !!series && !userLoading;
+  const isLoading = !display && (isSeriesLoading || userLoading);
 
   const isCreator = useMemo(() => {
     if (!userId || !series) return false;
@@ -177,7 +191,7 @@ export default function SeriesDetailPage() {
     );
   }
 
-  if (error) {
+  if (error && !display) {
     return (
       <div className="min-h-screen bg-background-darker flex items-center justify-center">
         <div className="text-center">
@@ -188,7 +202,7 @@ export default function SeriesDetailPage() {
     );
   }
 
-  if (!series) {
+  if (!display) {
     return (
       <div className="min-h-screen bg-background-darker flex items-center justify-center">
         <div className="text-center">
@@ -199,6 +213,32 @@ export default function SeriesDetailPage() {
     );
   }
 
+  const pricingCard = viewerReady && series ? (
+    <SeriesPricingCard
+      seriesId={id}
+      seriesTitle={series.title}
+      pricing={series.pricing}
+      isCreator={!!isCreator}
+      hasAccess={!!hasAccess}
+      isFree={isFree}
+      user={user}
+      onSuccess={handleEnrollmentSuccess}
+      onManage={handleManageSeries}
+      isRegistered={isRegistered}
+      registering={registering}
+      onRegister={handleRegister}
+      onCancelRegistration={handleCancelRegistration}
+    />
+  ) : error ? (
+    <div className="bg-background-card p-6 rounded-lg text-sm text-text-muted">
+      Couldn&apos;t load enrolment options.{' '}
+      <button onClick={() => refetch()} className="text-primary hover:underline">Try again</button>
+    </div>
+  ) : (
+    // Holds the card's place while the viewer's access and pricing load.
+    <div aria-busy="true" aria-label="Loading enrolment options" className="bg-background-card rounded-lg p-6 animate-pulse min-h-[220px]" />
+  );
+
   return (
     <div className="min-h-screen bg-background-darker">
       <div className="container mx-auto px-4 py-6 lg:py-8 max-w-7xl">
@@ -207,16 +247,16 @@ export default function SeriesDetailPage() {
           <div className="flex flex-col gap-6">
             {/* Thumbnail */}
             <div className="relative w-full -mx-4 lg:mx-0 lg:rounded-xl overflow-hidden aspect-video" style={{ width: 'calc(100% + 2rem)' }}>
-              {series.thumbnailUrl ? (
+              {display.thumbnailUrl ? (
                 <>
-                  <Image src={series.thumbnailUrl} alt="" fill className="object-cover scale-110 blur-sm brightness-100" aria-hidden="true" />
-                  <Image src={series.thumbnailUrl} alt={series.title} fill className="object-contain relative z-10" />
+                  <Image src={display.thumbnailUrl} alt="" fill className="object-cover scale-110 blur-sm brightness-100" aria-hidden="true" />
+                  <Image src={display.thumbnailUrl} alt={display.title} fill className="object-contain relative z-10" />
                 </>
               ) : (
                 <div className="flex items-center justify-center min-h-[160px] text-text-muted">No thumbnail available</div>
               )}
               <div className="absolute top-3 left-3 bg-primary px-2 py-1 rounded-md text-white text-xs font-semibold">SERIES</div>
-              {(series.stats?.liveSessions || 0) > 0 && (
+              {(display.stats?.liveSessions || 0) > 0 && (
                 <div className="absolute top-3 right-3 bg-accent-red px-2 py-1 rounded-md text-white text-xs font-semibold flex items-center gap-1.5">
                   <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
                   LIVE NOW
@@ -225,101 +265,71 @@ export default function SeriesDetailPage() {
             </div>
 
             {/* Pricing Card - mobile */}
-            <div className="lg:hidden">
-              <SeriesPricingCard
-                seriesId={id}
-                seriesTitle={series.title}
-                pricing={series.pricing}
-                isCreator={!!isCreator}
-                hasAccess={!!hasAccess}
-                isFree={isFree}
-                user={user}
-                onSuccess={handleEnrollmentSuccess}
-                onManage={handleManageSeries}
-                isRegistered={isRegistered}
-                registering={registering}
-                onRegister={handleRegister}
-                onCancelRegistration={handleCancelRegistration}
-              />
-            </div>
+            <div className="lg:hidden">{pricingCard}</div>
 
             {/* Title and Description */}
             <div className="flex flex-col gap-4">
-              <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-text-primary">{series.title}</h1>
+              <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-text-primary">{display.title}</h1>
 
               <div className="flex items-center gap-3">
                 <div className="w-9 h-9 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0">
-                  <span className="text-primary font-semibold text-sm">{series.creator?.firstname?.charAt(0) || 'U'}</span>
+                  <span className="text-primary font-semibold text-sm">{display.creator?.firstname?.charAt(0) || 'U'}</span>
                 </div>
                 <div>
                   <p className="text-text-primary font-medium text-sm">
-                    {series.creator ? `${series.creator.firstname} ${series.creator.lastname}` : 'Unknown Creator'}
+                    {display.creator ? `${display.creator.firstname} ${display.creator.lastname}` : 'Unknown Creator'}
                   </p>
                   <p className="text-text-muted text-xs">Series Creator</p>
                 </div>
               </div>
 
-              {series.description && (
+              {display.description && (
                 <div className="bg-background-card p-4 rounded-lg">
                   <h2 className="text-base lg:text-lg font-semibold text-text-primary mb-2">About this Series</h2>
-                  <p className="text-text-muted text-sm whitespace-pre-wrap">{series.description}</p>
+                  <p className="text-text-muted text-sm whitespace-pre-wrap">{display.description}</p>
                 </div>
               )}
 
               <div className="bg-background-card p-4 rounded-lg grid grid-cols-3 gap-2">
                 <div>
                   <p className="text-text-muted text-xs uppercase tracking-wider mb-1">Total Sessions</p>
-                  <p className="text-lg font-bold text-text-primary">{series.stats?.totalSessions || 0}</p>
+                  <p className="text-lg font-bold text-text-primary">{display.stats?.totalSessions || 0}</p>
                 </div>
                 <div>
                   <p className="text-text-muted text-xs uppercase tracking-wider mb-1">Completed</p>
-                  <p className="text-lg font-bold text-text-primary">{series.stats?.completedSessions || 0}</p>
+                  <p className="text-lg font-bold text-text-primary">{display.stats?.completedSessions || 0}</p>
                 </div>
                 <div>
                   <p className="text-text-muted text-xs uppercase tracking-wider mb-1">Duration</p>
-                  <p className="text-lg font-bold text-text-primary">{series.recurrencePattern.duration} min</p>
+                  <p className="text-lg font-bold text-text-primary">{display.recurrencePattern?.duration ?? 0} min</p>
                 </div>
               </div>
 
               <div className="bg-background-card p-4 lg:p-6 rounded-lg">
                 <h2 className="text-base lg:text-lg font-semibold text-text-primary mb-4">Sessions</h2>
-                <SessionList seriesId={id} isCreator={!!isCreator} showActions={!!hasAccess} streamingProvider={series.streamingProvider} />
+                <SessionList seriesId={id} isCreator={!!isCreator} showActions={!!hasAccess} streamingProvider={display.streamingProvider} />
               </div>
             </div>
           </div>
 
           {/* Right Column - desktop */}
           <div className="hidden lg:flex flex-col gap-4 lg:min-w-[320px]">
-            <SeriesPricingCard
-              seriesId={id}
-              seriesTitle={series.title}
-              pricing={series.pricing}
-              isCreator={!!isCreator}
-              hasAccess={!!hasAccess}
-              isFree={isFree}
-              user={user}
-              onSuccess={handleEnrollmentSuccess}
-              onManage={handleManageSeries}
-              isRegistered={isRegistered}
-              registering={registering}
-              onRegister={handleRegister}
-              onCancelRegistration={handleCancelRegistration}
-            />
+            {pricingCard}
 
             <div className="bg-background-card p-6 rounded-lg">
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
                   <span className="text-text-muted">Status</span>
-                  <span className="text-text-primary capitalize">{series.status}</span>
+                  <span className="text-text-primary capitalize">{display.status}</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-text-muted">Privacy</span>
-                  <span className="text-text-primary capitalize">{series.privacy}</span>
+                  <span className="text-text-primary capitalize">{display.privacy}</span>
                 </div>
-                {series.stats?.nextSession && (
+                {display.stats?.nextSession && (
                   <div className="flex justify-between text-sm">
                     <span className="text-text-muted">Next Session</span>
-                    <span className="text-text-primary">Session {series.stats.nextSession.sessionNumber}</span>
+                    <span className="text-text-primary">Session {display.stats.nextSession.sessionNumber}</span>
                   </div>
                 )}
               </div>

@@ -19,7 +19,7 @@ export function EventLimitedSlotsSection({ onRegister }: EventLimitedSlotsSectio
     >
       {/* Background mesh decoration */}
       <Image
-        src="/images/event/bg-mesh-slots.svg"
+        src="/images/event/bg-mesh-slots.webp"
         alt=""
         aria-hidden="true"
         width={1000}
@@ -58,7 +58,7 @@ export function EventLimitedSlotsSection({ onRegister }: EventLimitedSlotsSectio
           {/* Event info card */}
           <div className="event-info-bar flex-1 min-h-[192px]">
             <Image
-              src="/images/event/bg-detail-left.svg"
+              src="/images/event/bg-detail-left.webp"
               alt=""
               aria-hidden="true"
               width={200}
@@ -66,7 +66,7 @@ export function EventLimitedSlotsSection({ onRegister }: EventLimitedSlotsSectio
               className="absolute left-0 top-0 h-full w-auto pointer-events-none select-none"
             />
             <Image
-              src="/images/event/bg-detail-right.svg"
+              src="/images/event/bg-detail-right.webp"
               alt=""
               aria-hidden="true"
               width={200}
@@ -141,7 +141,7 @@ export function EventLimitedSlotsSection({ onRegister }: EventLimitedSlotsSectio
             {/* COUNTDOWN header */}
             <div className="event-countdown-header relative overflow-hidden py-3 px-6">
               <Image
-                src="/images/event/bg-mesh-countdown-header.svg"
+                src="/images/event/bg-mesh-countdown-header.webp"
                 alt=""
                 aria-hidden="true"
                 fill
@@ -164,7 +164,7 @@ export function EventLimitedSlotsSection({ onRegister }: EventLimitedSlotsSectio
             {/* Countdown numbers */}
             <div className="event-countdown-body relative p-5">
               <Image
-                src="/images/event/bg-mesh-countdown.svg"
+                src="/images/event/bg-mesh-countdown.webp"
                 alt=""
                 aria-hidden="true"
                 fill

@@ -141,7 +141,7 @@ export function ForgotPasswordForm() {
       <div className='mb-12'>
         <Image
           src="/transparentLogo.svg"
-          alt="Learning247 Logo"
+          alt="Hallos logo"
           width={120}
           height={30}
           className="w-[100px] sm:w-[162px] h-auto"
