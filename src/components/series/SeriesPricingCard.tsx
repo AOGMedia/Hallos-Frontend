@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/Button";
 import { initializePayment } from "@/lib/api/payments";
@@ -65,6 +65,13 @@ export function SeriesPricingCard({
   const [paymentError, setPaymentError] = useState<string | undefined>();
   const [couponResult, setCouponResult] = useState<CouponResult | null>(null);
   const checkoutWindowRef = useRef<Window | null>(null);
+  // A code typed before signing in comes back as ?coupon=CODE — put it back in the box.
+  const [returnedCoupon, setReturnedCoupon] = useState("");
+
+  useEffect(() => {
+    const code = new URLSearchParams(window.location.search).get("coupon");
+    if (code) setReturnedCoupon(code.toUpperCase());
+  }, []);
 
   // Removed auto-pre-fill of 'SAVEBIG10' from localStorage promo ref
 
@@ -136,6 +143,12 @@ export function SeriesPricingCard({
     setIsInitializing(true);
     const idempotencyKey = uuidv4();
 
+    // Open the checkout tab now, while the tap still counts: browsers block tabs
+    // opened after waiting for the server (always on iPhone and in-app browsers,
+    // and on Chrome when the server is slow). The link is filled in below.
+    // Not needed when a coupon already makes it free (no checkout page).
+    checkoutWindowRef.current = isFreeWithCoupon ? null : window.open("", "_blank");
+
     try {
       const referralCode = typeof window !== "undefined" ? localStorage.getItem("hallos-promo-ref") : null;
       const res = await initializePayment(
@@ -155,12 +168,12 @@ export function SeriesPricingCard({
       );
 
       if (res.success && (res.freeAccess || res.couponApplied || !res.data)) {
+        checkoutWindowRef.current?.close();
         markContentAsPurchased("live_series", seriesId, user?.id?.toString());
         onSuccess();
         return;
       }
 
-      checkoutWindowRef.current = window.open("", "_blank");
       const url = res.data?.authorizationUrl ?? res.data?.checkoutUrl;
 
       if (!url) {
@@ -169,10 +182,11 @@ export function SeriesPricingCard({
         return;
       }
 
-      if (checkoutWindowRef.current) {
+      if (checkoutWindowRef.current && !checkoutWindowRef.current.closed) {
         checkoutWindowRef.current.location.assign(url);
       } else {
-        window.open(url, "_blank", "noopener,noreferrer");
+        // The browser didn't allow a new tab: go to checkout in this tab instead of doing nothing.
+        window.location.assign(url);
       }
     } catch (err: unknown) {
       let msg = "Failed to initialize payment.";
@@ -193,7 +207,7 @@ export function SeriesPricingCard({
     } finally {
       setIsInitializing(false);
     }
-  }, [hasAccess, user, seriesId, selectedCurrency, couponCode, router, onSuccess, markContentAsPurchased]);
+  }, [hasAccess, user, seriesId, selectedCurrency, couponCode, isFreeWithCoupon, router, onSuccess, markContentAsPurchased]);
 
   return (
     <div className="bg-background-card p-6 rounded-lg">
@@ -345,6 +359,9 @@ export function SeriesPricingCard({
                 onApply={handleCouponApply}
                 onRemove={handleCouponRemove}
                 disabled={isInitializing}
+                initialValue={returnedCoupon}
+                isAuthenticated={!!user}
+                loginReturnPath={`/series/${seriesId}`}
               />
             )}
           </>
