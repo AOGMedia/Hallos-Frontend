@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { couponService } from '@/services/couponService';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 
@@ -14,6 +15,14 @@ interface CouponInputProps {
   onRemove: () => void;
   disabled?: boolean;
   initialValue?: string;
+  /** Logged-in state from the parent, when it already knows it (skips relying on this component's own lookup). */
+  isAuthenticated?: boolean;
+  /**
+   * Opt-in: page to come back to after signing in. When set, a logged-out user
+   * who taps Apply is sent to sign in, then returned here with their code kept
+   * (as ?coupon=CODE). When not set, they only see the "Please log in" message.
+   */
+  loginReturnPath?: string;
 }
 
 export function CouponInput({
@@ -23,12 +32,16 @@ export function CouponInput({
   onRemove,
   disabled,
   initialValue = '',
+  isAuthenticated,
+  loginReturnPath,
 }: CouponInputProps) {
+  const router = useRouter();
   const [localCoupon, setLocalCoupon] = useState(initialValue);
   const [isApplyingCoupon, setIsApplyingCoupon] = useState(false);
   const [isApplied, setIsApplied] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { user } = useCurrentUser();
+  const loggedIn = isAuthenticated ?? !!user;
 
   useEffect(() => {
     if (initialValue && !isApplied) {
@@ -38,7 +51,13 @@ export function CouponInput({
 
   const handleApplyCoupon = async () => {
     if (!localCoupon) return;
-    if (!user) {
+    if (!loggedIn) {
+      if (loginReturnPath) {
+        setError('Please log in to apply coupon. Redirecting you to log in...');
+        const returnTo = `${loginReturnPath}?coupon=${encodeURIComponent(localCoupon)}`;
+        router.push(`/signin?redirect=${encodeURIComponent(returnTo)}`);
+        return;
+      }
       setError('Please log in to apply coupon.');
       return;
     }
