@@ -376,9 +376,13 @@ export default function ZegoJoinPage() {
 
   if (userLoading || loading) {
     return (
-      <div className="min-h-screen bg-background-darker flex items-center justify-center text-text-primary">
-        Loading...
-      </div>
+      <>
+        {/* Kept here too, so a reload of the class never makes the prompt flash. */}
+        {goLiveDialog}
+        <div className="min-h-screen bg-background-darker flex items-center justify-center text-text-primary">
+          Loading...
+        </div>
+      </>
     );
   }
 

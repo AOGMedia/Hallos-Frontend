@@ -29,6 +29,8 @@ interface GetStreamRoomClientProps {
   isOwner: boolean;
   title: string;
   backHref: string;
+  /** When the class/session is scheduled (shown before joining). */
+  schedule?: { start?: string | null; end?: string | null };
 }
 
 function FullScreenStatus({ title, body, spinner }: { title: string; body?: string; spinner?: boolean }) {
@@ -45,7 +47,7 @@ function FullScreenStatus({ title, body, spinner }: { title: string; body?: stri
  * Gets GetStream credentials for the room (the creator starts the class,
  * everyone else joins it), then renders the room.
  */
-export function GetStreamRoomClient({ target, isOwner, title, backHref }: GetStreamRoomClientProps) {
+export function GetStreamRoomClient({ target, isOwner, title, backHref, schedule }: GetStreamRoomClientProps) {
   const router = useRouter();
   const { kind, id } = target;
   // Where someone without access is sent: the class lobby, or the series page.
@@ -131,6 +133,7 @@ export function GetStreamRoomClient({ target, isOwner, title, backHref }: GetStr
       credentials={credentials}
       title={credentials.liveClass?.title || title}
       backHref={backHref}
+      schedule={schedule}
     />
   );
 }

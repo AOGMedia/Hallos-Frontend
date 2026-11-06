@@ -51,7 +51,7 @@ import { GiftSheet } from "./GiftSheet";
 import { ParticipantsPanel } from "./ParticipantsPanel";
 import { SettingsSheet } from "./SettingsSheet";
 import { EffectsHost, type BlurLevel, type EffectsControls } from "./EffectsHost";
-import { PreJoinScreen } from "./PreJoinScreen";
+import { PreJoinScreen, type ClassSchedule } from "./PreJoinScreen";
 import { RoomToasts } from "./RoomToasts";
 import { TileActionsContext, type TileActionsValue } from "./TileActions";
 import { CaptionsOverlay, ChatPreview, EmptyRoomCard, RaisedHandsChip } from "./RoomOverlays";
@@ -66,6 +66,8 @@ export interface GetStreamRoomProps {
   title: string;
   /** Where "back"/"leave" goes (dashboard or the community the class came from). */
   backHref: string;
+  /** When the class is scheduled, shown on the pre-join screen. */
+  schedule?: ClassSchedule;
 }
 
 /** Call role the backend gives hosts (creator and co-hosts) — see getStreamService. */
@@ -81,7 +83,8 @@ type Phase = "prejoin" | "joining" | "joined";
  * GetStream SDK is only downloaded by people opening a GetStream class.
  * Starts with a Meet-style pre-join screen; joins when you're ready.
  */
-export default function GetStreamRoom({ target, credentials, title, backHref }: GetStreamRoomProps) {
+export default function GetStreamRoom({ target, credentials, title, backHref, schedule }: GetStreamRoomProps) {
+  const router = useRouter();
   const [client, setClient] = useState<StreamVideoClient>();
   const [call, setCall] = useState<Call>();
   const [phase, setPhase] = useState<Phase>("prejoin");
@@ -153,7 +156,17 @@ export default function GetStreamRoom({ target, credentials, title, backHref }: 
           {phase === "joined" ? (
             <RoomLayout target={target} credentials={credentials} title={title} backHref={backHref} />
           ) : (
-            <PreJoin title={title} name={userName || "You"} isHost={isHost} joining={phase === "joining"} error={joinError} onJoin={join} />
+            <PreJoin
+              title={title}
+              name={userName || ""}
+              isHost={isHost}
+              userType={credentials.userType}
+              schedule={schedule}
+              joining={phase === "joining"}
+              error={joinError}
+              onJoin={join}
+              onBack={() => router.push(backHref)}
+            />
           )}
         </StreamTheme>
       </StreamCall>
@@ -161,10 +174,14 @@ export default function GetStreamRoom({ target, credentials, title, backHref }: 
   );
 }
 
-/** Pre-join with your own profile picture (from your GetStream user). */
+/**
+ * Pre-join with your own name and profile picture. Joining sends your name;
+ * starting a class doesn't, so the creator's comes from their GetStream user
+ * (the server registers it when the class starts).
+ */
 function PreJoin(props: Omit<React.ComponentProps<typeof PreJoinScreen>, "image">) {
   const me = useConnectedUser();
-  return <PreJoinScreen {...props} image={me?.image ?? null} />;
+  return <PreJoinScreen {...props} name={props.name || me?.name || "You"} image={me?.image ?? null} />;
 }
 
 function RoomLoading({ label }: { label: string }) {
@@ -271,7 +288,8 @@ function RoomLayout({ target, credentials, title, backHref }: GetStreamRoomProps
 
   const isCreator = credentials.userType === "creator";
   const selfId = credentials.userId;
-  const selfName = credentials.userName || "You";
+  // Starting a class doesn't send a name; the creator's GetStream user has it.
+  const selfName = credentials.userName || me?.name || "You";
   const creatorId = isCreator ? selfId : createdBy?.id;
 
   // Creator and co-hosts are call members with the host role.

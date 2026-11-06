@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { GoLiveDialog } from "./GoLiveDialog";
 
 export interface GoLiveRequest {
@@ -21,7 +21,13 @@ export function useGoLiveConfirm() {
   const [request, setRequest] = useState<GoLiveRequest | null>(null);
   const [starting, setStarting] = useState(false);
 
+  const isOpen = useRef(false);
+
+  // Asking again while the prompt is already up keeps the open one as it is
+  // (a page reloading its data mustn't restart or flash the prompt).
   const ask = useCallback((next: GoLiveRequest) => {
+    if (isOpen.current) return;
+    isOpen.current = true;
     setStarting(false);
     setRequest(next);
   }, []);
@@ -29,6 +35,7 @@ export function useGoLiveConfirm() {
   const cancel = useCallback(() => {
     if (starting) return;
     const onCancel = request?.onCancel;
+    isOpen.current = false;
     setRequest(null);
     onCancel?.();
   }, [request, starting]);
