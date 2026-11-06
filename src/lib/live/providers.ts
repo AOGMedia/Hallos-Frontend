@@ -70,3 +70,15 @@ export function liveClassHref(cls: LinkableLiveClass, currentUserId?: string | n
   const isOwner = currentUserId != null && cls.userId != null && String(cls.userId) === String(currentUserId);
   return isOwner ? `/live/${id}/room` : `/live/join/${id}`;
 }
+
+/**
+ * True when following liveClassHref would start the class: it's the viewer's
+ * own class and it isn't live yet. Callers ask "Ready to go live?" first.
+ */
+export function opensRoomToStart(
+  cls: LinkableLiveClass & { status?: string | null },
+  currentUserId?: string | number | null
+): boolean {
+  if (isLegacyLiveClass(cls) || cls.status === "live") return false;
+  return currentUserId != null && cls.userId != null && String(cls.userId) === String(currentUserId);
+}

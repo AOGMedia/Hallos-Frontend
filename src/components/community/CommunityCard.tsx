@@ -34,15 +34,23 @@ export const CommunityCard = memo(({ community, onNavigate }: CommunityCardProps
 
   return (
     <div
-      className={`overflow-hidden flex flex-col transition-all ${isPendingCommunity ? 'opacity-80' : 'cursor-pointer hover:opacity-90'}`}
+      // The whole card opens the community (not just its button) — what a tap on a phone expects.
+      onClick={isPendingCommunity ? undefined : () => onNavigate(community)}
+      className={`overflow-hidden flex flex-col transition-all ${isPendingCommunity ? 'opacity-80' : 'cursor-pointer hover:opacity-90 active:scale-[0.99] touch-manipulation'}`}
       style={{
         borderRadius: '15px',
         border: isPendingCommunity ? '0.94px solid rgba(217,200,15,0.25)' : '0.94px solid rgba(234,234,234,0.10)',
         background: 'rgba(242,242,242,0.04)',
       }}
     >
-      <div className="relative w-full" style={{ height: '192px' }}>
-        <Image src={community.thumbnailUrl || community.thumbnail || '/placeholder-community.jpg'} alt={community.name || 'Community'} fill className="object-cover" />
+      <div className="relative w-full h-[168px] sm:h-[192px]">
+        <Image
+          src={community.thumbnailUrl || community.thumbnail || '/placeholder-community.jpg'}
+          alt={community.name || 'Community'}
+          fill
+          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+          className="object-cover"
+        />
         {/* Pending badge overlay */}
         {isPendingCommunity && (
           <div className="absolute top-3 left-3 flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold"
@@ -88,8 +96,11 @@ export const CommunityCard = memo(({ community, onNavigate }: CommunityCardProps
           </div>
         ) : (
           <button
-            onClick={() => onNavigate(community)}
-            className="w-full py-3 text-base font-semibold text-white transition-all hover:opacity-80"
+            onClick={(e) => {
+              e.stopPropagation(); // the card handles taps too — navigate once
+              onNavigate(community);
+            }}
+            className="w-full h-12 text-[15px] font-semibold text-white transition-all hover:opacity-80 active:scale-[0.98] touch-manipulation sm:h-auto sm:py-3 sm:text-base"
             style={{ background: '#6a57e5', borderRadius: '100px' }}
           >
             {(() => {

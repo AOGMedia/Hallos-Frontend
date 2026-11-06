@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { ShareFeedbackModal } from './ShareFeedbackModal';
+import { QuickActionsButton } from './QuickActionsButton';
 import { feedbackService } from '@/services/feedbackService';
 
 export default function GlobalFeedback() {
@@ -77,20 +78,9 @@ export default function GlobalFeedback() {
 
   return (
     <>
-      <button
-        onClick={() => setIsOpen(true)}
-        className="fixed bottom-6 right-6 z-40 bg-primary hover:bg-[#333333] text-white p-3 rounded-full shadow-[0_4px_20px_rgba(0,0,0,0.5)] backdrop-blur-md border border-white/10 transition-all hover:scale-105 active:scale-95 group flex items-center gap-2 hover:border-primary/80"
-        aria-label="Share Feedback"
-      >
-        <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
-        </svg>
-        <span className="w-0 overflow-hidden group-hover:w-20 whitespace-nowrap transition-all duration-300 ease-in-out text-sm font-medium">
-          Feedback
-        </span>
-      </button>
+      <QuickActionsButton onFeedback={() => setIsOpen(true)} />
 
-      <ShareFeedbackModal 
+      <ShareFeedbackModal
         isOpen={isOpen} 
         onClose={handleClose} 
         onSuccess={handleSuccess}

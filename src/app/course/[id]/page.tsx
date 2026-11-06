@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { ArrowRight, Award, Clock, MonitorPlay } from 'lucide-react';
 import { Footer } from '@/components/sections/Footer';
+import { MemberBackBar } from '@/components/nav/MemberBackBar';
 import { GeneratedCourseThumbnail } from '@/components/course/GeneratedCourseThumbnail';
 import { Breadcrumbs } from '@/components/course/public/Breadcrumbs';
 import { JsonLd } from '@/components/seo/JsonLd';
@@ -79,6 +80,7 @@ export default async function PublicCoursePage({ params }: PageProps) {
 
   return (
     <>
+      <MemberBackBar />
       <article className="min-h-screen px-4 sm:px-6 lg:px-10 pt-28 pb-20 max-w-[1100px] mx-auto">
         <JsonLd data={breadcrumbSchema(crumbs)} />
         <Breadcrumbs items={crumbs} />

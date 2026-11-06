@@ -31,6 +31,8 @@ interface CourseCardProps {
   
   // Optional navigation override
   href?: string;
+  /** Runs before following the link; call e.preventDefault() to stop it (e.g. to confirm first). */
+  onNavigate?: (e: React.MouseEvent<HTMLAnchorElement>) => void;
 }
 
 export function CourseCard({
@@ -50,6 +52,7 @@ export function CourseCard({
   scheduledFor,
   isPurchased = false,
   href,
+  onNavigate,
   isLandingPage = false,
 }: CourseCardProps) {
   // Format price with currency
@@ -197,7 +200,7 @@ export function CourseCard({
 
     if (isClickable && navigationUrl) {
       return (
-        <Link href={navigationUrl} className="block h-full">
+        <Link href={navigationUrl} onClick={onNavigate} className="block h-full">
           {purchasedCardContent}
         </Link>
       );
@@ -287,7 +290,7 @@ export function CourseCard({
 
   if (isClickable && navigationUrl) {
     return (
-      <Link href={navigationUrl} className="block">
+      <Link href={navigationUrl} onClick={onNavigate} className="block">
         {cardContent}
       </Link>
     );

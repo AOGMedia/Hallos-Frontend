@@ -14,6 +14,7 @@ import { usePaymentStore } from "@/store/paymentStore";
 import { Share2, Check, ArrowLeft } from "lucide-react";
 import { checkAccess, initializePayment } from "@/lib/api/payments";
 import LobbyDetailsCard from "./components/LobbyDetailsCard";
+import { useGoLiveConfirm } from "@/features/live/go-live";
 import type { CouponValidationData } from "@/types/coupon";
 
 /** How often the lobby re-checks a class that isn't live yet. */
@@ -47,6 +48,8 @@ export default function ZegoJoinPage() {
   const [couponResult, setCouponResult] = useState<CouponResult | null>(null);
   const [isRegistered, setIsRegistered] = useState(false);
   const [registering, setRegistering] = useState(false);
+  // The owner landing here would start their class: confirm first.
+  const { ask: askGoLive, dialog: goLiveDialog } = useGoLiveConfirm();
 
   async function handleShare() {
     try {
@@ -125,7 +128,18 @@ export default function ZegoJoinPage() {
           : isGetStream
             ? `/live/${id}/room`
             : `/live/host-zego/${id}`;
-        router.replace(hostRoute);
+        // Already live: straight back in. Otherwise opening the host page
+        // starts it, so ask first ("Not now" goes back to the schedule).
+        if (lc.status === "live") {
+          router.replace(hostRoute);
+        } else {
+          askGoLive({
+            title: lc.title,
+            kind: isSeries ? "session" : "class",
+            onGoLive: () => router.replace(hostRoute),
+            onCancel: () => router.push("/dashboard/schedule"),
+          });
+        }
         return;
       }
     } catch (e: unknown) {
@@ -154,7 +168,7 @@ export default function ZegoJoinPage() {
     } finally {
       setLoading(false);
     }
-  }, [id, user, router, isSeries]);
+  }, [id, user, router, isSeries, askGoLive]);
 
   useEffect(() => {
     if (id && !userLoading) loadClass();
@@ -362,9 +376,13 @@ export default function ZegoJoinPage() {
 
   if (userLoading || loading) {
     return (
-      <div className="min-h-screen bg-background-darker flex items-center justify-center text-text-primary">
-        Loading...
-      </div>
+      <>
+        {/* Kept here too, so a reload of the class never makes the prompt flash. */}
+        {goLiveDialog}
+        <div className="min-h-screen bg-background-darker flex items-center justify-center text-text-primary">
+          Loading...
+        </div>
+      </>
     );
   }
 
@@ -391,6 +409,7 @@ export default function ZegoJoinPage() {
 
   return (
     <>
+      {goLiveDialog}
       <div className="min-h-screen bg-background-darker text-text-primary py-12 px-4">
         <div className="max-w-4xl mx-auto flex flex-col gap-6">
           <div className="flex items-center justify-between">

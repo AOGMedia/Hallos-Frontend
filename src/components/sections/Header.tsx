@@ -6,18 +6,12 @@ import { Button } from "@/components/ui/Button";
 import SearchIcon from "@/components/icons/SearchIcon";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { useCurrentUser } from "@/hooks/useCurrentUser";
+import { useSignedIn } from "@/hooks/useSignedIn";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, X, ChevronDown, Newspaper, CalendarDays, ArrowUpRight } from "lucide-react";
+import { Menu, X, ChevronDown, Newspaper, CalendarDays } from "lucide-react";
+import { NAV_PANEL_CARD, NavMegaPanel, type NavPanelFeature, type NavPanelLink } from "@/components/nav/NavMegaPanel";
 
-interface CompanyLink {
-  label: string;
-  description: string;
-  href: string;
-  icon: React.ElementType;
-}
-
-const COMPANY_LINKS: CompanyLink[] = [
+const COMPANY_LINKS: NavPanelLink[] = [
   {
     label: "Blog",
     description: "Stories, product updates, and ideas from the team",
@@ -32,12 +26,20 @@ const COMPANY_LINKS: CompanyLink[] = [
   },
 ];
 
+const COMPANY_FEATURE: NavPanelFeature = {
+  eyebrow: "Featured",
+  title: "Live sessions run every week",
+  text: "See what's coming up next.",
+  href: "/events",
+  cta: "View events",
+};
+
 export function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [companyOpen, setCompanyOpen] = useState(false);
   const pathname = usePathname();
-  const { user } = useCurrentUser();
+  const signedIn = useSignedIn();
 
   const searchContainerRef = useRef<HTMLDivElement>(null);
   const companyContainerRef = useRef<HTMLDivElement>(null);
@@ -70,9 +72,13 @@ export function Header() {
   const isAuthRoute = pathname==="/signin" || pathname==="/signup" || pathname.startsWith("/dashboard")|| pathname.startsWith("/live")|| pathname.startsWith("/not-found")|| pathname.startsWith("/payments")|| pathname.startsWith("/series")|| pathname.startsWith("/series/")||pathname.startsWith("/admin")||pathname.startsWith("/campaign/")||pathname.startsWith("/email-portal");
 
   const isCourseRoute = pathname.startsWith("/course");
+  const isBlogRoute = pathname.startsWith("/blog");
+  const isEventsRoute = pathname.startsWith("/events");
 
-  if (isAuthRoute || (isCourseRoute && user)) {
-    return null; // Don't render the header on dashboard, auth, and course pages (for logged-in users)
+  // Signed-in people get the app's own navigation (a Back bar on these pages),
+  // not the visitor menu with Log In / Sign Up.
+  if (isAuthRoute || ((isCourseRoute || isBlogRoute || isEventsRoute) && signedIn)) {
+    return null;
   }
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-[#000000] backdrop-blur-lg border-b border-border">
@@ -132,75 +138,14 @@ export function Header() {
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: -8, scale: 0.98 }}
                   transition={{ duration: 0.18, ease: "easeOut" }}
-                  className="absolute top-full right-0 mt-4 w-[min(420px,calc(100vw-2.5rem))] rounded-2xl border border-border bg-[#0d0f18]/95 backdrop-blur-2xl shadow-[0_24px_60px_-12px_rgba(0,0,0,0.7)] overflow-hidden"
+                  className={`absolute top-full right-0 mt-4 w-[min(420px,calc(100vw-2.5rem))] ${NAV_PANEL_CARD}`}
                 >
-                  {/* Ambient accent glow — signals "crafted" rather than a plain list */}
-                  <div
-                    aria-hidden
-                    className="pointer-events-none absolute -top-24 -right-16 w-56 h-56 rounded-full opacity-25 blur-3xl"
-                    style={{ background: "radial-gradient(circle, var(--primary), transparent 70%)" }}
+                  <NavMegaPanel
+                    heading="Company"
+                    links={COMPANY_LINKS}
+                    featured={COMPANY_FEATURE}
+                    onNavigate={() => setCompanyOpen(false)}
                   />
-
-                  <div className="relative flex flex-col min-[380px]:grid min-[380px]:grid-cols-[1fr_auto]">
-                    {/* Link column */}
-                    <div className="p-3">
-                      <p className="px-3 pt-1 pb-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-text-secondary/70">
-                        Company
-                      </p>
-                      <div className="flex flex-col gap-1">
-                        {COMPANY_LINKS.map((item) => {
-                          const Icon = item.icon;
-                          return (
-                            <Link
-                              key={item.href}
-                              href={item.href}
-                              onClick={() => setCompanyOpen(false)}
-                              className="group flex items-start gap-3.5 rounded-xl px-3 py-3 transition-colors hover:bg-white/[0.06]"
-                            >
-                              <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-white/5 border border-border text-accent-cyan transition-colors group-hover:bg-accent-cyan/10 group-hover:border-accent-cyan/30">
-                                <Icon size={18} />
-                              </span>
-                              <span className="min-w-0 pt-0.5">
-                                <span className="flex items-center gap-1.5 text-[15px] font-semibold text-text-primary">
-                                  {item.label}
-                                  <ArrowUpRight
-                                    size={14}
-                                    className="text-text-secondary/50 opacity-0 -translate-x-0.5 transition-all group-hover:opacity-100 group-hover:translate-x-0"
-                                  />
-                                </span>
-                                <span className="block text-[13px] leading-snug text-text-secondary/80 mt-0.5">
-                                  {item.description}
-                                </span>
-                              </span>
-                            </Link>
-                          );
-                        })}
-                      </div>
-                    </div>
-
-                    {/* Highlight rail — gives the wider surface real content
-                        instead of stretching two links across empty space */}
-                    <div className="min-[380px]:w-[168px] border-t min-[380px]:border-t-0 min-[380px]:border-l border-border bg-white/[0.02] p-4 flex flex-col justify-between">
-                      <div>
-                        <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-text-secondary/70 mb-2">
-                          Featured
-                        </p>
-                        <p className="text-[13px] leading-snug text-text-primary font-medium">
-                          Live sessions run every week
-                        </p>
-                        <p className="text-[12px] leading-snug text-text-secondary/70 mt-1">
-                          See what&apos;s coming up next.
-                        </p>
-                      </div>
-                      <Link
-                        href="/events"
-                        onClick={() => setCompanyOpen(false)}
-                        className="inline-flex items-center gap-1 text-[13px] font-medium text-accent-cyan hover:underline mt-4"
-                      >
-                        View events <ArrowUpRight size={13} />
-                      </Link>
-                    </div>
-                  </div>
                 </motion.div>
               )}
             </AnimatePresence>

@@ -3,7 +3,9 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { listLiveClassesExternal, type LiveClass } from '@/services/liveClassService';
-import { liveClassHref } from '@/lib/live/providers';
+import { useRouter } from 'next/navigation';
+import { liveClassHref, opensRoomToStart } from '@/lib/live/providers';
+import { useGoLiveConfirm } from '@/features/live/go-live';
 import { getMyPurchases } from '@/lib/api/payments';
 import { transformPurchaseToCardProps, groupPurchasesByType, PurchaseDisplayItem } from '@/utils/purchaseTransformers';
 import { CourseCard } from './CourseCard';
@@ -22,6 +24,9 @@ interface ClassTabContentProps {
 
 export function ClassTabContent({ activeTab }: ClassTabContentProps) {
   const { userId } = useCurrentUser();
+  const router = useRouter();
+  // Opening your own class's room starts it, so ask first.
+  const goLive = useGoLiveConfirm();
 
 
   const { data: liveClassesData, isLoading: isLiveClassesLoading, error: liveClassesError } = useQuery({
@@ -178,6 +183,14 @@ export function ClassTabContent({ activeTab }: ClassTabContentProps) {
                 scheduledFor={scheduledFor}
                 isPurchased={false}
                 href={href}
+                onNavigate={
+                  opensRoomToStart(c, userId)
+                    ? (e) => {
+                        e.preventDefault();
+                        goLive.ask({ title: c.title, onGoLive: () => router.push(href) });
+                      }
+                    : undefined
+                }
               />
             </div>
           );
@@ -228,6 +241,7 @@ export function ClassTabContent({ activeTab }: ClassTabContentProps) {
         {Object.keys(groupedClasses).length === 0 && (
           <div className="text-text-primary/70">No live classes yet,ensure you are logged in  and network connectivity is stable.</div>
         )}
+        {goLive.dialog}
       </div>
     );
   }

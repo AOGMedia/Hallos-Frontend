@@ -49,6 +49,7 @@ export default function RoomClient({ liveClassId }: RoomClientProps) {
     isOwner: boolean;
     title: string;
     backHref: string;
+    schedule?: { start?: string | null; end?: string | null };
   } | null>(null);
 
   useEffect(() => {
@@ -75,6 +76,7 @@ export default function RoomClient({ liveClassId }: RoomClientProps) {
                 isOwner: !!isOwner,
                 title: `${session.series.title} - Session ${session.sessionNumber}`,
                 backHref: fromCommunityId ? `/dashboard/community/${fromCommunityId}` : `/series/${session.seriesId}`,
+                schedule: { start: session.scheduledStartTime, end: session.scheduledEndTime },
               });
             }
             return;
@@ -172,6 +174,7 @@ export default function RoomClient({ liveClassId }: RoomClientProps) {
                 isOwner: !!isOwner,
                 title: liveClass.title,
                 backHref: fromCommunityId ? `/dashboard/community/${fromCommunityId}` : "/dashboard",
+                schedule: { start: liveClass.startTime, end: liveClass.endTime },
               });
             }
             return;

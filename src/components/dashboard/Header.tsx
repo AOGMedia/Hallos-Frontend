@@ -8,12 +8,12 @@ import {
   Bell,
   X,
   Search as SearchIconLucide,
-  Calendar,
   Upload,
   // Download, Video, PenSquare
 } from "lucide-react";
 import LiveDotIcon from "@/components/icons/LiveDotIcon";
 import CreateDropdown from "../ui/CreateDropdown";
+import { MoreMenu } from "@/components/nav/MoreMenu";
 import { usePathname, useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { getMyVideos } from "@/lib/api/videos";
@@ -155,15 +155,8 @@ export function Header({ stats, onToggleSidebar }: HeaderProps) {
                   <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-[#f5313b] rounded-full" />
                 </button>
 
-                {/* Events Button */}
-                <button
-                  onClick={() => router.push("/dashboard/events")}
-                  className="flex flex-col items-center p-2 text-[#888c94] hover:text-text-primary transition-colors"
-                  aria-label="Events"
-                >
-                  <Calendar size={24} />
-                  <span className="text-xs mt-1">Events</span>
-                </button>
+                {/* More: events, blog… (bottom sheet on phones) */}
+                <MoreMenu variant="mobile" />
 
               </div>
             </>
@@ -236,7 +229,7 @@ export function Header({ stats, onToggleSidebar }: HeaderProps) {
                 />
                 <div className="flex flex-col items-start">
                   <span className="text-stat-large">{stats.liveSchedules}</span>
-                  <span className="text-stat-small">Live schedules</span>
+                  <span className="text-stat-small">Live classes</span>
                 </div>
               </button>
 
@@ -252,16 +245,8 @@ export function Header({ stats, onToggleSidebar }: HeaderProps) {
                 <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-[#f5313b] rounded-full" />
               </button>
 
-              {/* Events Button */}
-              <button
-                onClick={() => router.push("/dashboard/events")}
-                className="p-2 text-[#888c94] hover:text-text-primary transition-colors flex flex-col items-start"
-                aria-label="Events"
-              >
-                <Calendar size={20} />
-                Events
-                <span className="bg-primary flex w-10 h-1 mx-auto rounded-full"/>
-              </button>
+              {/* More: events, blog… */}
+              <MoreMenu variant="desktop" />
             </div>
 
             {/* Create Btn */}

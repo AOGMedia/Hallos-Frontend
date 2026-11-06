@@ -1,6 +1,10 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+'use client';
+
+import { useRouter } from 'next/navigation';
 import { CourseCard } from '@/components/course/CourseCard';
-import { liveClassHref } from '@/lib/live/providers';
+import { liveClassHref, opensRoomToStart } from '@/lib/live/providers';
+import { useGoLiveConfirm } from '@/features/live/go-live';
 
 interface LiveClassesTabProps {
   communityContent: any[];
@@ -8,11 +12,15 @@ interface LiveClassesTabProps {
 }
 
 export function LiveClassesTab({ communityContent, currentUserId }: LiveClassesTabProps) {
+  const router = useRouter();
+  // Opening your own class's room starts it, so ask first.
+  const goLive = useGoLiveConfirm();
   const classes = communityContent.filter(
     (c: any) => c.contentType === 'class' || c.contentType === 'live_class'
   );
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      {goLive.dialog}
       {classes.length === 0 ? (
         <p className="col-span-full text-center text-text-gray py-12">No live classes available.</p>
       ) : (
@@ -28,6 +36,7 @@ export function LiveClassesTab({ communityContent, currentUserId }: LiveClassesT
             ? data.startTime
             : undefined;
 
+          const href = liveClassHref(data, currentUserId);
           return (
             <CourseCard
               key={c.id}
@@ -45,7 +54,15 @@ export function LiveClassesTab({ communityContent, currentUserId }: LiveClassesT
               reviews={data.reviews || '0'}
               isLive={Boolean(isLiveNow)}
               scheduledFor={scheduledFor}
-              href={liveClassHref(data, currentUserId)}
+              href={href}
+              onNavigate={
+                opensRoomToStart(data, currentUserId)
+                  ? (e) => {
+                      e.preventDefault();
+                      goLive.ask({ title: data.title || 'your class', onGoLive: () => router.push(href) });
+                    }
+                  : undefined
+              }
             />
           );
         })

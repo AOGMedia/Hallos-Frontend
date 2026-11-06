@@ -67,6 +67,22 @@ export function playGift() {
   tone(1319, 0.18, 0.35, 0.06, "triangle");
 }
 
+/**
+ * "Test speaker" before joining: a clear, friendly three-note chime, played on
+ * the chosen speaker where the browser allows picking one (Chrome/Edge).
+ */
+export async function playSpeakerTest(deviceId?: string) {
+  if (throttled("speaker-test", 900)) return;
+  const ac = audio() as (AudioContext & { setSinkId?: (id: string) => Promise<void> }) | null;
+  if (!ac) return;
+  if (deviceId !== undefined && ac.setSinkId) {
+    await ac.setSinkId(deviceId === "default" ? "" : deviceId).catch(() => {});
+  }
+  tone(523, 0, 0.22, 0.09);
+  tone(659, 0.15, 0.22, 0.09);
+  tone(784, 0.3, 0.45, 0.09);
+}
+
 /** Someone joined (small classes only — the caller decides). */
 export function playJoin() {
   if (throttled("join", 2500)) return;

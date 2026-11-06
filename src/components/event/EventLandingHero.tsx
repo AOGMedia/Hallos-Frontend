@@ -5,11 +5,12 @@ import { UserPlus, ArrowRight } from "lucide-react";
 import { EventInfoBar } from "./EventInfoBar";
 import Link from "next/link";
 import { FEATURED_EVENT } from "@/data/featuredEvent";
+import { MemberBackBar } from "@/components/nav/MemberBackBar";
 
 interface EventLandingHeroProps {
   onRegister?: () => void;
   isLandingPage?: boolean;
-  /** Public /events page: room for the site header, and no "Dashboard" pill for visitors. */
+  /** Public /events page: room for the site header (visitors) or the Back bar (signed in). */
   isPublicPage?: boolean;
 }
 
@@ -21,19 +22,12 @@ export function EventLandingHero({
   const EventTitle = isLandingPage ? "h2" : "h1";
 
   return (
-    <section aria-label="Event hero" className={isLandingPage || isPublicPage ? "pt-20" : ""}>
+    // Room at the top for the site header (visitors) or the Back bar (signed in).
+    <section aria-label="Event hero" className={isLandingPage || isPublicPage ? "pt-20" : "pt-16"}>
+      {/* Signed-in people get a Back bar instead of the visitor menu (not on the homepage banner). */}
+      {!isLandingPage && <MemberBackBar />}
       {/* Colorful gradient hero background */}
       <div className="event-hero-colorful-bg relative w-full overflow-hidden">
-        <div className={isLandingPage || isPublicPage ? "hidden" : "flex"}>
-          <Link
-            href="/dashboard"
-            rel="nofollow"
-            aria-label="go to dashboard"
-            className="inline-block bg-primary text-xs text-white px-2 py-1 mt-1 rounded-full border-2 shadow-2xl border-secondary font-bold animate-pulse hover:opacity-90 transition-opacity"
-          >
-            Dashboard
-          </Link>
-        </div>
 
         {/* Mesh/grid texture overlay */}
         <Image
