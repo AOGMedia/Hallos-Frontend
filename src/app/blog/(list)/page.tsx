@@ -4,6 +4,7 @@ import { buildMetadata } from '@/lib/metadata';
 import { fetchBlogPage } from '@/lib/seo/publicApi';
 import { blogListSchema, breadcrumbSchema } from '@/lib/seo/jsonLd';
 import { JsonLd } from '@/components/seo/JsonLd';
+import { MemberBackBar } from '@/components/nav/MemberBackBar';
 
 /**
  * Server-rendered so crawlers get the full post list in the HTML. Pagination
@@ -50,6 +51,7 @@ export default async function BlogPage({ searchParams }: PageProps) {
 
   return (
     <div className="min-h-screen px-4 sm:px-6 lg:px-10 pt-28 pb-20 max-w-[1100px] mx-auto">
+      <MemberBackBar />
       {posts.length > 0 && (
         <JsonLd
           data={[

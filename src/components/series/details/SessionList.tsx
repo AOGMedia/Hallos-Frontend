@@ -12,6 +12,7 @@ import { Film } from 'lucide-react';
 import type { Session } from '@/types/series';
 import type { LiveProvider } from '@/lib/live/providers';
 import { endGetStreamLive, recordingsHref } from '@/features/live/getstream';
+import { useGoLiveConfirm } from '@/features/live/go-live';
 
 interface SessionListProps {
   seriesId: string;
@@ -53,10 +54,10 @@ const SessionCard = ({
     return session.status === 'scheduled';
   }, [session.status]);
 
-  const handleStartSession = async () => {
+  const openHostRoom = () => {
     setIsStarting(true);
     setError(null);
-    
+
     try {
       // Don't start the session here - let HostClient do it
       // Just redirect with the series flag
@@ -69,6 +70,11 @@ const SessionCard = ({
       setIsStarting(false);
     }
   };
+
+  // Opening the room starts the session for everyone, so ask first.
+  const goLive = useGoLiveConfirm();
+  const handleStartSession = () =>
+    goLive.ask({ title: `Session ${session.sessionNumber}`, kind: 'session', onGoLive: openHostRoom });
 
   // Handle join session (for students)
   const handleJoinSession = async () => {
@@ -191,6 +197,7 @@ const SessionCard = ({
         isLive ? 'border-red-500/50 shadow-lg shadow-red-500/10' : 'border-border/10'
       }`}
     >
+      {goLive.dialog}
       {/* Header with session number and status */}
       <div className="flex items-center justify-between mb-3">
         <span className="text-text-muted text-sm font-medium">

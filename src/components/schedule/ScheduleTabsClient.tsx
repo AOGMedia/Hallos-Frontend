@@ -17,7 +17,8 @@ import {
   type LiveClass,
 } from "@/services/liveClassService";
 import { deleteLiveClass } from "@/lib/api/live";
-import { liveClassHref } from "@/lib/live/providers";
+import { liveClassHref, opensRoomToStart } from "@/lib/live/providers";
+import { useGoLiveConfirm } from "@/features/live/go-live";
 import { ConfirmationModal } from "@/components/ui/ConfirmationModal";
 import { AlertModal } from "@/components/ui/AlertModal";
 import { listSeries } from "@/services/seriesService";
@@ -38,6 +39,8 @@ export function ScheduleTabsClient() {
   const queryClient = useQueryClient();
   const { userId } = useCurrentUser();
   const { currency } = useCurrencyPreference();
+  // Opening your own class's room starts it, so ask first.
+  const goLive = useGoLiveConfirm();
 
   const [deleteClassId, setDeleteClassId] = useState<string | null>(null);
   const [alertMessage, setAlertMessage] = useState<string | null>(null);
@@ -278,6 +281,14 @@ export function ScheduleTabsClient() {
               scheduledFor={scheduledFor}
               isPurchased={false}
               href={href}
+              onNavigate={
+                opensRoomToStart(c, userId)
+                  ? (e) => {
+                      e.preventDefault();
+                      goLive.ask({ title: c.title, onGoLive: () => router.push(href) });
+                    }
+                  : undefined
+              }
             />
           </div>
         );
@@ -393,7 +404,11 @@ export function ScheduleTabsClient() {
                     console.log('View earnings for class:', c.id);
                   }}
                   onStartClass={() => {
-                    window.location.href = href;
+                    const open = () => {
+                      window.location.href = href;
+                    };
+                    if (opensRoomToStart(c, userId)) goLive.ask({ title: c.title, onGoLive: open });
+                    else open();
                   }}
                   onDelete={!isLiveNow ? () => handleDeleteLiveClass(c.id) : undefined}
                 />
@@ -466,7 +481,7 @@ export function ScheduleTabsClient() {
             <ArrowLeft className="w-5 h-5" />
           </button>
           <h1 className="text-xl sm:text-2xl font-bold text-white">
-            Live Schedules
+            Live Classes
           </h1>
           <LiveDotIcon
             width={18}
@@ -530,11 +545,12 @@ export function ScheduleTabsClient() {
         onCancel={() => setDeleteClassId(null)}
         isDestructive={true}
       />
-      <AlertModal 
+      <AlertModal
         isOpen={!!alertMessage}
         onClose={() => setAlertMessage(null)}
         message={alertMessage || ""}
       />
+      {goLive.dialog}
     </div>
   );
 }

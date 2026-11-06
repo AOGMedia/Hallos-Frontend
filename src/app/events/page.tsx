@@ -5,8 +5,10 @@ import { breadcrumbSchema, eventSchema } from '@/lib/seo/jsonLd';
 import { FEATURED_EVENT, isFeaturedEventUpcoming } from '@/data/featuredEvent';
 
 /**
- * Public events page — the same content as /dashboard/events, reachable
- * without signing in (registration itself doesn't need an account).
+ * Public events page — the same content as /dashboard/events, readable
+ * without signing in. Anyone can fill the application; paying needs an
+ * account, so a visitor who submits signs in and comes back to the form with
+ * their answers kept.
  */
 
 // Re-render daily so the event schema drops off on its own once the event ends.

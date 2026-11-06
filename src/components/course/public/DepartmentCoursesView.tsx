@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Footer } from '@/components/sections/Footer';
+import { MemberBackBar } from '@/components/nav/MemberBackBar';
 import { JsonLd } from '@/components/seo/JsonLd';
 import { breadcrumbSchema } from '@/lib/seo/jsonLd';
 import { departmentPagePath, type DepartmentPageData } from '@/lib/courses/departmentPage';
@@ -20,6 +21,7 @@ export function DepartmentCoursesView({ data }: { data: DepartmentPageData }) {
 
   return (
     <>
+      <MemberBackBar />
       <div className="min-h-screen px-4 sm:px-6 lg:px-10 pt-28 pb-20 max-w-[1200px] mx-auto">
         <JsonLd data={breadcrumbSchema(crumbs)} />
         <Breadcrumbs items={crumbs} />

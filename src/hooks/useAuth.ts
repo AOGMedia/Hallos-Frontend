@@ -64,13 +64,15 @@ export function useAuth() {
       const redirectTo = urlParams.get('redirect') || localStorage.getItem('auth_redirect');
     
       
+      // replace, not push: the sign-up page shouldn't stay in history, or
+      // "Back" on the next page would land on it again.
       if (redirectTo) {
         // console.log('Redirecting to:', redirectTo);
         localStorage.removeItem('auth_redirect'); // Clean up
-        router.push(redirectTo);
+        router.replace(redirectTo);
       } else {
         // console.log('No redirect parameter, going to dashboard');
-        router.push('/dashboard');
+        router.replace('/dashboard');
       }
     },
   });
@@ -113,19 +115,21 @@ export function useAuth() {
       const urlParams = new URLSearchParams(window.location.search);
       const redirectTo = urlParams.get('redirect') || localStorage.getItem('auth_redirect');
       
+      // replace, not push: the sign-in page shouldn't stay in history, or
+      // "Back" on the next page would land on it again.
       if (redirectTo) {
         // console.log('Redirecting to:', redirectTo);
         localStorage.removeItem('auth_redirect');
-        router.push(redirectTo);
+        router.replace(redirectTo);
       } else {
         console.log('No redirect parameter, checking role. User role:');
         // Check role and redirect accordingly
         if (u && u.role === 'admin') {
             // console.log('👑 User is admin');
-            router.push('/admin');
+            router.replace('/admin');
         } else {
             // console.log('👤 User is not admin (role:', u?.role, '), redirecting to /dashboard');
-            router.push('/dashboard');
+            router.replace('/dashboard');
         }
       }
     },

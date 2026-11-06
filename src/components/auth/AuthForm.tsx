@@ -248,19 +248,20 @@ export function AuthForm({ mode, onSubmit, isLoading, error }: AuthFormProps) {
               {isLoading ? 'Please wait...' : 'Continue'}
             </Button>
 
-            {/* Toggle Auth Mode */}
+            {/* Toggle Auth Mode — replace, so switching between log in and sign
+                up never leaves an auth page behind in history for "Back" */}
             <p className="text-xs text-center text-[#EAEAEA]">
               {isSignup ? (
                 <>
                   Already have an account?{' '}
-                  <Link href={`/signin${redirectQuery}`} className="text-primary hover:underline font-medium">
+                  <Link href={`/signin${redirectQuery}`} replace className="text-primary hover:underline font-medium">
                     Log In
                   </Link>
                 </>
               ) : (
                 <>
                   Don&apos;t have an account?{' '}
-                  <Link href={`/signup${redirectQuery}`} className="text-primary hover:underline font-medium">
+                  <Link href={`/signup${redirectQuery}`} replace className="text-primary hover:underline font-medium">
                     Sign Up
                   </Link>
                 </>

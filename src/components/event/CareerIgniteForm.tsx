@@ -1,12 +1,20 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { PhoneInput } from "react-international-phone";
 import "react-international-phone/style.css";
 import "@/styles/phone-input-override.css";
 import { Button } from "@/components/ui/Button";
 import { careerIgniteFormFields } from "./careerIgniteMockData";
 import { useCampaignRegistration } from "@/hooks/useCampaignRegistration";
+import { useSignedIn } from "@/hooks/useSignedIn";
+import {
+  clearRegistrationDraft,
+  loadRegistrationDraft,
+  saveRegistrationDraft,
+  signInToContinueHref,
+} from "./registrationDraft";
 import axios from "axios";
 
 export function CareerIgniteForm() {
@@ -14,13 +22,23 @@ export function CareerIgniteForm() {
   const UI_LOCK_ENABLED = false; // Set to true to enable the UI lock
 
   const { mutateAsync: registerCampaign, isPending } = useCampaignRegistration();
+  const router = useRouter();
+  const signedIn = useSignedIn();
 
-  const [formData, setFormDataLocal] = useState<Record<string, string>>({});
-  const [otherValues, setOtherValues] = useState<Record<string, string>>({});
-  const [otherModeActive, setOtherModeActive] = useState<Record<string, boolean>>({});
+  // Answers saved before signing in come back here (the form only mounts in
+  // the browser, inside the registration modal).
+  const [draft] = useState(() => (typeof window === "undefined" ? null : loadRegistrationDraft()));
+  const [formData, setFormDataLocal] = useState<Record<string, string>>(draft?.formData ?? {});
+  const [otherValues, setOtherValues] = useState<Record<string, string>>(draft?.otherValues ?? {});
+  const [otherModeActive, setOtherModeActive] = useState<Record<string, boolean>>(draft?.otherModeActive ?? {});
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [agreedToTerms, setAgreedToTerms] = useState(false);
+  const [agreedToTerms, setAgreedToTerms] = useState(draft?.agreedToTerms ?? false);
+
+  // Restored once; not kept around after that.
+  useEffect(() => {
+    if (draft) clearRegistrationDraft();
+  }, [draft]);
 
   const validateEmail = (email: string): boolean =>
     /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
@@ -105,6 +123,16 @@ export function CareerIgniteForm() {
       return;
     }
 
+    // Paying needs an account: keep their answers, sign in, then come back
+    // to this form with everything filled in.
+    if (!signedIn) {
+      saveRegistrationDraft({ formData, otherValues, otherModeActive, agreedToTerms });
+      // replace: after signing in they return to this page, so it shouldn't
+      // also be left behind in history (Back would show it twice).
+      router.replace(signInToContinueHref());
+      return;
+    }
+
     setIsSubmitting(true);
 
     const getValue = (name: string) => {
@@ -123,16 +151,29 @@ export function CareerIgniteForm() {
       whatToLearn: formData.reasonForJoining,
     };
 
+    // Open the payment tab now, while the tap still counts: browsers block tabs
+    // opened after waiting for the server (always on iPhone and in-app
+    // browsers). The Paystack link is filled in once it arrives.
+    const paymentTab = window.open("", "_blank");
+
     try {
       const response = await registerCampaign(payload);
       // Redirect to Paystack in new window
       if (response.authorizationUrl) {
-        window.open(response.authorizationUrl, '_blank', 'noopener,noreferrer');
+        if (paymentTab && !paymentTab.closed) {
+          paymentTab.opener = null;
+          paymentTab.location.assign(response.authorizationUrl);
+        } else {
+          // The browser didn't allow a new tab: pay in this tab instead of doing nothing.
+          window.location.assign(response.authorizationUrl);
+        }
         // No success state here as per request; waiting for payment verification
       } else {
+        paymentTab?.close();
         alert("Registration initiated, but payment URL was not found.");
       }
     } catch (err: unknown) {
+      paymentTab?.close();
       if (axios.isAxiosError(err)) {
         alert(err.response?.data?.message || "Registration failed");
       } else {
@@ -259,6 +300,12 @@ export function CareerIgniteForm() {
         </div>
         <span className="font-medium">Kindly fill the form below</span>
       </div>
+
+      {draft && (
+        <div className="mb-8 rounded-xl border border-primary/30 bg-primary/10 px-4 py-3 text-sm text-[#eaeaea]">
+          Welcome back — your details are saved. Review them and tap submit to continue to payment.
+        </div>
+      )}
 
       <form onSubmit={handleSubmit} className="space-y-12">
         {/* Personal Information Section */}

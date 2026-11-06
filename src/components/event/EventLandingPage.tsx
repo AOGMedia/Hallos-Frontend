@@ -1,6 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { usePathname, useRouter } from 'next/navigation';
+import { useSignedIn } from '@/hooks/useSignedIn';
+import { REGISTER_PARAM } from './registrationDraft';
 import { EventLandingHero } from './EventLandingHero';
 import { EventVideoJourney } from './video-journey/EventVideoJourney';
 import { EventAboutSection } from './EventAboutSection';
@@ -20,9 +23,26 @@ interface EventLandingPageProps {
 
 export function EventLandingPage({ isPublicPage = false }: EventLandingPageProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const router = useRouter();
+  const pathname = usePathname();
+  const signedIn = useSignedIn();
 
+  // Anyone can open and fill the form; signing in is asked for at submit,
+  // since paying needs an account (see CareerIgniteForm).
   const handleRegister = () => setIsModalOpen(true);
   const handleCloseModal = () => setIsModalOpen(false);
+
+  // Back from sign-in: reopen the form (their answers are restored by the
+  // form itself), then tidy the address.
+  useEffect(() => {
+    if (!signedIn) return;
+    const params = new URLSearchParams(window.location.search);
+    if (params.get(REGISTER_PARAM) !== '1') return;
+    setIsModalOpen(true);
+    params.delete(REGISTER_PARAM);
+    const rest = params.toString();
+    router.replace(rest ? `${pathname}?${rest}` : pathname, { scroll: false });
+  }, [signedIn, pathname, router]);
 
   return (
     <main className="w-full overflow-x-hidden">

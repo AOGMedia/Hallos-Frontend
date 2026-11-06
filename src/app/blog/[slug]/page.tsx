@@ -6,6 +6,7 @@ import { buildMetadata } from '@/lib/metadata';
 import { fetchBlogPost } from '@/lib/seo/publicApi';
 import { blogPostingSchema, breadcrumbSchema } from '@/lib/seo/jsonLd';
 import { JsonLd } from '@/components/seo/JsonLd';
+import { MemberBackBar } from '@/components/nav/MemberBackBar';
 
 /**
  * Server-rendered so the article itself is in the HTML crawlers index.
@@ -77,6 +78,7 @@ export default async function BlogPostPage({ params }: PageProps) {
 
   return (
     <article className="min-h-screen px-4 sm:px-6 lg:px-10 pt-28 pb-20 max-w-[760px] mx-auto">
+      <MemberBackBar />
       <JsonLd
         data={[
           blogPostingSchema(post, path),
