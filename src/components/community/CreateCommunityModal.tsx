@@ -83,36 +83,49 @@ export function CreateCommunityModal() {
     <AnimatePresence>
       {isCreateModalOpen && (
         <motion.div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75"
+          // Phones: a sheet docked to the bottom edge. Larger screens: centred.
+          className="fixed inset-0 z-50 flex items-end justify-center bg-black/75 sm:items-center sm:p-4"
           initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
         >
           <motion.div
-            className="relative w-full max-w-[700px] max-h-[95vh] flex flex-col gap-6 sm:gap-10"
-            initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
-            exit={{ scale: 0.95, opacity: 0 }} transition={{ type: 'spring', stiffness: 280, damping: 26 }}
+            className="relative flex max-h-[92dvh] w-full flex-col overflow-hidden rounded-t-[28px] bg-background-dark sm:max-h-[95vh] sm:max-w-[700px] sm:gap-10 sm:overflow-visible sm:rounded-none sm:bg-transparent"
+            initial={{ y: 40, opacity: 0 }} animate={{ y: 0, opacity: 1 }}
+            exit={{ y: 40, opacity: 0 }} transition={{ duration: 0.22, ease: [0.2, 0.8, 0.2, 1] }}
           >
-            <div className="flex items-center gap-2.5 px-2 shrink-0">
+            {/* Grab handle (phones) */}
+            <div className="flex shrink-0 justify-center pt-2.5 sm:hidden">
+              <span className="h-1 w-10 rounded-full bg-white/20" />
+            </div>
+
+            <div className="flex shrink-0 items-center gap-2.5 px-4 pb-2 pt-2 sm:p-0 sm:px-2">
               {createStep > 1 && !createMutation.isPending && (
-                <button onClick={prevCreateStep} className="text-text-gray hover:text-text-primary transition-colors">
+                <button onClick={prevCreateStep} aria-label="Back"
+                  className="flex h-10 w-10 items-center justify-center rounded-full text-text-gray transition-colors hover:text-text-primary active:bg-white/10 touch-manipulation sm:h-auto sm:w-auto">
                   <ArrowLeft size={19} />
                 </button>
               )}
-              <h2 className="text-2xl sm:text-3xl font-medium text-text-primary/60">Create community</h2>
+              <h2 className="flex-1 text-lg font-semibold text-text-primary sm:text-3xl sm:font-medium sm:text-text-primary/60">Create community</h2>
+              {!createMutation.isPending && (
+                <button onClick={handleClose} aria-label="Close"
+                  className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-text-primary active:scale-90 touch-manipulation sm:hidden">
+                  <X size={18} />
+                </button>
+              )}
             </div>
 
-            <div className="rounded-[32px] sm:rounded-[40px] bg-background-dark p-6 sm:p-10 flex flex-col gap-8 sm:gap-10 overflow-y-auto">
-              {/* Progress */}
-              <div className="flex items-center gap-4">
+            <div className="flex flex-col gap-6 overflow-y-auto px-5 pb-[max(env(safe-area-inset-bottom),20px)] pt-2 sm:gap-10 sm:rounded-[40px] sm:bg-background-dark sm:p-10">
+              {/* Progress — compact on phones so all three steps fit */}
+              <div className="flex items-center gap-2 sm:gap-4">
                 {STEP_LABELS.map((label, idx) => {
                   const step = idx + 1;
                   const isActive = step <= createStep;
                   return (
-                    <div key={label} className="flex items-center gap-4">
-                      <span className={`text-sm font-medium px-4 py-1 rounded-full transition-colors ${step === createStep ? 'bg-white/20 text-text-primary' : isActive ? 'text-text-primary' : 'text-text-gray'}`}>
+                    <div key={label} className="flex items-center gap-2 sm:gap-4">
+                      <span className={`whitespace-nowrap text-xs sm:text-sm font-medium px-3 sm:px-4 py-1 rounded-full transition-colors ${step === createStep ? 'bg-white/20 text-text-primary' : isActive ? 'text-text-primary' : 'text-text-gray'}`}>
                         {label}
                       </span>
                       {idx < STEP_LABELS.length - 1 && (
-                        <div className="border-t-2 border-dashed border-text-gray/40 w-8" />
+                        <div className="border-t-2 border-dashed border-text-gray/40 w-3 sm:w-8" />
                       )}
                     </div>
                   );
@@ -128,7 +141,7 @@ export function CreateCommunityModal() {
                       <div className="flex flex-col gap-2">
                         <label className="text-sm font-medium text-text-primary">Community name *</label>
                         <input value={name} onChange={e => setName(e.target.value)} placeholder="e.g. UNILAG Online Tutorials"
-                          className="live-event-input text-text-primary text-sm placeholder-text-muted/60 w-full outline-none focus:border-primary transition-colors" />
+                          className="live-event-input text-text-primary text-base sm:text-sm placeholder-text-muted/60 w-full outline-none focus:border-primary transition-colors" />
                       </div>
                       
                       <div className="flex flex-col gap-2">
@@ -154,7 +167,7 @@ export function CreateCommunityModal() {
                       <div className="flex flex-col gap-2">
                         <label className="text-sm font-medium text-text-primary">Description</label>
                         <textarea value={description} onChange={e => setDescription(e.target.value)} rows={4} placeholder="What is this community about?"
-                          className="live-event-input text-text-primary text-sm placeholder-text-muted/60 w-full outline-none resize-none focus:border-primary transition-colors" />
+                          className="live-event-input text-text-primary text-base sm:text-sm placeholder-text-muted/60 w-full outline-none resize-none focus:border-primary transition-colors" />
                       </div>
                     </div>
                   )}
@@ -225,7 +238,7 @@ export function CreateCommunityModal() {
 
               {createStep !== 1 && (
                 <button onClick={handleNext} disabled={!canNext || createMutation.isPending}
-                  className="flex items-center gap-2 px-6 py-4 rounded-full bg-primary text-white font-bold disabled:opacity-50 hover:bg-primary/90 transition-colors self-start">
+                  className="flex w-full items-center justify-center gap-2 px-6 py-4 rounded-full bg-primary text-white font-bold disabled:opacity-50 hover:bg-primary/90 active:scale-[0.98] transition touch-manipulation sm:w-auto sm:self-start">
                   {createMutation.isPending ? (
                     <>
                       <span>Creating</span>
@@ -242,7 +255,7 @@ export function CreateCommunityModal() {
             </div>
 
             {!createMutation.isPending && (
-              <button onClick={handleClose} className="absolute -top-2 right-0 p-2 text-text-gray hover:text-text-primary transition-colors">
+              <button onClick={handleClose} aria-label="Close" className="absolute -top-2 right-0 hidden p-2 text-text-gray hover:text-text-primary transition-colors sm:block">
                 <X size={22} />
               </button>
             )}
