@@ -100,7 +100,7 @@ export function CouponInput({
           onChange={(e) => setLocalCoupon(e.target.value.toUpperCase())}
           placeholder="Enter coupon code"
           disabled={disabled || isApplied}
-          className={`flex-1 bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-text-primary text-sm placeholder-text-muted/60 focus:outline-none focus:border-primary focus:bg-white/10 transition-all ${
+          className={`min-w-0 flex-1 bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-text-primary text-sm placeholder-text-muted/60 focus:outline-none focus:border-primary focus:bg-white/10 transition-all ${
             disabled || isApplied ? 'opacity-50 cursor-not-allowed' : ''
           }`}
         />

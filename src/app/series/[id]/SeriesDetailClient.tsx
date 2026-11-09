@@ -8,6 +8,7 @@ import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { Button } from '@/components/ui/Button';
 import Image from 'next/image';
 import { SessionList } from '@/components/series/details/SessionList';
+import { SeriesInfoTabs } from '@/components/series/details/SeriesInfoTabs';
 import { SeriesPricingCard } from '@/components/series/SeriesPricingCard';
 import { usePaymentStore } from '@/store/paymentStore';
 import { trackReferralClick } from '@/lib/api/referral';
@@ -242,11 +243,11 @@ export default function SeriesDetailPage({ initialSeries = null }: { initialSeri
   return (
     <div className="min-h-screen bg-background-darker">
       <div className="container mx-auto px-4 py-6 lg:py-8 max-w-7xl">
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_auto] gap-6 lg:gap-8 lg:items-start">
+        <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_auto] gap-6 lg:gap-8 lg:items-start">
           {/* Left Column */}
-          <div className="flex flex-col gap-6">
-            {/* Thumbnail */}
-            <div className="relative w-full -mx-4 lg:mx-0 lg:rounded-xl overflow-hidden aspect-video" style={{ width: 'calc(100% + 2rem)' }}>
+          <div className="flex min-w-0 flex-col gap-6">
+            {/* Thumbnail: edge to edge on phones, inside its column from lg up */}
+            <div className="relative w-[calc(100%+2rem)] -mx-4 lg:w-full lg:mx-0 lg:rounded-xl overflow-hidden aspect-video">
               {display.thumbnailUrl ? (
                 <>
                   <Image src={display.thumbnailUrl} alt="" fill className="object-cover scale-110 blur-sm brightness-100" aria-hidden="true" />
@@ -268,14 +269,14 @@ export default function SeriesDetailPage({ initialSeries = null }: { initialSeri
             <div className="lg:hidden">{pricingCard}</div>
 
             {/* Title and Description */}
-            <div className="flex flex-col gap-4">
+            <div className="flex min-w-0 flex-col gap-4 [overflow-wrap:anywhere]">
               <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-text-primary">{display.title}</h1>
 
               <div className="flex items-center gap-3">
                 <div className="w-9 h-9 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0">
                   <span className="text-primary font-semibold text-sm">{display.creator?.firstname?.charAt(0) || 'U'}</span>
                 </div>
-                <div>
+                <div className="min-w-0">
                   <p className="text-text-primary font-medium text-sm">
                     {display.creator ? `${display.creator.firstname} ${display.creator.lastname}` : 'Unknown Creator'}
                   </p>
@@ -304,6 +305,15 @@ export default function SeriesDetailPage({ initialSeries = null }: { initialSeri
                   <p className="text-lg font-bold text-text-primary">{display.recurrencePattern?.duration ?? 0} min</p>
                 </div>
               </div>
+
+              {/* Until the viewer's data is in, the public price decides whether How to pay shows. */}
+              <SeriesInfoTabs
+                isCreator={!!isCreator}
+                isFree={viewerReady ? isFree : Number(display.price ?? 1) === 0}
+                hasAccess={viewerReady && !!hasAccess}
+                isRegistered={isRegistered}
+                interactive={display.streamingProvider === 'getstream'}
+              />
 
               <div className="bg-background-card p-4 lg:p-6 rounded-lg">
                 <h2 className="text-base lg:text-lg font-semibold text-text-primary mb-4">Sessions</h2>
