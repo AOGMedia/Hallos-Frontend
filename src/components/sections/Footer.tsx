@@ -72,7 +72,6 @@ const SOCIAL_LINKS: SocialLink[] = [
 const FOOTER_LINKS: FooterLink[] = [
   { label: 'Courses', href: '/course' },
   { label: 'Blog', href: '/blog' },
-  { label: 'Investor Relations', href: '/investor-relations' },
   { label: 'Terms of Service', href: '/terms' },
   { label: 'Privacy Policy', href: '/privacy' },
   { label: 'Contact', href: '/contact' }
