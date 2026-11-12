@@ -72,12 +72,13 @@ export default function Home() {
           <PopularClassesSection />
         </Suspense>
 
-        <GamersSection />
-
-        <LiveClassShowSection />
         <div>
           <SpecialCoursesSection isLandingPage={true} />
         </div>
+
+        <LiveClassShowSection />
+        <GamersSection />
+
         <Features />
         <Testimonials />
         <FAQ />
