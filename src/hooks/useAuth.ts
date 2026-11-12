@@ -4,7 +4,15 @@ import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { authApi } from '@/lib/api/auth';
 import { useAuthStore } from '@/store/authStore';
-import type { SignupRequest, LoginRequest, AuthResponse, AuthError } from '@/types/auth';
+import type {
+  SignupRequest,
+  LoginRequest,
+  AuthResponse,
+  AuthError,
+  SignupCodeSent,
+  SignupStartResult,
+  VerifySignupRequest,
+} from '@/types/auth';
 import type { AxiosError } from 'axios';
 
 export function useAuth() {
@@ -26,14 +34,8 @@ export function useAuth() {
     load();
   }, [isAuthenticated, user, setAuth, setUser]);
 
-  // SIGNUP MUTATION
-  const signupMutation = useMutation<
-    AuthResponse,
-    AxiosError<AuthError>,
-    SignupRequest
-  >({
-    mutationFn: authApi.signup,
-    onSuccess: async (data) => {
+  // Account created (after the email code): store the session, then go on.
+  const completeSignup = async (data: AuthResponse) => {
       localStorage.setItem("auth_token", data.token);
       setAuth(data.token);
       let u = data.user;
@@ -74,8 +76,32 @@ export function useAuth() {
         // console.log('No redirect parameter, going to dashboard');
         router.replace('/dashboard');
       }
+  };
+
+  // SIGNUP — step 1: details in, a code is emailed (no account yet).
+  const signupMutation = useMutation<
+    SignupStartResult,
+    AxiosError<AuthError>,
+    SignupRequest
+  >({
+    mutationFn: authApi.signupStart,
+    onSuccess: async (result) => {
+      // A server without email verification signs up in one step.
+      if (result.kind === 'done') await completeSignup(result.auth);
     },
   });
+
+  // SIGNUP — step 2: the emailed code creates the account.
+  const verifySignupMutation = useMutation<AuthResponse, AxiosError<AuthError>, VerifySignupRequest>({
+    mutationFn: authApi.signupVerify,
+    onSuccess: completeSignup,
+  });
+
+  const resendCodeMutation = useMutation<SignupCodeSent, AxiosError<AuthError>, string>({
+    mutationFn: authApi.signupResend,
+  });
+
+  const pendingSignup = signupMutation.data?.kind === 'verify' ? signupMutation.data.sent : null;
 
   // LOGIN MUTATION
   const loginMutation = useMutation<
@@ -172,6 +198,16 @@ export function useAuth() {
     logout,
     loginWithGoogle,
 
+    // Sign-up email code (step 2): set once a code has been sent
+    pendingSignup,
+    verifySignup: verifySignupMutation.mutate,
+    resendSignupCode: resendCodeMutation.mutateAsync,
+    isVerifyingSignup: verifySignupMutation.isPending || verifySignupMutation.isSuccess,
+    isResendingSignupCode: resendCodeMutation.isPending,
+    verifySignupError: verifySignupMutation.error,
+    resendSignupCodeError: resendCodeMutation.error,
+    resetVerifySignupError: verifySignupMutation.reset,
+
     // Loading states
     isSigningUp: signupMutation.isPending,
     isLoggingIn: loginMutation.isPending,
@@ -180,7 +216,7 @@ export function useAuth() {
     signupError: signupMutation.error,
     loginError: loginMutation.error,
 
-    // Reset errors
+    // Reset errors (resetting sign-up also goes back from the code step)
     resetSignupError: signupMutation.reset,
     resetLoginError: loginMutation.reset,
   };

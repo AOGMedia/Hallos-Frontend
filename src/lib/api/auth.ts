@@ -10,13 +10,45 @@ import type {
   ResetPasswordRequest,
   ResetPasswordResponse,
   ResendOtpRequest,
+  SignupCodeSent,
+  SignupStartResult,
+  VerifySignupRequest,
 } from '@/types/auth';
 import { apiClient } from './client';
+import { savePendingSignupReferral } from '@/lib/referral/pendingSignupReferral';
 
 export const authApi = {
-  // Signup
+  // Signup (one step — used only as the fallback below)
   signup: async (data: SignupRequest): Promise<AuthResponse> => {
     const response = await apiClient.post<AuthResponse>('/auth/signup', data);
+    return response.data;
+  },
+
+  /**
+   * Sign-up step 1: the server emails a 6-digit code. If the server doesn't
+   * have email verification yet (404), sign up the old way so sign-up keeps
+   * working whichever is deployed first.
+   */
+  signupStart: async (data: SignupRequest): Promise<SignupStartResult> => {
+    try {
+      const response = await apiClient.post<SignupCodeSent>('/auth/signup/start', data);
+      return { kind: 'verify', sent: response.data };
+    } catch (error) {
+      if ((error as { response?: { status?: number } }).response?.status === 404) {
+        return { kind: 'done', auth: await authApi.signup(data) };
+      }
+      throw error;
+    }
+  },
+
+  /** Sign-up step 2: the right code creates the account and returns the login token. */
+  signupVerify: async (data: VerifySignupRequest): Promise<AuthResponse> => {
+    const response = await apiClient.post<AuthResponse>('/auth/signup/verify', data);
+    return response.data;
+  },
+
+  signupResend: async (email: string): Promise<SignupCodeSent> => {
+    const response = await apiClient.post<SignupCodeSent>('/auth/signup/resend', { email });
     return response.data;
   },
 
@@ -56,7 +88,10 @@ export const authApi = {
       if (redirectTo) {
         localStorage.setItem('auth_redirect', redirectTo);
       }
-      
+      // A partner link's code, credited after Google brings them back (see auth/callback).
+      const referralCode = urlParams.get('ref');
+      if (referralCode) savePendingSignupReferral(referralCode);
+
       const base = apiClient.defaults.baseURL || '';
       const origin = window.location.origin;
       const redirect = encodeURIComponent(`${origin}/auth/callback`);
