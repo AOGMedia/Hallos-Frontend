@@ -7,6 +7,26 @@ export interface SignupRequest {
   ref?: string;
 }
 
+/** Sign-up step 1 answer: a code was emailed; the account is made once it's confirmed. */
+export interface SignupCodeSent {
+  verificationRequired: true;
+  email: string;
+  expiresInMinutes: number;
+  resendAfterSeconds: number;
+  message?: string;
+}
+
+/**
+ * Starting a sign-up either asks for the emailed code, or — on a server
+ * without email verification yet — creates the account straight away.
+ */
+export type SignupStartResult = { kind: 'verify'; sent: SignupCodeSent } | { kind: 'done'; auth: AuthResponse };
+
+export interface VerifySignupRequest {
+  email: string;
+  code: string;
+}
+
 export interface LoginRequest {
   email: string;
   password: string;
@@ -20,6 +40,9 @@ export interface AuthResponse {
 
 export interface AuthError {
   message?: string;
+  code?: string;
+  attemptsRemaining?: number;
+  resendAfterSeconds?: number;
   errors?: Array<{
     msg: string;
     param: string;

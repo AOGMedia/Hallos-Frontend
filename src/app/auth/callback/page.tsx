@@ -2,6 +2,7 @@
 import { useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuthStore } from '@/store/authStore';
+import { claimPendingSignupReferral } from '@/lib/referral/pendingSignupReferral';
 
 function CallbackHandler() {
   const router = useRouter();
@@ -25,6 +26,8 @@ function CallbackHandler() {
     }
     if (token) {
       setAuth(token);
+      // Credit the partner whose link this Google sign-up came from (background, never blocks).
+      claimPendingSignupReferral(token);
     }
     
     // Check for stored redirect destination
