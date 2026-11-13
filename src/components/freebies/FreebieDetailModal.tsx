@@ -1,6 +1,7 @@
 import { useCallback, useState, useEffect } from 'react';
 import Image from 'next/image';
 import { BookmarkCheck, Clock, File as FileIcon, X, Link as LinkIcon, Loader2, Download, Trash2, Lock, Unlock } from 'lucide-react';
+import { ReportButton } from '@/components/report/ReportButton';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useFreebiesStore } from '@/store/freebiesStore';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
@@ -232,8 +233,15 @@ export function FreebieDetailModal({ freebieId, isOpen, onClose }: Props) {
               </button>
             )}
 
+            {/* Report — everyone except the owner */}
+            {freebie && !isOwner && (
+              <div className="absolute top-2.5 right-11 z-10">
+                <ReportButton targetType="freebie" targetId={freebie.id} subject="this item" appearance="icon" />
+              </div>
+            )}
+
             {/* ── Breadcrumb header ── */}
-            <div className="flex items-center gap-2 pr-8">
+            <div className="flex items-center gap-2 pr-20">
               <h2 className="text-xl sm:text-[32px] font-medium text-text-primary leading-tight truncate">
                 {isDetailsLoading ? 'Loading detail...' : freebie?.title}
               </h2>

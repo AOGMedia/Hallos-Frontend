@@ -19,6 +19,7 @@ import { checkAccess } from '@/lib/api/payments';
 import { usePaymentStore } from '@/store/paymentStore';
 import { PaymentModal } from '@/components/payments/PaymentModal';
 import { useCurrentUser } from "@/hooks/useCurrentUser";
+import { ReportButton } from "@/components/report/ReportButton";
 
 export default function VideoDetailsPage() {
   const params = useParams();
@@ -240,9 +241,12 @@ export default function VideoDetailsPage() {
               className="w-[19px] h-[14px]"
             />
           </button>
-          <h1 className="text-xl font-bold text-text-primary leading-5">
+          <h1 className="text-xl font-bold text-text-primary leading-5 min-w-0 flex-1">
             {video.title}
           </h1>
+          {!(user && video.userId && String(user.id) === String(video.userId)) && (
+            <ReportButton targetType="video" targetId={videoId} subject="this video" className="shrink-0" />
+          )}
         </div>
 
         {/* Main Content */}

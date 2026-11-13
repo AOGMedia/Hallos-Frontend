@@ -148,6 +148,24 @@ function shouldRetryGet(error: AxiosError): boolean {
   return status === undefined || RETRYABLE_STATUSES.has(status);
 }
 
+/**
+ * Staff suspended this account: the server refuses its session everywhere.
+ * Sign out once and show the reason on the sign-in page. Only this exact
+ * code does it, so no other 403 ever signs anyone out.
+ */
+let suspendedRedirectStarted = false;
+function signOutSuspended() {
+  if (typeof window === 'undefined' || suspendedRedirectStarted) return;
+  if (window.location.pathname.startsWith('/signin')) return; // the form shows the message itself
+  suspendedRedirectStarted = true;
+  clearAuthToken();
+  try {
+    localStorage.removeItem('user_id');
+    localStorage.removeItem('auth-storage');
+  } catch {}
+  window.location.replace('/signin?error=account_suspended');
+}
+
 // Response interceptor for error handling
 apiClient.interceptors.response.use(
   (response) => response,
@@ -163,6 +181,10 @@ apiClient.interceptors.response.use(
 
     const status = error.response?.status;
     const url = error.config?.url ?? 'unknown url';
+
+    if (status === 403 && (error.response?.data as { code?: string } | undefined)?.code === 'ACCOUNT_SUSPENDED') {
+      signOutSuspended();
+    }
 
     // Log helpful debug info (response body) for 401s and other failures
     if (status === 401 || status === 403) {

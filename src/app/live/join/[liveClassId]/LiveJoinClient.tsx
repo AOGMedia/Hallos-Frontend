@@ -16,6 +16,7 @@ import { checkAccess, initializePayment } from "@/lib/api/payments";
 import LobbyDetailsCard from "./components/LobbyDetailsCard";
 import { useGoLiveConfirm } from "@/features/live/go-live";
 import type { CouponValidationData } from "@/types/coupon";
+import { ReportButton } from "@/components/report/ReportButton";
 
 /** How often the lobby re-checks a class that isn't live yet. */
 const LOBBY_STATUS_POLL_MS = 15_000;
@@ -419,20 +420,26 @@ export default function ZegoJoinPage() {
             >
               <ArrowLeftIcon className="w-4 h-4"/> Back 
             </Link>
-            <button
-              onClick={handleShare}
-              className="flex items-center gap-2 px-4 py-2 bg-white/5 border border-white/10 rounded-full text-sm font-semibold hover:bg-white/10 transition-all"
-            >
-              {shareCopied ? (
-                <>
-                  <Check size={16} className="text-green-400" /> Copied!
-                </>
-              ) : (
-                <>
-                  <Share2 size={16} /> Share class
-                </>
+            <div className="flex items-center gap-1">
+              {/* Series sessions are reported from the series page. */}
+              {!isSeries && String(liveClass.userId) !== String(user.id) && (
+                <ReportButton targetType="live_class" targetId={liveClass.id} subject="this class" appearance="icon" />
               )}
-            </button>
+              <button
+                onClick={handleShare}
+                className="flex items-center gap-2 px-4 py-2 bg-white/5 border border-white/10 rounded-full text-sm font-semibold hover:bg-white/10 transition-all"
+              >
+                {shareCopied ? (
+                  <>
+                    <Check size={16} className="text-green-400" /> Copied!
+                  </>
+                ) : (
+                  <>
+                    <Share2 size={16} /> Share class
+                  </>
+                )}
+              </button>
+            </div>
           </div>
 
           <LobbyDetailsCard
