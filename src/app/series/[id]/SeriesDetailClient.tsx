@@ -17,6 +17,7 @@ import { Share2, Check } from 'lucide-react';
 import { RegistrationSuccess } from '@/components/event/RegistrationSuccess';
 import type { Series } from '@/types/series';
 import type { PublicSeriesDetail } from '@/lib/seo/publicApi';
+import { ReportButton } from '@/components/report/ReportButton';
 
 /**
  * `initialSeries` is the public (anonymous) copy fetched on the server, so the
@@ -353,6 +354,7 @@ export default function SeriesDetailPage({ initialSeries = null }: { initialSeri
               {shareCopied ? <Check size={15} className="text-green-500" /> : <Share2 size={15} />}
               {shareCopied ? 'Link copied!' : 'Share series'}
             </button>
+            {!isCreator && <ReportButton targetType="live_series" targetId={id} subject="this series" className="self-center" />}
           </div>
 
           {/* Back Button - mobile */}
@@ -365,6 +367,7 @@ export default function SeriesDetailPage({ initialSeries = null }: { initialSeri
               {shareCopied ? <Check size={15} className="text-green-500" /> : <Share2 size={15} />}
               {shareCopied ? 'Link copied!' : 'Share series'}
             </button>
+            {!isCreator && <ReportButton targetType="live_series" targetId={id} subject="this series" className="self-center" />}
           </div>
         </div>
       </div>

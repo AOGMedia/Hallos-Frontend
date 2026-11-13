@@ -30,6 +30,12 @@ export function AuthForm({ mode, onSubmit, isLoading, error }: AuthFormProps) {
   // console.log('AuthForm - Redirect param:', redirectParam);
   // console.log('AuthForm - Current URL:', typeof window !== 'undefined' ? window.location.href : 'SSR');
   
+  // Set by the Google sign-in callback, or after a suspended session is signed out.
+  const suspendedNotice =
+    mode === 'signin' && searchParams.get('error') === 'account_suspended'
+      ? 'Your account is suspended. Contact support@hallos.net if you think this is a mistake.'
+      : null;
+
   const [showMoreOptions, setShowMoreOptions] = useState(true);
   const [formData, setFormData] = useState({
     firstName: '',
@@ -112,9 +118,9 @@ export function AuthForm({ mode, onSubmit, isLoading, error }: AuthFormProps) {
           </div>
 
           {/* Error Message */}
-          {error && (
-            <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4">
-              <p className="text-sm text-red-500">{getErrorMessage()}</p>
+          {(error || suspendedNotice) && (
+            <div role="alert" className="bg-red-500/10 border border-red-500/20 rounded-lg p-4">
+              <p className="text-sm text-red-500">{error ? getErrorMessage() : suspendedNotice}</p>
             </div>
           )}
 

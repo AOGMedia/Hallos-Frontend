@@ -3,6 +3,7 @@
 
 import { memo, useMemo, useState } from 'react';
 import { ArrowLeft, Search, Share2, Users, Video, Volume2, RefreshCw, Gift, Lock, LayoutGrid, Plus, X, UserPlus, VideoIcon, Settings } from 'lucide-react';
+import { ReportButton } from '@/components/report/ReportButton';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MenuModal } from '@/components/ui/MenuModal';
 import { InviteMembersModal } from './InviteMembersModal';
@@ -298,6 +299,7 @@ export const CommunityDetail = memo(({ community, activeTab, onTabChange, onBack
             )}
             <div className="flex items-center gap-2">
               <button onClick={onShare} className="text-text-gray hover:text-text-primary transition-colors"><Share2 size={20} /></button>
+              {!isAdmin && <ReportButton targetType="community" targetId={community.id} subject="this community" appearance="icon" />}
               <button className="text-text-gray hover:text-text-primary transition-colors"><Search size={20} /></button>
             </div>
           </div>
