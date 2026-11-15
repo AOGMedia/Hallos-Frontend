@@ -154,7 +154,7 @@ function shouldRetryGet(error: AxiosError): boolean {
  * code does it, so no other 403 ever signs anyone out.
  */
 let suspendedRedirectStarted = false;
-function signOutSuspended() {
+function signOutSuspended(reason: 'account_suspended' | 'account_deleted' = 'account_suspended') {
   if (typeof window === 'undefined' || suspendedRedirectStarted) return;
   if (window.location.pathname.startsWith('/signin')) return; // the form shows the message itself
   suspendedRedirectStarted = true;
@@ -163,7 +163,7 @@ function signOutSuspended() {
     localStorage.removeItem('user_id');
     localStorage.removeItem('auth-storage');
   } catch {}
-  window.location.replace('/signin?error=account_suspended');
+  window.location.replace(`/signin?error=${reason}`);
 }
 
 // Response interceptor for error handling
@@ -184,6 +184,10 @@ apiClient.interceptors.response.use(
 
     if (status === 403 && (error.response?.data as { code?: string } | undefined)?.code === 'ACCOUNT_SUSPENDED') {
       signOutSuspended();
+    }
+    // The account was deleted (at the person's request): same, once, with its own message.
+    if (status === 401 && (error.response?.data as { code?: string } | undefined)?.code === 'ACCOUNT_DELETED') {
+      signOutSuspended('account_deleted');
     }
 
     // Log helpful debug info (response body) for 401s and other failures

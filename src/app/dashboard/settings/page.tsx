@@ -1,51 +1,20 @@
 'use client';
 
-import React, { useState, useCallback } from 'react';
+import React, { useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import ArrowLeftIcon from '@/components/icons/ArrowLeftIcon';
-import { DeleteAccountPasswordModal } from '@/components/ui/DeleteAccountPasswordModal';
-import DeleteAccountModal from '@/components/ui/DeleteAccountModal';
 import { Ticket, Bell } from 'lucide-react';
 import { useCouponStore } from '@/store/couponStore';
 import { CouponManagementModal } from '@/components/profile/CouponManagementModal';
+import { AccountPrivacySection } from '@/features/account/components/AccountPrivacySection';
 
 const SettingsPage = React.memo(() => {
   const router = useRouter();
   const { isCreateModalOpen, openCreateModal, closeCreateModal } = useCouponStore();
-  const [showPasswordModal, setShowPasswordModal] = useState(false);
-  const [showConfirmModal, setShowConfirmModal] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
 
   const handleBack = useCallback(() => {
     router.back();
   }, [router]);
-
-  const handlePasswordSubmit = useCallback(() => {
-    setShowPasswordModal(false);
-    setShowConfirmModal(true);
-  }, []);
-
-  const handleConfirmDelete = useCallback(async () => {
-    setIsDeleting(true);
-    try {
-      console.log('Deleting account...');
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      router.push('/signin');
-    } catch (error) {
-      console.error('Error deleting account:', error);
-    } finally {
-      setIsDeleting(false);
-      setShowConfirmModal(false);
-    }
-  }, [router]);
-
-  const handleCancelDelete = useCallback(() => {
-    setShowConfirmModal(false);
-  }, []);
-
-  const handleClosePasswordModal = useCallback(() => {
-    setShowPasswordModal(false);
-  }, []);
 
   return (
     <>
@@ -103,22 +72,11 @@ const SettingsPage = React.memo(() => {
               </button>
             </div>
           </div>
+
+          {/* Download your data, delete your account */}
+          <AccountPrivacySection />
         </div>
       </div>
-
-      <DeleteAccountPasswordModal
-        isOpen={showPasswordModal}
-        onClose={handleClosePasswordModal}
-        onConfirm={handlePasswordSubmit}
-        isLoading={isDeleting}
-      />
-
-      <DeleteAccountModal
-        isOpen={showConfirmModal}
-        onConfirm={handleConfirmDelete}
-        onCancel={handleCancelDelete}
-        isLoading={isDeleting}
-      />
 
       <CouponManagementModal
         isOpen={isCreateModalOpen}
