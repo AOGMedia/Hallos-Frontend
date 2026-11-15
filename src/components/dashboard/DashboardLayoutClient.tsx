@@ -3,6 +3,8 @@
 import { usePathname, useRouter } from 'next/navigation';
 import { Header } from "@/components/dashboard/Header";
 import { Sidebar } from "@/components/dashboard/Sidebar";
+import { AnnouncementBar } from "@/components/announcements/AnnouncementBar";
+import { useAnnouncements } from "@/components/announcements/useAnnouncements";
 import { DashboardShellSkeleton } from "@/components/dashboard/DashboardShellSkeleton";
 import { mockRootProps } from "@/app/dashboard/dashboardMockData";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
@@ -29,6 +31,8 @@ export function DashboardLayoutClient({ children }: DashboardLayoutClientProps) 
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const { modalDismissed, bannerDismissed, dismissModal, dismissBanner } = usePromoStore();
   const [modalReopened, setModalReopened] = useState(false);
+  // Announcements from the admin take the promo bar's place; the promo bar is the fallback.
+  const announcements = useAnnouncements();
 
   // Fetch live classes count
   const { data: liveClassesData } = useQuery({
@@ -104,7 +108,8 @@ export function DashboardLayoutClient({ children }: DashboardLayoutClientProps) 
               onToggleSidebar={toggleSidebar}
             />
           )}
-          {!isVideoPage && modalDismissed && !bannerDismissed && (
+          {!isVideoPage && <AnnouncementBar items={announcements.items} onDismiss={announcements.dismiss} />}
+          {!isVideoPage && announcements.ready && announcements.items.length === 0 && modalDismissed && !bannerDismissed && (
             <PromoCompactBanner onDismiss={dismissBanner} onOpenModal={() => setModalReopened(true)} />
           )}
         </div>
