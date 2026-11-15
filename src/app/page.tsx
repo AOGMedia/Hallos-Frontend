@@ -1,7 +1,8 @@
 // import { EventSection } from '@/components/event';
 // import { mockRootProps } from '@/components/event/eventMockData';
 import { Hero } from "@/components/sections/Hero";
-import { EventLandingHero } from "@/components/event/EventLandingHero";
+// Hallos Millionaires Retreat hero: hidden from the landing page for now.
+// import { EventLandingHero } from "@/components/event/EventLandingHero";
 // import { SearchSection } from '@/components/sections/SearchSection';
 import { GamersSection } from "@/components/sections/GamersSection";
 import { Suspense } from "react";
@@ -63,7 +64,8 @@ export default function Home() {
       <LandingRedirect />
       <main>
         {/* <EventSection {...mockRootProps} /> */}
-        <EventLandingHero isLandingPage={true} />
+        {/* Hallos Millionaires Retreat hero: hidden for now. Uncomment (and its import) to bring it back. */}
+        {/* <EventLandingHero isLandingPage={true} /> */}
         <Hero />
         {/* <SearchSection header1='Find your ' header2='next class'/> */}
 

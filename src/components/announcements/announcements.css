@@ -1,0 +1,87 @@
+/* Announcement bar motion (components/announcements/AnnouncementBar.tsx).
+   Transform and opacity only, so the GPU composites it and pages stay
+   smooth. Calm by design: slow loops, long pauses. All of it stops for
+   people who prefer reduced motion. */
+
+/* A slow light sweep across the card now and then. */
+.announce-shimmer {
+  background: linear-gradient(105deg, transparent 0%, rgba(255, 255, 255, 0.6) 50%, transparent 100%);
+  transform: translateX(-160%) skewX(-14deg);
+  animation: announce-shimmer 7s cubic-bezier(0.4, 0, 0.2, 1) 1.8s infinite;
+}
+@keyframes announce-shimmer {
+  0% { transform: translateX(-160%) skewX(-14deg); }
+  18% { transform: translateX(420%) skewX(-14deg); }
+  100% { transform: translateX(420%) skewX(-14deg); }
+}
+
+/* Pointer parallax wrapper: --mx/--my are written by the component (-1..1). */
+.announce-parallax {
+  transform: translate3d(calc(var(--mx, 0) * var(--depth, 4) * 1px), calc(var(--my, 0) * var(--depth, 4) * 1px), 0);
+  transition: transform 420ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* The brand artwork, each on its own slow rhythm so they never move in step. */
+.announce-parachute { animation: announce-sway 5.6s ease-in-out 1.4s infinite; transform-origin: 50% 0; }
+@keyframes announce-sway {
+  0%, 100% { transform: rotate(-7deg) translateY(0); }
+  50% { transform: rotate(6deg) translateY(3px); }
+}
+.announce-coins { animation: announce-bob 3.8s ease-in-out infinite; }
+@keyframes announce-bob {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-4px) rotate(-8deg); }
+}
+.announce-percent { animation: announce-tilt 5.2s ease-in-out 0.6s infinite; }
+@keyframes announce-tilt {
+  0%, 100% { transform: rotate(-10deg); }
+  50% { transform: rotate(8deg) translateY(-2px); }
+}
+.announce-gift { animation: announce-gift 3.4s ease-in-out infinite; transform-origin: 50% 95%; }
+@keyframes announce-gift {
+  0%, 100% { transform: rotate(-3deg); }
+  50% { transform: rotate(3deg) translateY(-2px); }
+}
+
+/* The megaphone gives the odd shake. */
+.announce-wiggle { transform-origin: 70% 60%; animation: announce-wiggle 4.5s ease-in-out 1.2s infinite; }
+@keyframes announce-wiggle {
+  0%, 84%, 100% { transform: rotate(0); }
+  87% { transform: rotate(-12deg); }
+  90% { transform: rotate(10deg); }
+  93% { transform: rotate(-5deg); }
+  96% { transform: rotate(2deg); }
+}
+
+/* Steady signal ring for news and notices (not celebrations): spreads and fades, then rests. */
+.announce-ring { animation: announce-ring 3.2s cubic-bezier(0.22, 1, 0.36, 1) 0.8s infinite; opacity: 0; }
+.announce-ring-slow { animation-duration: 4.2s; }
+@keyframes announce-ring {
+  0% { transform: scale(1); opacity: 0.45; }
+  55%, 100% { transform: scale(1.75); opacity: 0; }
+}
+
+/* Slideshow timer: the active dot fills; when it's full the bar moves on
+   (animationend drives it, so pausing the animation pauses the slideshow). */
+.announce-progress { transform-origin: left center; animation: announce-progress 7s linear forwards; }
+@keyframes announce-progress {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+
+/* The arrow nudges forward every few seconds. */
+.announce-arrow { animation: announce-arrow 3s ease-in-out 2s infinite; }
+@keyframes announce-arrow {
+  0%, 76%, 100% { transform: translateX(0); }
+  84% { transform: translateX(3px); }
+  92% { transform: translateX(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .announce-shimmer { display: none; }
+  .announce-parallax { transform: none; transition: none; }
+  .announce-ring { display: none; }
+  /* .announce-progress keeps running: changing slides is content, not motion, and
+     with reduced motion the slides cross-fade instead of sliding. */
+  .announce-parachute, .announce-coins, .announce-percent, .announce-gift, .announce-wiggle, .announce-arrow { animation: none; }
+}

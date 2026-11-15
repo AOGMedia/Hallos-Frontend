@@ -34,7 +34,9 @@ export function AuthForm({ mode, onSubmit, isLoading, error }: AuthFormProps) {
   const suspendedNotice =
     mode === 'signin' && searchParams.get('error') === 'account_suspended'
       ? 'Your account is suspended. Contact support@hallos.net if you think this is a mistake.'
-      : null;
+      : mode === 'signin' && searchParams.get('error') === 'account_deleted'
+        ? 'That account has been deleted, as requested. You’re welcome to create a new one.'
+        : null;
 
   const [showMoreOptions, setShowMoreOptions] = useState(true);
   const [formData, setFormData] = useState({
