@@ -3,11 +3,17 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "framer-motion";
-import { CalendarDays, ChevronDown, GraduationCap, LayoutGrid, Newspaper } from "lucide-react";
+import { CalendarDays, ChevronDown, GraduationCap, LayoutGrid, Newspaper, Radio } from "lucide-react";
 import { NAV_PANEL_CARD, NavMegaPanel, type NavPanelFeature, type NavPanelLink } from "./NavMegaPanel";
 
 /** Everything under the dashboard's "More" menu. Add new destinations here. */
 export const MORE_LINKS: NavPanelLink[] = [
+  {
+    label: "Live classes",
+    description: "Join interactive classes as they happen",
+    href: "/dashboard/schedule",
+    icon: Radio,
+  },
   {
     label: "Events",
     description: "Live sessions, cohorts, and community meetups",
