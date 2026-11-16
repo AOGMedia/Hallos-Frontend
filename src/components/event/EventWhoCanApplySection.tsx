@@ -2,19 +2,16 @@
 
 import { BadgeCheck, UserPlus } from 'lucide-react';
 import Image from 'next/image';
-
-const CRITERIA = [
-  'Growth-minded individuals',
-  'Passionate learners',
-  'Career-focused participants',
-  'Must be available for the full 2-days',
-];
+import { fillPrice } from '@/data/featuredEvent';
+import { useFeaturedEvent } from './FeaturedEventContext';
 
 interface EventWhoCanApplySectionProps {
   onRegister: () => void;
 }
 
 export function EventWhoCanApplySection({ onRegister }: EventWhoCanApplySectionProps) {
+  const { whoCanApply, price } = useFeaturedEvent();
+  const CRITERIA = whoCanApply.map((item) => fillPrice(item, price));
   return (
     <section
       aria-label="Who can apply"

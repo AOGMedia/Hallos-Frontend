@@ -1,7 +1,12 @@
+'use client';
+
 import { Download, Mic2, Users, Wallet, ArrowRight } from 'lucide-react';
 import Image from 'next/image';
+import { fillPrice } from '@/data/featuredEvent';
+import { useFeaturedEvent } from './FeaturedEventContext';
 
 export function EventAboutSection() {
+  const { about, price } = useFeaturedEvent();
   return (
     <section
       aria-label="About this event"
@@ -55,9 +60,7 @@ export function EventAboutSection() {
                 color: '#f2f2f2',
               }}
             >
-              A 2-day, all-expense paid experience designed to help you gain
-              practical life skills, accelerate your personal growth, and move
-              your career forward with clarity.
+              {fillPrice(about.valueProposition, price)}
             </p>
           </div>
 
@@ -86,8 +89,7 @@ export function EventAboutSection() {
                 color: '#f2f2f2',
               }}
             >
-              Gain real-world insights, connect with ambitious peers, and take
-              your next step with confidence.
+              {fillPrice(about.perks, price)}
             </p>
           </div>
 
@@ -117,8 +119,7 @@ export function EventAboutSection() {
                 color: '#f2f2f2',
               }}
             >
-              Open to individuals ready to take action. A ₦3,000 commitment fee
-              applies to complete your registration.
+              {fillPrice(about.commitment, price)}
             </p>
             <button
               className="flex items-center gap-2 w-fit hover:opacity-80 transition-opacity cursor-pointer"

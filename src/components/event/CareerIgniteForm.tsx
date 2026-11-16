@@ -1,12 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { PhoneInput } from "react-international-phone";
 import "react-international-phone/style.css";
 import "@/styles/phone-input-override.css";
 import { Button } from "@/components/ui/Button";
-import { careerIgniteFormFields } from "./careerIgniteMockData";
+import { careerIgniteFormFields as baseFormFields } from "./careerIgniteMockData";
+import { useFeaturedEvent } from "./FeaturedEventContext";
+import { formatNaira } from "@/data/featuredEvent";
 import { useCampaignRegistration } from "@/hooks/useCampaignRegistration";
 import { useSignedIn } from "@/hooks/useSignedIn";
 import {
@@ -24,6 +26,19 @@ export function CareerIgniteForm() {
   const { mutateAsync: registerCampaign, isPending } = useCampaignRegistration();
   const router = useRouter();
   const signedIn = useSignedIn();
+
+  // The dropdown choices and the price are set in the admin (Event page).
+  const event = useFeaturedEvent();
+  const careerIgniteFormFields = useMemo(() => {
+    const optionsFor: Record<string, string[]> = {
+      location: event.form.locations,
+      talent: event.form.talents,
+      careerPath: event.form.careerPaths,
+    };
+    const withOptions = (fields: typeof baseFormFields.personalInfo) =>
+      fields.map((field) => (optionsFor[field.name] ? { ...field, options: optionsFor[field.name] } : field));
+    return { personalInfo: withOptions(baseFormFields.personalInfo), careerInfo: withOptions(baseFormFields.careerInfo) };
+  }, [event.form]);
 
   // Answers saved before signing in come back here (the form only mounts in
   // the browser, inside the registration modal).
@@ -184,7 +199,7 @@ export function CareerIgniteForm() {
     }
   };
 
-  const renderField = (field: typeof careerIgniteFormFields.personalInfo[number]) => {
+  const renderField = (field: typeof baseFormFields.personalInfo[number]) => {
     const fieldName = field.name === 'phoneNumber' ? 'phone' : field.name;
     const hasError = !!errors[field.name];
     const hasOtherError = !!errors[`${field.name}Other`];
@@ -288,6 +303,18 @@ export function CareerIgniteForm() {
 
   // Remove success state check here as verification happens on a separate page
 
+  // Closed from the admin: say so instead of taking answers we can't use.
+  if (!event.registrationOpen) {
+    return (
+      <div className="w-full mx-auto py-16 text-center">
+        <h3 className="text-xl font-bold text-[#eaeaea]">Registration is closed</h3>
+        <p className="mt-3 text-sm text-[#888C94] max-w-md mx-auto">
+          We&apos;re no longer taking registrations for {event.name}. Keep an eye on this page for the next one.
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div className="w-full mx-auto pb-12">
       {/* Form Info Icon matched to screenshot */}
@@ -372,7 +399,7 @@ export function CareerIgniteForm() {
               </span>
             ) : (
               <>
-                <span>Pay N3,000</span>
+                <span>Pay {formatNaira(event.price)}</span>
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
                   <path d="M5 12h14M12 5l7 7-7 7" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>

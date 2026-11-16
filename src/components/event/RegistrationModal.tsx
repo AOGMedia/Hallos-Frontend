@@ -8,10 +8,12 @@ import { RegistrationForm } from "./RegistrationForm";
 import { CareerIgniteForm } from "./CareerIgniteForm";
 import CloseIcon from "@/components/icons/CloseIcon";
 import { RegistrationRole } from "./types";
+import { useFeaturedEvent } from "./FeaturedEventContext";
 import type { RegistrationModalProps } from "./types";
 
 export function RegistrationModal({ isOpen, onClose }: RegistrationModalProps) {
   const isCareerIgnite = true; // Hardcoded for now as per current priority
+  const event = useFeaturedEvent();
   
   const [step, setStep] = useState<"role" | "form">(isCareerIgnite ? "form" : "role");
   const [selectedRole, setSelectedRole] = useState<RegistrationRole | null>(
@@ -82,7 +84,8 @@ export function RegistrationModal({ isOpen, onClose }: RegistrationModalProps) {
                 HALLOS
               </span>
               <h2 className="text-2xl sm:text-4xl lg:text-5xl font-black text-white drop-shadow-2xl uppercase tracking-tight leading-tight">
-                Millionaires Retreat 2026
+                {/* "HALLOS" sits above, so drop it from the start of the name. */}
+                {event.name.replace(/^hallos\s+/i, "")}
               </h2>
               <p className="text-white/80 mt-1 sm:mt-2 text-xs sm:text-base font-medium tracking-wide">
                 Program application form

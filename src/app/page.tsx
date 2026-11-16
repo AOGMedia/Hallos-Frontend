@@ -21,7 +21,8 @@ import { buildMetadata } from "@/lib/metadata";
 import { SITE } from "@/lib/seo/site";
 import { eventSchema, faqSchema } from "@/lib/seo/jsonLd";
 import { HOME_FAQS } from "@/data/faqs";
-import { FEATURED_EVENT, isFeaturedEventUpcoming } from "@/data/featuredEvent";
+import { FEATURED_EVENT_PATH, isFeaturedEventUpcoming } from "@/data/featuredEvent";
+import { fetchFeaturedEvent } from "@/lib/seo/publicApi";
 
 // Re-rendered every 5 minutes: keeps the server-rendered "Popular Live Classes"
 // current (its data is cached for the same window), and drops the event schema
@@ -38,21 +39,23 @@ export const metadata = {
   title: { absolute: SITE.title },
 };
 
-export default function Home() {
+export default async function Home() {
+  // As set in the admin; cached for a minute, built-in event if the API is slow or down.
+  const event = await fetchFeaturedEvent();
   const structuredData = [
     faqSchema(HOME_FAQS),
-    ...(isFeaturedEventUpcoming()
+    ...(isFeaturedEventUpcoming(new Date(), event)
       ? [
           eventSchema({
-            name: FEATURED_EVENT.name,
-            description: FEATURED_EVENT.description,
-            startDate: FEATURED_EVENT.startDate,
-            endDate: FEATURED_EVENT.endDate,
-            path: FEATURED_EVENT.path,
-            image: FEATURED_EVENT.image,
-            locationName: FEATURED_EVENT.locationLabel,
-            locality: FEATURED_EVENT.locality,
-            country: FEATURED_EVENT.country,
+            name: event.name,
+            description: event.description,
+            startDate: event.startDate,
+            endDate: event.endDate,
+            path: FEATURED_EVENT_PATH,
+            image: event.image,
+            locationName: event.locationLabel,
+            locality: event.locality,
+            country: event.country,
           }),
         ]
       : []),

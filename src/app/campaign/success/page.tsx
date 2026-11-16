@@ -6,6 +6,7 @@ import { apiClient } from "@/lib/api/client";
 import { Button } from "@/components/ui/Button";
 import { AnimatedTicket } from "@/components/ui/AnimatedTicket";
 import { toPng } from "html-to-image";
+import { DEFAULT_EVENT, formatNaira } from "@/data/featuredEvent";
 
 // Define interface for campaign verify payment response
 interface CampaignVerifyPaymentResponse {
@@ -17,6 +18,9 @@ interface CampaignVerifyPaymentResponse {
     lastName: string;
     email: string;
     paymentStatus: string;
+    /** What they were charged (₦); older responses don't include it. */
+    amount?: number;
+    currency?: string;
   };
   alreadyProcessed?: boolean;
 }
@@ -106,7 +110,7 @@ function CampaignSuccessContent() {
         <div className="space-y-4 text-center">
           <div className="w-16 h-16 border-4 border-[#6A57E5] border-t-transparent rounded-full animate-spin mx-auto" />
           <h2 className="text-2xl font-bold text-white">Verifying Payment</h2>
-          <p className="text-[#888C94]">Please wait while we confirm your spot for Hallos Millionaires Retreat – 2026.</p>
+          <p className="text-[#888C94]">Please wait while we confirm your spot at the event.</p>
         </div>
       ) : status === "success" && data && data.registration ? (
         <>
@@ -114,7 +118,10 @@ function CampaignSuccessContent() {
           <div ref={ticketRef}>
             <AnimatedTicket
               ticketId={data.registration.id}
-              amount="₦3,000.00"
+              amount={formatNaira(
+                Number(data.registration.amount) > 0 ? Number(data.registration.amount) : DEFAULT_EVENT.price,
+                2
+              )}
               date={new Date()}
               name={`${data.registration.firstName} ${data.registration.lastName}`}
               email={data.registration.email}

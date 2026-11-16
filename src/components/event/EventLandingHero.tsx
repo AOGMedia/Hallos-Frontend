@@ -4,8 +4,9 @@ import Image from "next/image";
 import { UserPlus, ArrowRight } from "lucide-react";
 import { EventInfoBar } from "./EventInfoBar";
 import Link from "next/link";
-import { FEATURED_EVENT } from "@/data/featuredEvent";
+import { isRemoteImage } from "@/data/featuredEvent";
 import { MemberBackBar } from "@/components/nav/MemberBackBar";
+import { useFeaturedEvent } from "./FeaturedEventContext";
 
 interface EventLandingHeroProps {
   onRegister?: () => void;
@@ -20,6 +21,7 @@ export function EventLandingHero({
   isPublicPage = false,
 }: EventLandingHeroProps) {
   const EventTitle = isLandingPage ? "h2" : "h1";
+  const event = useFeaturedEvent();
 
   return (
     // Room at the top for the site header (visitors) or the Back bar (signed in).
@@ -60,7 +62,7 @@ export function EventLandingHero({
               backgroundClip: "text",
             }}
           >
-            {FEATURED_EVENT.name}
+            {event.name}
           </EventTitle>
 
           {/* Register/Learn More button */}
@@ -87,13 +89,15 @@ export function EventLandingHero({
           {/* Speaker images */}
           <div className="mt-8 mb-8 w-full flex justify-center ">
             <Image
-              src="/images/event/speakers-hero.webp"
-              alt="Event speakers and hosts"
+              src={event.image}
+              alt={event.imageAlt}
               width={878}
               height={400}
               sizes="(min-width: 910px) 878px, 100vw"
               // Above the fold on every page that shows this hero: load it first.
               priority
+              // A web address set in the admin may be on a host next/image isn't set up for.
+              unoptimized={isRemoteImage(event.image)}
               className="w-full max-w-[878px] h-auto"
             />
           </div>
@@ -103,9 +107,9 @@ export function EventLandingHero({
       {/* Event details info bar */}
       <div className="px-4 sm:px-8 lg:px-16 -mt-6 sm:-mt-8 relative z-20">
         <EventInfoBar
-          date={FEATURED_EVENT.dateLabel}
-          time={FEATURED_EVENT.durationLabel}
-          location={FEATURED_EVENT.locationLabel}
+          date={event.dateLabel}
+          time={event.durationLabel}
+          location={event.locationLabel}
         />
       </div>
     </section>
