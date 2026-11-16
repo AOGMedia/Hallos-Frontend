@@ -6,7 +6,14 @@ import { Button } from "@/components/ui/Button";
 import SearchIcon from "@/components/icons/SearchIcon";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { useSignedIn } from "@/hooks/useSignedIn";
+import { useHeaderSession } from "@/components/nav/account/useHeaderSession";
+import {
+  AccountPlaceholder,
+  DesktopAccount,
+  MobileAccountCard,
+  MobileAvatarLink,
+} from "@/components/nav/account/HeaderAccount";
+import { VISITOR_ONLY_CLASS } from "@/components/nav/account/savedLogin";
 import { motion, AnimatePresence } from "framer-motion";
 import { Menu, X, ChevronDown, Newspaper, CalendarDays } from "lucide-react";
 import { NAV_PANEL_CARD, NavMegaPanel, type NavPanelFeature, type NavPanelLink } from "@/components/nav/NavMegaPanel";
@@ -39,7 +46,9 @@ export function Header() {
   const [searchOpen, setSearchOpen] = useState(false);
   const [companyOpen, setCompanyOpen] = useState(false);
   const pathname = usePathname();
-  const signedIn = useSignedIn();
+  // Re-checked on every navigation: this header stays mounted across pages.
+  const session = useHeaderSession();
+  const signedIn = session.status !== "signedOut";
 
   const searchContainerRef = useRef<HTMLDivElement>(null);
   const companyContainerRef = useRef<HTMLDivElement>(null);
@@ -185,27 +194,46 @@ export function Header() {
           </div>
 
           <span className="w-px h-5 bg-border" />
-          <Link
-            href="/signin"
-            className="text-nav hover:text-accent-cyan transition-colors text-sm lg:text-base"
-          >
-            Log In
-          </Link>
-          <Link href="/signup">
-            <Button variant="primary" size="sm" className="lg:px-6 lg:py-3">
-              Sign Up
-            </Button>
-          </Link>
+          {/* Signed in: their account instead of Log In / Sign Up.
+              While a saved login is checked, the visitor buttons stay hidden. */}
+          {session.status === "signedIn" && session.user ? (
+            <DesktopAccount user={session.user} />
+          ) : session.status === "checking" ? (
+            <AccountPlaceholder withButton />
+          ) : (
+            <>
+              <Link
+                href="/signin"
+                className={`text-nav hover:text-accent-cyan transition-colors text-sm lg:text-base ${VISITOR_ONLY_CLASS}`}
+              >
+                Log In
+              </Link>
+              <Link href="/signup" className={VISITOR_ONLY_CLASS}>
+                <Button variant="primary" size="sm" className="lg:px-6 lg:py-3">
+                  Sign Up
+                </Button>
+              </Link>
+            </>
+          )}
         </nav>
 
-        {/* Mobile Hamburger Button */}
-        <button
-          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          className="lg:hidden p-2 text-[#f2f2f2] hover:text-accent-cyan transition-colors"
-          aria-label="Toggle menu"
-        >
-          {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
-        </button>
+        <div className="lg:hidden flex items-center gap-2">
+          {/* Phones: the avatar goes straight to the dashboard */}
+          {session.status === "signedIn" && session.user ? (
+            <MobileAvatarLink user={session.user} />
+          ) : session.status === "checking" ? (
+            <AccountPlaceholder />
+          ) : null}
+
+          {/* Mobile Hamburger Button */}
+          <button
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            className="p-2 text-[#f2f2f2] hover:text-accent-cyan transition-colors"
+            aria-label="Toggle menu"
+          >
+            {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+          </button>
+        </div>
       </div>
 
       {/* Mobile Menu Dropdown */}
@@ -225,6 +253,11 @@ export function Header() {
               transition={{ duration: 0.3 }}
               className="flex flex-col px-4 py-4 space-y-4"
             >
+              {/* Signed in: who they are, first — like an app's account header */}
+              {session.status === "signedIn" && session.user && (
+                <MobileAccountCard user={session.user} onNavigate={() => setMobileMenuOpen(false)} />
+              )}
+
               {/* Mobile Search — always visible on the mobile menu, no toggle
                   needed since the menu itself is already an explicit action */}
               <div className="glass-effect bg-[#1F2636]! rounded-lg w-full">
@@ -278,21 +311,24 @@ export function Header() {
                 </div>
               </div>
 
-              <div className="h-px bg-border my-2" />
-
-              {/* Mobile Auth Buttons */}
-              <Link
-                href="/signin"
-                onClick={() => setMobileMenuOpen(false)}
-                className="text-nav hover:text-accent-cyan transition-colors py-2 text-center"
-              >
-                Log In
-              </Link>
-              <Link href="/signup" onClick={() => setMobileMenuOpen(false)}>
-                <Button variant="primary" size="sm" className="w-full">
-                  Sign Up
-                </Button>
-              </Link>
+              {/* Mobile Auth Buttons — visitors only */}
+              {session.status === "signedOut" && (
+                <>
+                  <div className="h-px bg-border my-2" />
+                  <Link
+                    href="/signin"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="text-nav hover:text-accent-cyan transition-colors py-2 text-center"
+                  >
+                    Log In
+                  </Link>
+                  <Link href="/signup" onClick={() => setMobileMenuOpen(false)}>
+                    <Button variant="primary" size="sm" className="w-full">
+                      Sign Up
+                    </Button>
+                  </Link>
+                </>
+              )}
             </motion.nav>
           </motion.div>
         )}

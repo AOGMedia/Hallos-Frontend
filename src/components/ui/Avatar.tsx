@@ -9,6 +9,8 @@ interface AvatarProps {
   alt?: string;
   size?: "sm" | "md" | "lg" | "xl";
   className?: string;
+  /** Show first + last initials ("AC") instead of one letter. */
+  twoInitials?: boolean;
 }
 
 const SIZES = {
@@ -24,6 +26,13 @@ const COLORS = ["#7C5CFC", "#E5579F", "#1E88E5", "#00897B", "#F4511E", "#8E24AA"
 export function initialOf(name?: string | null): string {
   const letter = (name || "").trim().charAt(0);
   return letter ? letter.toUpperCase() : "?";
+}
+
+/** "Ada Creator" -> "AC"; one name -> its first letter. */
+export function initialsOf(name?: string | null): string {
+  const words = (name || "").trim().split(/\s+/).filter(Boolean);
+  if (words.length < 2) return initialOf(name);
+  return `${words[0].charAt(0)}${words[words.length - 1].charAt(0)}`.toUpperCase();
 }
 
 export function colorFor(name?: string | null): string {
@@ -51,7 +60,7 @@ export function resolveAvatarUrl(src?: string | null): string | null {
  * Uses a plain <img>, so pictures from any host (our storage, legacy S3)
  * render without image-domain configuration.
  */
-export function Avatar({ src, alt = "", size = "md", className = "" }: AvatarProps) {
+export function Avatar({ src, alt = "", size = "md", className = "", twoInitials = false }: AvatarProps) {
   const url = resolveAvatarUrl(src);
   const [failed, setFailed] = useState<string | null>(null);
   const showImage = url && failed !== url;
@@ -75,7 +84,7 @@ export function Avatar({ src, alt = "", size = "md", className = "" }: AvatarPro
           onError={() => setFailed(url)}
         />
       ) : (
-        <span aria-hidden>{initialOf(alt)}</span>
+        <span aria-hidden>{twoInitials ? initialsOf(alt) : initialOf(alt)}</span>
       )}
     </div>
   );

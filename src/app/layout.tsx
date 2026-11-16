@@ -8,6 +8,7 @@ import { JsonLd } from "@/components/seo/JsonLd";
 import { SITE } from "@/lib/seo/site";
 import { organizationSchema, websiteSchema } from "@/lib/seo/jsonLd";
 import { Suspense } from "react";
+import { SAVED_LOGIN_KEYS } from "@/components/nav/account/savedLogin";
 
 // No `alternates.canonical` here on purpose: it would be inherited by every
 // page that doesn't set its own, pointing them all at the homepage.
@@ -81,8 +82,17 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    // suppressHydrationWarning: the script below may set data-saved-login on
+    // <html> before React hydrates.
+    <html lang="en" suppressHydrationWarning>
       <head>
+        {/* Before first paint: mark a saved login so the header never flashes
+            "Log In" at someone who's signed in (see useHeaderSession). */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `try{if(${JSON.stringify(SAVED_LOGIN_KEYS)}.some(function(k){return localStorage.getItem(k)}))document.documentElement.setAttribute('data-saved-login','')}catch(e){}`,
+          }}
+        />
         {/* Body copy font — preloaded so text paints in the brand face, not a fallback swap */}
         <link
           rel="preload"
