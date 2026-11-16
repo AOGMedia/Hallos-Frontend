@@ -1,17 +1,21 @@
+'use client';
+
 import Image from 'next/image';
 import { CountdownTimer } from './CountdownTimer';
 import CalendarIcon from '@/components/icons/CalendarIcon';
 import ClockIcon from '@/components/icons/ClockIcon';
 import LocationPinIcon from '@/components/icons/LocationPinIcon';
+import { fillPrice } from '@/data/featuredEvent';
+import { useFeaturedEvent } from './FeaturedEventContext';
 
 interface EventLimitedSlotsSectionProps {
   onRegister: () => void;
 }
 
 export function EventLimitedSlotsSection({ onRegister }: EventLimitedSlotsSectionProps) {
-  // registration deadline: July 5, 2026 (local time at 23:59:59)
-  const targetDate = new Date(2026, 6, 5, 23, 59, 59);
-  const targetIso = targetDate.toISOString();
+  const event = useFeaturedEvent();
+  // Set in the admin (Event page → Registration deadline).
+  const targetIso = event.registrationDeadline;
   return (
     <section
       aria-label="Limited slots available"
@@ -39,7 +43,7 @@ export function EventLimitedSlotsSection({ onRegister }: EventLimitedSlotsSectio
               color: '#f2f2f2',
             }}
           >
-            Limited slots available.
+            {fillPrice(event.slots.title, event.price)}
           </h2>
           <p
             style={{
@@ -49,7 +53,7 @@ export function EventLimitedSlotsSection({ onRegister }: EventLimitedSlotsSectio
               color: 'rgba(242,242,242,0.7)',
             }}
           >
-            Don&apos;t miss this opportunity to fast-track your growth.
+            {fillPrice(event.slots.subtitle, event.price)}
           </p>
         </div>
 
@@ -86,7 +90,7 @@ export function EventLimitedSlotsSection({ onRegister }: EventLimitedSlotsSectio
                     color: 'rgba(242,242,242,0.8)',
                   }}
                 >
-                   9th to 11th December
+                  {event.dateLabel}
                 </span>
               </div>
 
@@ -107,7 +111,7 @@ export function EventLimitedSlotsSection({ onRegister }: EventLimitedSlotsSectio
                     color: 'rgba(242,242,242,0.8)',
                   }}
                 >
-                  2 days
+                  {event.durationLabel}
                 </span>
               </div>
 
@@ -130,7 +134,7 @@ export function EventLimitedSlotsSection({ onRegister }: EventLimitedSlotsSectio
                     lineHeight: '24px',
                   }}
                 >
-                  Lagos, Nigeria
+                  {event.locationLabel}
                 </span>
               </div>
             </div>
@@ -171,7 +175,7 @@ export function EventLimitedSlotsSection({ onRegister }: EventLimitedSlotsSectio
                 className="absolute inset-0 w-full h-full object-cover opacity-50 pointer-events-none select-none"
               />
               <div className="relative z-10">
-                <CountdownTimer targetDate={targetIso} />
+                <CountdownTimer targetDate={targetIso} closed={!event.registrationOpen} />
               </div>
             </div>
           </div>

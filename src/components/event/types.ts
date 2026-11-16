@@ -10,7 +10,9 @@ export interface EventSectionProps {
 }
 
 export interface CountdownTimerProps {
-  targetDate: string; 
+  targetDate: string;
+  /** Registration closed from the admin: shows zeros and says so. */
+  closed?: boolean;
 }
 
 export interface TimeUnit {

@@ -2,6 +2,8 @@
 
 import { useState } from 'react';
 import { ChevronDown, ChevronUp } from 'lucide-react';
+import { fillPrice } from '@/data/featuredEvent';
+import { useFeaturedEvent } from './FeaturedEventContext';
 
 interface FAQItem {
   id: string;
@@ -9,34 +11,13 @@ interface FAQItem {
   answer: string;
 }
 
-const FAQ_ITEMS: FAQItem[] = [
-  {
-    id: 'faq-1',
-    question: 'How do I register for the event?',
-    answer:
-      'Click any "Register" button on this page and complete the registration form. A ₦3,000 non-refundable commitment fee is required to secure your spot.',
-  },
-  {
-    id: 'faq-2',
-    question: 'Is the event fully covered?',
-    answer:
-      'Yes — once you are shortlisted among the participants, all expenses for the 2-day event including accommodation and meals are fully covered.',
-  },
-  {
-    id: 'faq-3',
-    question: 'What happens after I register?',
-    answer:
-      'After registering, you will receive a confirmation email with further instructions.',
-  },
-  {
-    id: 'faq-4',
-    question: 'Can I transfer my slot to someone else?',
-    answer:
-      'No. Participation in the program is non-transferable. Shortlisted slots cannot be transferred to another individual.',
-  },
-];
-
 export function EventFAQSection() {
+  const { faqs, price } = useFeaturedEvent();
+  const FAQ_ITEMS: FAQItem[] = faqs.map((faq, i) => ({
+    id: `faq-${i + 1}`,
+    question: fillPrice(faq.question, price),
+    answer: fillPrice(faq.answer, price),
+  }));
   const [openId, setOpenId] = useState<string | null>('faq-1');
 
   const toggle = (id: string) => {

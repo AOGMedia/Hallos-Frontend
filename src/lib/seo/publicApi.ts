@@ -1,6 +1,7 @@
 import type { BlogPost } from '@/services/blogService';
 import type { Series, SeriesCreator } from '@/types/series';
 import { isLegacyLiveClass } from '@/lib/live/providers';
+import { DEFAULT_EVENT, normalizeEvent, type FeaturedEvent } from '@/data/featuredEvent';
 
 /**
  * Server-only module. Server-side reads of PUBLIC backend endpoints, for server-rendered pages,
@@ -309,6 +310,17 @@ export async function fetchDepartmentCourses(
     3600
   );
   return data?.success ? data.courses.map(toPublicCourse) : null;
+}
+
+// ── Featured event (/events) ───────────────────────────────────────────────
+
+/**
+ * The event as staff set it in the admin. Never fails: a slow (3s), down or
+ * odd response gives the built-in event, so the page always renders.
+ */
+export async function fetchFeaturedEvent(): Promise<FeaturedEvent> {
+  const { data } = await getJson<{ success: boolean; data: unknown }>('/api/events/featured', 60, 3000);
+  return data?.success ? normalizeEvent(data.data) : DEFAULT_EVENT;
 }
 
 export async function fetchCourse(id: string): Promise<{ course: PublicCourse | null; notFound: boolean }> {

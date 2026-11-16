@@ -1,43 +1,53 @@
+import type { Metadata } from 'next';
 import { EventLandingPage } from '@/components/event/EventLandingPage';
 import { JsonLd } from '@/components/seo/JsonLd';
 import { buildMetadata } from '@/lib/metadata';
 import { breadcrumbSchema, eventSchema } from '@/lib/seo/jsonLd';
-import { FEATURED_EVENT, isFeaturedEventUpcoming } from '@/data/featuredEvent';
+import { fetchFeaturedEvent } from '@/lib/seo/publicApi';
+import { isFeaturedEventUpcoming } from '@/data/featuredEvent';
 
 /**
  * Public events page — the same content as /dashboard/events, readable
  * without signing in. Anyone can fill the application; paying needs an
  * account, so a visitor who submits signs in and comes back to the form with
  * their answers kept.
+ *
+ * The content is set by staff in the admin (Event page) and falls back to the
+ * built-in event if the API can't be reached.
  */
 
-// Re-render daily so the event schema drops off on its own once the event ends.
-export const revalidate = 86400;
+// Re-rendered at most every minute, so admin changes show without a deploy
+// (and the event schema drops off on its own once the event ends).
+export const revalidate = 60;
 
-export const metadata = buildMetadata({
-  title: FEATURED_EVENT.name,
-  description: `${FEATURED_EVENT.dateLabel} · ${FEATURED_EVENT.locationLabel}. ${FEATURED_EVENT.description}`,
-  thumbnail: FEATURED_EVENT.image,
-  path: '/events',
-});
+export async function generateMetadata(): Promise<Metadata> {
+  const event = await fetchFeaturedEvent();
+  return buildMetadata({
+    title: event.name,
+    description: `${event.dateLabel} · ${event.locationLabel}. ${event.description}`,
+    thumbnail: event.image,
+    path: '/events',
+  });
+}
 
-export default function EventsPage() {
+export default async function EventsPage() {
+  const event = await fetchFeaturedEvent();
   return (
     <>
       <JsonLd
         data={[
-          ...(isFeaturedEventUpcoming()
+          ...(isFeaturedEventUpcoming(new Date(), event)
             ? [
                 eventSchema({
-                  name: FEATURED_EVENT.name,
-                  description: FEATURED_EVENT.description,
-                  startDate: FEATURED_EVENT.startDate,
-                  endDate: FEATURED_EVENT.endDate,
+                  name: event.name,
+                  description: event.description,
+                  startDate: event.startDate,
+                  endDate: event.endDate,
                   path: '/events',
-                  image: FEATURED_EVENT.image,
-                  locationName: FEATURED_EVENT.locationLabel,
-                  locality: FEATURED_EVENT.locality,
-                  country: FEATURED_EVENT.country,
+                  image: event.image,
+                  locationName: event.locationLabel,
+                  locality: event.locality,
+                  country: event.country,
                 }),
               ]
             : []),
@@ -47,7 +57,7 @@ export default function EventsPage() {
           ]),
         ]}
       />
-      <EventLandingPage isPublicPage />
+      <EventLandingPage isPublicPage event={event} />
     </>
   );
 }

@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { TimeUnit } from './TimeUnit';
 import type { CountdownTimerProps } from './types';
 
-export function CountdownTimer({ targetDate }: CountdownTimerProps) {
+export function CountdownTimer({ targetDate, closed = false }: CountdownTimerProps) {
   const [timeLeft, setTimeLeft] = useState({
     days: 0,
     hours: 0,
@@ -13,6 +13,11 @@ export function CountdownTimer({ targetDate }: CountdownTimerProps) {
   });
 
   useEffect(() => {
+    // Closed from the admin: nothing to count down to.
+    if (closed) {
+      setTimeLeft({ days: 0, hours: 0, minutes: 0, seconds: 0 });
+      return;
+    }
     const calculateTimeLeft = () => {
       const difference = new Date(targetDate).getTime() - new Date().getTime();
       
@@ -32,12 +37,12 @@ export function CountdownTimer({ targetDate }: CountdownTimerProps) {
     const timer = setInterval(calculateTimeLeft, 1000);
 
     return () => clearInterval(timer);
-  }, [targetDate]);
+  }, [targetDate, closed]);
 
   return (
     <div className="flex flex-col gap-4 sm:gap-6">
       <p className="text-body text-sm sm:text-base font-bold" style={{ color: '#ffffff' }}>
-        Registration ends in:
+        {closed ? 'Registration is closed' : 'Registration ends in:'}
       </p>
       <div className="flex gap-3 sm:gap-[19.2px]">
         <TimeUnit value={timeLeft.days} label="Days" />

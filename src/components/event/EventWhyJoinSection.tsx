@@ -1,35 +1,21 @@
+'use client';
+
 import Image from 'next/image';
 import { Button } from '@/components/ui/Button';
 import { Users, Rocket, Brain, Target } from 'lucide-react';
+import { fillPrice } from '@/data/featuredEvent';
+import { useFeaturedEvent } from './FeaturedEventContext';
 
-const WHY_JOIN_FEATURES = [
-  {
-    icon: Rocket,
-    title: 'Accelerated Growth',
-    description: 'Learn practical skills you can apply immediately',
-    highlighted: false,
-  },
-  {
-    icon: Users,
-    title: 'High-Value Networking',
-    description: 'Connect with ambitious, like-minded individuals',
-    highlighted: false,
-  },
-  {
-    icon: Brain,
-    title: 'Real-Life Skills',
-    description: "Gain insights they don't teach in school",
-    highlighted: false,
-  },
-  {
-    icon: Target,
-    title: 'Clarity & Direction',
-    description: 'Leave with a clear plan for your next phase',
-    highlighted: true,
-  },
-];
+// Icons go with the cards in order (and repeat if staff add more than four).
+const ICONS = [Rocket, Users, Brain, Target];
 
 export function EventWhyJoinSection() {
+  const { whyJoin, price } = useFeaturedEvent();
+  const features = whyJoin.map((item, i) => ({
+    icon: ICONS[i % ICONS.length],
+    title: fillPrice(item.title, price),
+    description: fillPrice(item.description, price),
+  }));
   return (
     <section
       aria-label="Why you should join"
@@ -144,9 +130,9 @@ export function EventWhyJoinSection() {
 
         {/* Feature columns */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {WHY_JOIN_FEATURES.map((feature) => (
+          {features.map((feature, i) => (
             <div
-              key={feature.title}
+              key={i}
               className="event-info-bar relative overflow-hidden rounded-2xl p-6 flex flex-col gap-4"
             >
               {/* Background decorative SVGs */}
