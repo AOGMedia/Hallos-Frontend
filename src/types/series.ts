@@ -177,6 +177,14 @@ export interface UpdateSeriesResponse {
   success: boolean;
   message: string;
   series: Partial<Series>;
+  /** Sessions added by an end-date extension. */
+  newSessionsCount?: number;
+  /** Present when the days, start time or start date changed. */
+  rescheduled?: {
+    upcomingSessions: number;
+    nextSession: NextSession | null;
+    attendeesNotified: number;
+  };
 }
 
 export interface CancelSeriesResponse {

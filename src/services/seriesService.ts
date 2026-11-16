@@ -17,6 +17,7 @@ import type {
   GetSeriesResponse,
   UpdateSeriesResponse,
   CancelSeriesResponse,
+  RecurrencePattern,
 } from '@/types/series';
 import type { LiveProvider } from '@/lib/live/providers';
 
@@ -54,6 +55,12 @@ export interface UpdateSeriesBody {
   maxParticipants?: number;
   /** Applies to sessions that haven't started yet. */
   streamingProvider?: LiveProvider;
+  /** YYYY-MM-DD, later than the current end. Adds sessions for the extra weeks. */
+  endDate?: string;
+  /** YYYY-MM-DD. Only before the first session has run. */
+  startDate?: string;
+  /** New weekdays and/or start time; upcoming sessions move and attendees are emailed. */
+  recurrencePattern?: Partial<Pick<RecurrencePattern, 'days' | 'startTime'>>;
 }
 
 /**
@@ -222,6 +229,9 @@ export async function updateSeries(
         fd.append('maxParticipants', String(body.maxParticipants));
       }
       if (body.streamingProvider) fd.append('streamingProvider', body.streamingProvider);
+      if (body.endDate) fd.append('endDate', body.endDate);
+      if (body.startDate) fd.append('startDate', body.startDate);
+      if (body.recurrencePattern) fd.append('recurrencePattern', JSON.stringify(body.recurrencePattern));
       fd.append('thumbnail', thumbnailFile);
 
       const res = await apiClient.put<UpdateSeriesResponse>(`/api/live/series/${id}`, fd, {
