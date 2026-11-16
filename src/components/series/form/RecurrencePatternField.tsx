@@ -1,10 +1,17 @@
 interface RecurrencePatternFieldProps {
   selectedDays: string[];
   startTime: string;
-  duration: string;
+  /** Not needed when showDuration is false. */
+  duration?: string;
   onDaysChange: (days: string[]) => void;
   onStartTimeChange: (time: string) => void;
-  onDurationChange: (duration: string) => void;
+  onDurationChange?: (duration: string) => void;
+  /** False hides the duration input (e.g. editing a series, where it's fixed). */
+  showDuration?: boolean;
+  /** Replaces the default heading. */
+  label?: string;
+  /** Replaces the default helper text under the label. */
+  helperText?: string;
   errors?: {
     days?: string;
     startTime?: string;
@@ -25,10 +32,13 @@ const DAYS_OF_WEEK = [
 export function RecurrencePatternField({
   selectedDays,
   startTime,
-  duration,
+  duration = '',
   onDaysChange,
   onStartTimeChange,
   onDurationChange,
+  showDuration = true,
+  label = 'Recurrence Pattern',
+  helperText,
   errors
 }: RecurrencePatternFieldProps) {
   const toggleDay = (day: string) => {
@@ -62,9 +72,9 @@ export function RecurrencePatternField({
 
   return (
     <div className="flex flex-col gap-4">
-      <label className="live-event-label">Recurrence Pattern</label>
+      <label className="live-event-label">{label}</label>
       <p className="live-event-helper-text">
-        Define when your sessions will occur. Select the days of the week, start time, and duration for each session.
+        {helperText ?? 'Define when your sessions will occur. Select the days of the week, start time, and duration for each session.'}
       </p>
 
       {/* Days of Week Selection */}
@@ -75,8 +85,9 @@ export function RecurrencePatternField({
             <button
               key={day.value}
               type="button"
+              aria-pressed={selectedDays.includes(day.value)}
               onClick={() => toggleDay(day.value)}
-              className={`px-4 py-2 rounded-lg border-2 transition-all font-medium ${
+              className={`min-h-11 px-4 py-2 rounded-lg border-2 transition-all font-medium ${
                 selectedDays.includes(day.value)
                   ? 'border-primary bg-primary/20 text-primary'
                   : 'border-border/20 bg-background-dark text-text-primary/70 hover:border-border/40'
@@ -94,7 +105,7 @@ export function RecurrencePatternField({
       </div>
 
       {/* Start Time and Duration */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className={showDuration ? 'grid grid-cols-1 md:grid-cols-2 gap-4' : 'grid grid-cols-1 gap-4 md:max-w-xs'}>
         {/* Start Time */}
         <div className="flex flex-col gap-1">
           <label className="text-sm text-text-primary/70">Session Start Time</label>
@@ -120,30 +131,34 @@ export function RecurrencePatternField({
         </div>
 
         {/* Duration */}
-        <div className="flex flex-col gap-1">
-          <label className="text-sm text-text-primary/70">Duration (minutes)</label>
-          <div className="live-event-input">
-            <input
-              type="number"
-              value={duration}
-              onChange={(e) => onDurationChange(e.target.value)}
-              placeholder="e.g., 60"
-              min="1"
-              className="w-full bg-transparent outline-none live-event-input-text"
-            />
-          </div>
-          {durationError && (
-            <div className="text-sm text-red-400 mt-1">
-              {durationError}
+        {showDuration && (
+          <div className="flex flex-col gap-1">
+            <label className="text-sm text-text-primary/70">Duration (minutes)</label>
+            <div className="live-event-input">
+              <input
+                type="number"
+                value={duration}
+                onChange={(e) => onDurationChange?.(e.target.value)}
+                placeholder="e.g., 60"
+                min="1"
+                className="w-full bg-transparent outline-none live-event-input-text"
+              />
             </div>
-          )}
-        </div>
+            {durationError && (
+              <div className="text-sm text-red-400 mt-1">
+                {durationError}
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Helper text for duration */}
-      <p className="text-xs text-text-primary/50">
-        Common durations: 30 min, 60 min (1 hour), 90 min (1.5 hours), 120 min (2 hours)
-      </p>
+      {showDuration && (
+        <p className="text-xs text-text-primary/50">
+          Common durations: 30 min, 60 min (1 hour), 90 min (1.5 hours), 120 min (2 hours)
+        </p>
+      )}
     </div>
   );
 }

@@ -19,6 +19,24 @@ import {
 import { DEFAULT_LIVE_PROVIDER, type LiveProvider } from '@/lib/live/providers';
 import { CurrencyCode } from '@/types/videoUpload';
 import { AlertModal } from '@/components/ui/AlertModal';
+import { ConfirmationModal } from '@/components/ui/ConfirmationModal';
+import { SeriesScheduleSection } from '@/components/series/edit/SeriesScheduleSection';
+import {
+  diffSchedule,
+  hasSeriesStarted,
+  isSeriesLiveNow,
+  scheduleFormFrom,
+  validateSchedule,
+  type ScheduleForm,
+} from '@/components/series/edit/scheduleChange';
+
+/** Today in the creator's own time zone, as a date input value. */
+function todayInput(): string {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+const EMPTY_SCHEDULE: ScheduleForm = { startDate: '', endDate: '', days: [], startTime: '' };
 
 export default function EditSeriesPage() {
   const params = useParams();
@@ -48,10 +66,11 @@ export default function EditSeriesPage() {
   const [streamingProvider, setStreamingProvider] = useState<LiveProvider>(DEFAULT_LIVE_PROVIDER);
   const [thumbnail, setThumbnail] = useState<File | null>(null);
   const [thumbnailPreview, setThumbnailPreview] = useState<string | null>(null);
-  const [endDate, setEndDate] = useState('');
+  const [schedule, setSchedule] = useState<ScheduleForm>(EMPTY_SCHEDULE);
 
   // UI state
   const [isSaving, setIsSaving] = useState(false);
+  const [confirmReschedule, setConfirmReschedule] = useState(false);
   const [alertState, setAlertState] = useState<{ open: boolean; message: string; isError: boolean }>({ 
     open: false, 
     message: "",
@@ -89,9 +108,12 @@ export default function EditSeriesPage() {
       setMaxParticipants(String(series.maxParticipants));
       setStreamingProvider(series.streamingProvider ?? DEFAULT_LIVE_PROVIDER);
       setThumbnailPreview(series.thumbnailUrl || null);
-      setEndDate(series.endDate ? series.endDate.split('T')[0] : '');
+      setSchedule(scheduleFormFrom(series));
     }
   }, [series]);
+
+  const originalSchedule = useMemo(() => (series ? scheduleFormFrom(series) : EMPTY_SCHEDULE), [series]);
+  const scheduleDiff = useMemo(() => diffSchedule(originalSchedule, schedule), [originalSchedule, schedule]);
 
   // Redirect if not creator (only after we have both userId and series data)
   useEffect(() => {
@@ -106,26 +128,33 @@ export default function EditSeriesPage() {
     setThumbnailPreview(preview);
   };
 
-  const handleSave = async () => {
+  const handleSave = () => {
     if (!title.trim()) {
       setAlertState({ open: true, message: 'Title is required', isError: true });
       return;
     }
 
-    // endDate can only be extended, not shortened
-    if (endDate && series?.endDate) {
-      const originalEnd = new Date(series.endDate);
-      const newEnd = new Date(endDate);
-      if (newEnd < originalEnd) {
-        setAlertState({ open: true, message: 'End date can only be extended forward, not shortened.', isError: true });
-        return;
-      }
+    const scheduleError = validateSchedule(originalSchedule, schedule, todayInput());
+    if (scheduleError) {
+      setAlertState({ open: true, message: scheduleError, isError: true });
+      return;
     }
 
+    // Moving sessions emails everyone enrolled, so it's confirmed first.
+    if (scheduleDiff.rescheduling) {
+      setConfirmReschedule(true);
+      return;
+    }
+    void save();
+  };
+
+  const save = async () => {
+    setConfirmReschedule(false);
     setIsSaving(true);
-    
+
     try {
-      // Prepare update body
+      // Schedule fields are only sent when they changed, so an ordinary save
+      // never moves sessions or emails attendees.
       const updateBody = {
         title: title.trim(),
         description: description.trim() || undefined,
@@ -133,20 +162,20 @@ export default function EditSeriesPage() {
         category: category || undefined,
         privacy,
         maxParticipants: parseInt(maxParticipants),
-        endDate: endDate || undefined,
+        ...scheduleDiff.body,
         // Only sent when changed; applies to sessions that haven't started.
         streamingProvider:
           streamingProvider !== (series?.streamingProvider ?? DEFAULT_LIVE_PROVIDER) ? streamingProvider : undefined,
       };
-
-      console.log('Updating series:', updateBody);
 
       const response = await updateSeries(id, updateBody, thumbnail || undefined);
 
       if (response.success) {
         setAlertState({
           open: true,
-          message: 'Series updated successfully!',
+          message: response.rescheduled || response.newSessionsCount
+            ? response.message
+            : 'Series updated successfully!',
           isError: false
         });
         
@@ -226,7 +255,7 @@ export default function EditSeriesPage() {
             Edit Series
           </h1>
           <p className="text-text-muted text-sm">
-            Update series information. Note: Schedule and recurrence pattern cannot be changed after creation.
+            Update the details and schedule. Sessions that already happened stay as they are.
           </p>
         </div>
 
@@ -267,30 +296,23 @@ export default function EditSeriesPage() {
             onFileSelect={handleThumbnailSelect} 
           />
 
-          {/* End Date - extendable only */}
-          <div className="flex flex-col gap-2">
-            <label className="text-sm font-medium text-text-primary">
-              End Date
-              <span className="text-text-muted font-normal ml-2 text-xs">(can only be extended forward)</span>
-            </label>
-            <input
-              type="date"
-              value={endDate}
-              min={series.endDate ? series.endDate.split('T')[0] : undefined}
-              onChange={(e) => setEndDate(e.target.value)}
-              className="bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-text-primary text-sm focus:outline-none focus:border-primary [color-scheme:dark]"
+          <div className="border-t border-border/20 pt-6">
+            <SeriesScheduleSection
+              value={schedule}
+              onChange={setSchedule}
+              originalEndDate={originalSchedule.endDate}
+              today={todayInput()}
+              started={hasSeriesStarted(series)}
+              liveNow={isSeriesLiveNow(series)}
+              duration={series.recurrencePattern.duration}
+              rescheduling={scheduleDiff.rescheduling}
             />
-            <p className="text-xs text-text-muted">
-              Current end date: {new Date(series.endDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-            </p>
           </div>
 
-          <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4">
-            <h3 className="text-sm font-semibold text-blue-400 mb-2">Cannot be changed:</h3>
+          <div className="rounded-lg border border-border/20 bg-background-dark p-4">
+            <h3 className="text-sm font-semibold text-text-primary mb-2">Fixed after creation</h3>
             <ul className="text-sm text-text-muted space-y-1">
-              <li>• Start date: {new Date(series.startDate).toLocaleDateString()}</li>
-              <li>• Schedule: {series.recurrencePattern.days.join(', ')}</li>
-              <li>• Session time: {series.recurrencePattern.startTime} ({series.recurrencePattern.duration} mins)</li>
+              <li>• Session length: {series.recurrencePattern.duration} mins</li>
               <li>• Currency: {series.currency}</li>
               <li>• Total sessions: {series.stats?.totalSessions || 0}</li>
             </ul>
@@ -327,6 +349,16 @@ export default function EditSeriesPage() {
           </div>
         </div>
       </div>
+
+      <ConfirmationModal
+        isOpen={confirmReschedule}
+        title="Change the schedule?"
+        message="Upcoming sessions will move to the new schedule and everyone enrolled will get an email about it. Sessions that already happened stay as they are."
+        confirmText="Yes, change"
+        cancelText="Go back"
+        onConfirm={() => void save()}
+        onCancel={() => setConfirmReschedule(false)}
+      />
 
       {/* Alert Modal */}
       <AlertModal 
