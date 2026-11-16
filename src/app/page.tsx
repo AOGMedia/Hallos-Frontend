@@ -15,7 +15,9 @@ import { FAQ } from "@/components/sections/FAQ";
 import { CTA } from "@/components/sections/CTA";
 import { Footer } from "@/components/sections/Footer";
 import { SpecialCoursesSection } from "@/components/dashboard/SpecialCoursesSection";
-import { LandingRedirect } from "@/components/auth/LandingRedirect";
+// Signed-in people now stay on the homepage (the header shows their account
+// and a Dashboard button), so they're no longer sent to /dashboard on arrival.
+// import { LandingRedirect } from "@/components/auth/LandingRedirect";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { buildMetadata } from "@/lib/metadata";
 import { SITE } from "@/lib/seo/site";
@@ -64,7 +66,7 @@ export default async function Home() {
   return (
     <div className="min-h-screen ">
       <JsonLd data={structuredData} />
-      <LandingRedirect />
+      {/* <LandingRedirect /> */}
       <main>
         {/* <EventSection {...mockRootProps} /> */}
         {/* Hallos Millionaires Retreat hero: hidden for now. Uncomment (and its import) to bring it back. */}

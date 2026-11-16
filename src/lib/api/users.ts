@@ -5,7 +5,16 @@ import { authApi } from './auth';
 export async function getCurrentUser(): Promise<User> {
   try {
     const response = await apiClient.get('/auth/me');
-    const responseData = response.data as unknown;
+    return parseMeResponse(response.data);
+  } catch {
+    const res = await authApi.me();
+    return res.user;
+  }
+}
+
+/** The signed-in person from an /auth/me response body. */
+export function parseMeResponse(body: unknown): User {
+    const responseData = body;
     // Handle response structure: { success: true, data: { ...userFields } }
     const raw = (responseData as { data?: unknown }).data ?? 
                 (responseData as { user?: unknown }).user ?? 
@@ -31,8 +40,4 @@ export async function getCurrentUser(): Promise<User> {
       role: role,
       avatarUrl,
     };
-  } catch {
-    const res = await authApi.me();
-    return res.user;
-  }
 }

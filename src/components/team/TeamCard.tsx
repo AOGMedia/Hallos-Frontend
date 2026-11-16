@@ -33,7 +33,8 @@ export function TeamCard({ member, onViewDetails }: TeamCardProps) {
           alt={member.name}
           fill
           priority
-          quality={90}
+          // Must be one of images.qualities in next.config.ts.
+          quality={75}
           className="object-cover object-top"
           sizes="(max-width: 640px) 40vw, 40vw"
           // sizes="(max-width: 640px) 114px, 145px"

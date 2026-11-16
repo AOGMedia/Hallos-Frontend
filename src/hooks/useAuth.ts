@@ -4,6 +4,7 @@ import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { authApi } from '@/lib/api/auth';
 import { useAuthStore } from '@/store/authStore';
+import { clearAccountPreview } from '@/components/nav/account/accountPreview';
 import type {
   SignupRequest,
   LoginRequest,
@@ -178,6 +179,8 @@ export function useAuth() {
     clearAuth();
     localStorage.removeItem("auth_token");
     localStorage.removeItem("user_id");
+    // The site header's remembered name/photo (see nav/account/accountPreview).
+    clearAccountPreview();
 
     router.push('/signin');
   };
