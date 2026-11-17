@@ -50,6 +50,7 @@ export function LiveClassesTab({ communityContent, currentUserId }: LiveClassesT
               currency={data.currency || 'NGN'}
               duration={data.duration || ''}
               posted={data.posted || (data.createdAt ? new Date(data.createdAt).toLocaleDateString() : '')}
+              startsOn={data.startTime}
               rating={data.rating ?? 0}
               reviews={data.reviews || '0'}
               isLive={Boolean(isLiveNow)}

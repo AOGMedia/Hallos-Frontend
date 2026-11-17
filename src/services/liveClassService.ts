@@ -351,9 +351,23 @@ export async function listLiveClasses(): Promise<LiveClass[]> {
   }
 }
 
+/** Public classes everyone can see (public only, at most 20). */
 export async function listLiveClassesExternal(): Promise<LiveClass[]> {
+  return fetchListedClasses('/live/getLive')
+}
+
+/**
+ * The signed-in creator's own upcoming and live classes, private ones
+ * included — the public list above never has private classes.
+ */
+export async function listMyLiveClasses(): Promise<LiveClass[]> {
+  return fetchListedClasses('/live/my-classes', { limit: 100 })
+}
+
+/** A list endpoint (getLive, my-classes) mapped to the app's class shape. */
+async function fetchListedClasses(url: string, params?: Record<string, string | number>): Promise<LiveClass[]> {
   try {
-    const res = await apiClient.get('/live/getLive')
+    const res = await apiClient.get(url, params ? { params } : undefined)
     const data = res.data as unknown
     // console.log('API Response (/live/getLive):', data)
     const liveClasses = (data as { liveClasses?: unknown[] }).liveClasses

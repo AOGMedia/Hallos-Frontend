@@ -7,6 +7,8 @@ import ClockIcon from '@/components/icons/ClockIcon';
 import UploadIcon from '@/components/icons/UploadIcon';
 import StarIcon from '@/components/icons/StarIcon';
 import BookmarkIcon from '@/components/icons/BookmarkIcon';
+import { CalendarDays } from 'lucide-react';
+import { formatClassShortDate } from '@/lib/live/classTime';
 
 interface CourseCardProps {
   id?: string;
@@ -20,6 +22,11 @@ interface CourseCardProps {
   currency?: string;
   duration: string;
   posted: string;
+  /**
+   * Live classes: when the class starts (ISO). Shown with a calendar icon
+   * instead of the upload date in `posted`, which stays the fallback.
+   */
+  startsOn?: string;
   /** Omit to hide the star rating (e.g. on public pages without real reviews). */
   rating?: number;
   reviews?: string;
@@ -46,6 +53,7 @@ export function CourseCard({
   currency = 'NGN',
   duration,
   posted,
+  startsOn,
   rating,
   reviews,
   isLive = false,
@@ -55,6 +63,9 @@ export function CourseCard({
   onNavigate,
   isLandingPage = false,
 }: CourseCardProps) {
+  // Live classes show their start date rather than when they were created.
+  const startDateLabel = formatClassShortDate(startsOn);
+
   // Format price with currency
   const formatPrice = (price: number, currency: string) => {
     if (price === 0) return 'Free';
@@ -271,10 +282,20 @@ export function CourseCard({
               <ClockIcon width={24} height={24} color="#F2F2F2" />
               <span className="text-small">{duration}</span>
             </div>
-            <div className="flex items-center gap-1.5">
-              <UploadIcon width={17} height={18} color="#F2F2F2" />
-              <span className="text-small">{posted}</span>
-            </div>
+            {startDateLabel ? (
+              <div className="flex items-center gap-1.5" title="Class date">
+                <CalendarDays size={17} color="#F2F2F2" aria-hidden="true" />
+                <span className="text-small">
+                  <span className="sr-only">Starts </span>
+                  {startDateLabel}
+                </span>
+              </div>
+            ) : (
+              <div className="flex items-center gap-1.5">
+                <UploadIcon width={17} height={18} color="#F2F2F2" />
+                <span className="text-small">{posted}</span>
+              </div>
+            )}
           </div>
           
           {rating !== undefined && (

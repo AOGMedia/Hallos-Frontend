@@ -177,6 +177,7 @@ export function ClassTabContent({ activeTab }: ClassTabContentProps) {
                 price={typeof c.price === 'number' ? c.price : Number(c.price) || 0}
                 duration={formatDuration(c.startTime, c.endTime)}
                 posted={c.createdAt ? new Date(c.createdAt).toLocaleDateString() : ''}
+                startsOn={c.startTime}
                 rating={0}
                 reviews={'0'}
                 isLive={Boolean(isLiveNow)}
