@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/Badge';
 import { Avatar } from '@/components/ui/Avatar';
 import ClockIcon from '@/components/icons/ClockIcon';
 import UploadIcon from '@/components/icons/UploadIcon';
-import StarIcon from '@/components/icons/StarIcon';
+// import StarIcon from '@/components/icons/StarIcon'; // star rating hidden for now
 import BookmarkIcon from '@/components/icons/BookmarkIcon';
 import { CalendarDays } from 'lucide-react';
 import { formatClassShortDate } from '@/lib/live/classTime';
@@ -27,7 +27,7 @@ interface CourseCardProps {
    * instead of the upload date in `posted`, which stays the fallback.
    */
   startsOn?: string;
-  /** Omit to hide the star rating (e.g. on public pages without real reviews). */
+  /** Star rating — currently hidden on every card (no way to rate yet). */
   rating?: number;
   reviews?: string;
   isLive?: boolean;
@@ -54,8 +54,7 @@ export function CourseCard({
   duration,
   posted,
   startsOn,
-  rating,
-  reviews,
+  // rating, reviews: accepted but not shown while the star rating is hidden (see below).
   isLive = false,
   scheduledFor,
   isPurchased = false,
@@ -298,12 +297,15 @@ export function CourseCard({
             )}
           </div>
           
+          {/* Star rating hidden for now: there's no way to rate yet. To bring
+              it back, uncomment this, the StarIcon import and rating/reviews
+              in the props destructuring above.
           {rating !== undefined && (
             <div className="flex items-center gap-2">
               <StarIcon width={21} height={21} color="#FFD42A" />
               <span className="text-small">{rating} ({reviews})</span>
             </div>
-          )}
+          )} */}
         </div>
       </div>
     </Card>
