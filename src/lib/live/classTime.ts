@@ -17,6 +17,12 @@ export function formatClassDate(value?: string | null): string {
     : "";
 }
 
+/** "Nov 20, 2026" — compact, for cards. */
+export function formatClassShortDate(value?: string | null): string {
+  const d = valid(value);
+  return d ? d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" }) : "";
+}
+
 /** "7:00 PM" */
 export function formatClassTime(value?: string | null): string {
   const d = valid(value);

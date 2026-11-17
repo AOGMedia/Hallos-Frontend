@@ -4,11 +4,8 @@ import React from "react";
 import { Card } from "@/components/ui/Card";
 import ShareIcon from "@/components/icons/ShareIcon";
 import PeopleIcon from "@/components/icons/PeopleIcon";
-import {
-  formatCurrency,
-  formatDateLabel,
-  formatTimeLabel,
-} from "@/utils/formatters";
+import { formatCurrency } from "@/utils/formatters";
+import { formatClassDate, formatClassTimeRange } from "@/lib/live/classTime";
 import LiveButton from "../ui/LiveButton";
 import { Check, Pencil } from "lucide-react";
 
@@ -48,10 +45,10 @@ export default function ScheduledSummary({
   onDelete,
   onEdit,
 }: ScheduledSummaryProps) {
-  const dateLabel = formatDateLabel(date);
-  const timeLabel = `${formatTimeLabel(startTime)} To ${formatTimeLabel(
-    endTime
-  )}`;
+  // Class times are full dates saved as the creator set them; read them the
+  // same way as everywhere else (the old "HH:MM" formatter misread them).
+  const dateLabel = formatClassDate(date);
+  const timeLabel = formatClassTimeRange(startTime, endTime);
   const priceLabel = formatCurrency(price, currency);
   const earnedLabel = formatCurrency(totalEarned, currency);
 

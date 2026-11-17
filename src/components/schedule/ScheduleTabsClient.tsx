@@ -14,6 +14,7 @@ import {
 import { useRouter } from "next/navigation";
 import {
   listLiveClassesExternal,
+  listMyLiveClasses,
   type LiveClass,
 } from "@/services/liveClassService";
 import { deleteLiveClass } from "@/lib/api/live";
@@ -57,6 +58,7 @@ export function ScheduleTabsClient() {
     try {
       await deleteLiveClass(id);
       queryClient.invalidateQueries({ queryKey: ["schedule-live-classes"] });
+      queryClient.invalidateQueries({ queryKey: ["schedule-my-live-classes"] });
     } catch (err: unknown) {
       if (typeof err === "object" && err !== null) {
         const errorObj = err as { hasPurchases?: boolean; message?: string };
@@ -83,6 +85,16 @@ export function ScheduleTabsClient() {
     refetchOnMount: "always",
   });
 
+  // The creator's own classes, private ones included (the public list above
+  // never has private classes, and stops at 20).
+  const { data: myClassesData, isError: myClassesFailed } = useQuery({
+    queryKey: ["schedule-my-live-classes", userId],
+    queryFn: listMyLiveClasses,
+    enabled: Boolean(userId),
+    staleTime: 0,
+    refetchOnMount: "always",
+  });
+
   // Fetch live series
   const { data: seriesData, isLoading: isLoadingSeries } = useQuery({
     queryKey: ["schedule-live-series"],
@@ -98,10 +110,12 @@ export function ScheduleTabsClient() {
   const series = useMemo(() => seriesData || [], [seriesData]);
   const endedClasses = useMemo(() => endedClassesData || [], [endedClassesData]);
 
-  // Filter user's own classes and series
+  // Filter user's own classes and series. Own classes come from their own
+  // list; if that couldn't load, fall back to their public ones as before.
   const myClasses = useMemo(() => {
+    if (myClassesData && !myClassesFailed) return myClassesData;
     return classes.filter((c) => String(c.userId) === String(userId));
-  }, [classes, userId]);
+  }, [myClassesData, myClassesFailed, classes, userId]);
 
   const mySeries = useMemo(() => {
     return series.filter((s) => String(s.userId) === String(userId));
@@ -275,6 +289,7 @@ export function ScheduleTabsClient() {
               posted={
                 c.createdAt ? new Date(c.createdAt).toLocaleDateString() : ""
               }
+              startsOn={c.startTime}
               rating={0}
               reviews={"0"}
               isLive={Boolean(isLiveNow)}

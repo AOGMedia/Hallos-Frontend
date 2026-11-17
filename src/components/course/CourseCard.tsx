@@ -5,8 +5,10 @@ import { Badge } from '@/components/ui/Badge';
 import { Avatar } from '@/components/ui/Avatar';
 import ClockIcon from '@/components/icons/ClockIcon';
 import UploadIcon from '@/components/icons/UploadIcon';
-import StarIcon from '@/components/icons/StarIcon';
+// import StarIcon from '@/components/icons/StarIcon'; // star rating hidden for now
 import BookmarkIcon from '@/components/icons/BookmarkIcon';
+import { CalendarDays } from 'lucide-react';
+import { formatClassShortDate } from '@/lib/live/classTime';
 
 interface CourseCardProps {
   id?: string;
@@ -20,7 +22,12 @@ interface CourseCardProps {
   currency?: string;
   duration: string;
   posted: string;
-  /** Omit to hide the star rating (e.g. on public pages without real reviews). */
+  /**
+   * Live classes: when the class starts (ISO). Shown with a calendar icon
+   * instead of the upload date in `posted`, which stays the fallback.
+   */
+  startsOn?: string;
+  /** Star rating — currently hidden on every card (no way to rate yet). */
   rating?: number;
   reviews?: string;
   isLive?: boolean;
@@ -46,8 +53,8 @@ export function CourseCard({
   currency = 'NGN',
   duration,
   posted,
-  rating,
-  reviews,
+  startsOn,
+  // rating, reviews: accepted but not shown while the star rating is hidden (see below).
   isLive = false,
   scheduledFor,
   isPurchased = false,
@@ -55,6 +62,9 @@ export function CourseCard({
   onNavigate,
   isLandingPage = false,
 }: CourseCardProps) {
+  // Live classes show their start date rather than when they were created.
+  const startDateLabel = formatClassShortDate(startsOn);
+
   // Format price with currency
   const formatPrice = (price: number, currency: string) => {
     if (price === 0) return 'Free';
@@ -271,18 +281,31 @@ export function CourseCard({
               <ClockIcon width={24} height={24} color="#F2F2F2" />
               <span className="text-small">{duration}</span>
             </div>
-            <div className="flex items-center gap-1.5">
-              <UploadIcon width={17} height={18} color="#F2F2F2" />
-              <span className="text-small">{posted}</span>
-            </div>
+            {startDateLabel ? (
+              <div className="flex items-center gap-1.5" title="Class date">
+                <CalendarDays size={17} color="#F2F2F2" aria-hidden="true" />
+                <span className="text-small">
+                  <span className="sr-only">Starts </span>
+                  {startDateLabel}
+                </span>
+              </div>
+            ) : (
+              <div className="flex items-center gap-1.5">
+                <UploadIcon width={17} height={18} color="#F2F2F2" />
+                <span className="text-small">{posted}</span>
+              </div>
+            )}
           </div>
           
+          {/* Star rating hidden for now: there's no way to rate yet. To bring
+              it back, uncomment this, the StarIcon import and rating/reviews
+              in the props destructuring above.
           {rating !== undefined && (
             <div className="flex items-center gap-2">
               <StarIcon width={21} height={21} color="#FFD42A" />
               <span className="text-small">{rating} ({reviews})</span>
             </div>
-          )}
+          )} */}
         </div>
       </div>
     </Card>

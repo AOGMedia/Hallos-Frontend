@@ -164,6 +164,7 @@ export function PopularClasses({ initialData }: { initialData?: LandingLiveConte
                     duration={formatDuration(c.startTime, c.endTime)}
                     // Fixed locale/timezone: this renders on the server too, and must match the browser.
                     posted={c.createdAt ? new Date(c.createdAt).toLocaleDateString('en-GB', { timeZone: 'Africa/Lagos' }) : "Recently"}
+                    startsOn={c.startTime}
                     isLive={Boolean(isLiveNow)}
                     scheduledFor={scheduledFor}
                     isPurchased={false}
