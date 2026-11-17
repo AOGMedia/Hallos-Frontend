@@ -35,6 +35,8 @@ export function TeamMemberProfile({ member, priority = false }: TeamMemberProfil
               alt={member.name}
               fill
               priority={priority}
+              // A photo uploaded in the admin may be on a host next/image isn't set up for.
+              unoptimized={/^https?:\/\//i.test(member.image)}
               className="object-cover object-top"
               sizes="(min-width: 768px) 280px, (min-width: 360px) 280px, 90vw"
             />
