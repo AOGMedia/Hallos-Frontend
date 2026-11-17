@@ -58,9 +58,11 @@ interface PriceFieldProps {
   onCurrencyChange: (v: CurrencyCode) => void
   price: string
   onPriceChange: (v: string) => void
+  /** Show the currency as fixed text (e.g. when editing: it can't change after creation). */
+  currencyLocked?: boolean
 }
 
-export function PriceField({ currency, onCurrencyChange, price, onPriceChange }: PriceFieldProps) {
+export function PriceField({ currency, onCurrencyChange, price, onPriceChange, currencyLocked = false }: PriceFieldProps) {
   const [isFocused, setIsFocused] = React.useState(false);
 
   // Format number with commas and decimals for display (only when not focused)
@@ -123,7 +125,13 @@ export function PriceField({ currency, onCurrencyChange, price, onPriceChange }:
     <div className="flex flex-col gap-1">
       <label className="live-event-label">Price</label>
       <div className="live-event-input flex items-center gap-2">
-        <CurrencySelect value={currency} onChange={onCurrencyChange} />
+        {currencyLocked ? (
+          <span className="live-event-input-text shrink-0 font-semibold" title="Currency can't change after creation">
+            {currency}
+          </span>
+        ) : (
+          <CurrencySelect value={currency} onChange={onCurrencyChange} />
+        )}
         <input
           type="text"
           value={displayValue}
@@ -339,12 +347,14 @@ interface ScheduleFieldsProps {
   onStartTimeChange: (v: string) => void
   endTime: string
   onEndTimeChange: (v: string) => void
+  /** Replaces the default heading; an empty string hides it (when a section heading already says it). */
+  label?: string
 }
 
-export function ScheduleFields({ date, onDateChange, startTime, onStartTimeChange, endTime, onEndTimeChange }: ScheduleFieldsProps) {
+export function ScheduleFields({ date, onDateChange, startTime, onStartTimeChange, endTime, onEndTimeChange, label = 'Schedule Option' }: ScheduleFieldsProps) {
   return (
     <div className="flex flex-col gap-4">
-      <label className="live-event-label">Schedule Option</label>
+      {label && <label className="live-event-label">{label}</label>}
       <DateField date={date} onChange={onDateChange} />
       <div className="flex gap-4">
         <TimeField value={startTime} onChange={onStartTimeChange} active={!!endTime} placeholder="Start Time" />

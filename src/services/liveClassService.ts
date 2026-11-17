@@ -130,7 +130,6 @@ export async function createLiveClass(
             }
           : {}),
       })
-      console.log('Backend response:', res.data)
       return res.data
     }
     const res = await apiClient.post<CreateLiveClassResponse>(
@@ -138,12 +137,10 @@ export async function createLiveClass(
       idempotencyKey ? { ...body, idempotencyKey } : body,
       options ? { timeout: JSON_CREATE_TIMEOUT_MS } : undefined
     )
-    console.log('Backend response:', res.data)
     return res.data
   }
 
   try {
-    console.log('Creating live class with body:', body)
     if (!idempotencyKey) return await send()
     return await withNetworkRetry(send, {
       canRetry: () => supportsIdempotentCreate('liveClass'),
@@ -151,6 +148,57 @@ export async function createLiveClass(
     })
   } catch (e) {
     throw options ? toCreateError(e) : toError(e)
+  }
+}
+
+/** What an edit may send; anything left out keeps its current value. */
+export interface UpdateLiveClassBody {
+  title?: string
+  description?: string
+  price?: number
+  category?: string
+  privacy?: 'public' | 'private'
+  maxParticipants?: number
+  /** Only while the class is scheduled, and only between the in-app providers. */
+  streamingProvider?: LiveProvider
+  /** ISO, saved as typed (see the create form). Only while scheduled. */
+  startTime?: string
+  endTime?: string
+}
+
+export interface UpdateLiveClassResponse {
+  success: boolean
+  message: string
+  liveClass?: LiveClass
+  /** The date or time changed. */
+  rescheduled?: boolean
+  /** People who'll be emailed about the new time. */
+  attendeesNotified?: number
+}
+
+/** Edit a live class (creator only). A new thumbnail is sent as an upload. */
+export async function updateLiveClass(
+  id: string,
+  body: UpdateLiveClassBody,
+  thumbnailFile?: File
+): Promise<UpdateLiveClassResponse> {
+  try {
+    if (thumbnailFile) {
+      const fd = new FormData()
+      for (const [key, value] of Object.entries(body)) {
+        if (value !== undefined && value !== null) fd.append(key, String(value))
+      }
+      fd.append('thumbnailUrl', thumbnailFile)
+      const res = await apiClient.put<UpdateLiveClassResponse>(`/live/${id}`, fd, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+        timeout: MULTIPART_CREATE_TIMEOUT_MS,
+      })
+      return res.data
+    }
+    const res = await apiClient.put<UpdateLiveClassResponse>(`/live/${id}`, body)
+    return res.data
+  } catch (e) {
+    throw toError(e)
   }
 }
 
@@ -176,7 +224,6 @@ export async function getLiveClass(id: string): Promise<LiveClass> {
   try {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const res = await apiClient.get<any>(`/live/${id}`)
-    console.log('getLiveClass response:', res.data)
     
     // Map snake_case backend fields to camelCase frontend fields
     const data = res.data
@@ -208,7 +255,6 @@ export async function getLiveClass(id: string): Promise<LiveClass> {
       isRegistered: data.isRegistered,
     }
     
-    console.log('Mapped live class:', mapped)
     return mapped
   } catch (e) {
     throw toError(e)

@@ -6,6 +6,7 @@ import { CouponValidationData } from "@/types/coupon";
 import { Button } from "@/components/ui/Button";
 import RedDotIcon from "@/components/icons/RedDotIcon";
 import { Avatar } from "@/components/ui/Avatar";
+import { formatClassDate, formatClassTimeRange } from "@/lib/live/classTime";
 
 interface CouponResult {
   discountAmount: number;
@@ -145,10 +146,18 @@ export default function LobbyDetailsCard({
             </div>
           </div>
           <div className="p-4 bg-background-dark/50 rounded-xl border border-border/10 sm:col-span-2">
+            {/* When the class starts (not when it was created). */}
             <p className="text-text-primary/40 text-sm mb-1">Scheduled Time</p>
-            <p className="text-text-primary font-bold text-lg">
-              {liveClass.createdAt && new Date(liveClass.createdAt).toLocaleDateString()}
-            </p>
+            {liveClass.startTime ? (
+              <p className="text-text-primary font-bold text-lg">
+                {formatClassDate(liveClass.startTime)}
+                <span className="block text-base font-semibold text-text-primary/80 sm:inline sm:before:content-['·'] sm:before:mx-2">
+                  {formatClassTimeRange(liveClass.startTime, liveClass.endTime)}
+                </span>
+              </p>
+            ) : (
+              <p className="text-text-primary font-bold text-lg">To be announced</p>
+            )}
           </div>
         </div>
 

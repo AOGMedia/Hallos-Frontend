@@ -10,7 +10,7 @@ import {
   formatTimeLabel,
 } from "@/utils/formatters";
 import LiveButton from "../ui/LiveButton";
-import { Check } from "lucide-react";
+import { Check, Pencil } from "lucide-react";
 
 interface ScheduledSummaryProps {
   title: string;
@@ -27,6 +27,8 @@ interface ScheduledSummaryProps {
   onViewEarnings?: () => void;
   onStartClass: () => void;
   onDelete?: () => void;
+  /** Opens the class's edit page (details, price, date and time). */
+  onEdit?: () => void;
 }
 
 export default function ScheduledSummary({
@@ -44,6 +46,7 @@ export default function ScheduledSummary({
   onViewEarnings,
   onStartClass,
   onDelete,
+  onEdit,
 }: ScheduledSummaryProps) {
   const dateLabel = formatDateLabel(date);
   const timeLabel = `${formatTimeLabel(startTime)} To ${formatTimeLabel(
@@ -58,6 +61,16 @@ export default function ScheduledSummary({
       <Card variant="feature" className="live-event-card flex-1 bg-[#1F2636] shadow-2xl shadow-black/80">
         <div className="flex items-center justify-between mb-6">
           <h3 className="heading-card">Class Details:</h3>
+          {onEdit && (
+            <button
+              type="button"
+              onClick={onEdit}
+              className="inline-flex min-h-11 items-center gap-2 rounded-full border border-primary/50 px-4 text-sm font-semibold text-primary transition-colors hover:bg-primary/10"
+            >
+              <Pencil size={16} aria-hidden="true" />
+              Edit class
+            </button>
+          )}
         </div>
 
         <div className="flex flex-col gap-6">
@@ -77,9 +90,15 @@ export default function ScheduledSummary({
               <span className="live-event-input-text font-semibold">
                 {priceLabel.replace(`${currency} `, "")}
               </span>
-              <button className="text-small underline opacity-80 hover:opacity-100">
-                Edit Price
-              </button>
+              {onEdit && (
+                <button
+                  type="button"
+                  onClick={onEdit}
+                  className="text-small underline opacity-80 hover:opacity-100"
+                >
+                  Edit Price
+                </button>
+              )}
             </div>
           </div>
 
