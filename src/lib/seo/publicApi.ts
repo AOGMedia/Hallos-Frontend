@@ -2,6 +2,7 @@ import type { BlogPost } from '@/services/blogService';
 import type { Series, SeriesCreator } from '@/types/series';
 import { isLegacyLiveClass } from '@/lib/live/providers';
 import { DEFAULT_EVENT, normalizeEvent, type FeaturedEvent } from '@/data/featuredEvent';
+import type { TeamMember } from '@/components/team/types';
 
 /**
  * Server-only module. Server-side reads of PUBLIC backend endpoints, for server-rendered pages,
@@ -310,6 +311,52 @@ export async function fetchDepartmentCourses(
     3600
   );
   return data?.success ? data.courses.map(toPublicCourse) : null;
+}
+
+// ── Investor relations (/investor-relations) ───────────────────────────────
+
+interface RawInvestorProfile {
+  id: string;
+  name: string;
+  role: string;
+  location: string | null;
+  websiteLabel: string | null;
+  websiteUrl: string | null;
+  email: string | null;
+  linkedinUrl: string | null;
+  imageUrl: string;
+  bio: string;
+}
+
+/**
+ * Profiles as staff set them in the admin, in order. Null if the API is slow
+ * (3s), down or odd, so the page keeps its built-in profile; an empty list
+ * means staff removed or hid them all.
+ */
+export async function fetchInvestorProfiles(): Promise<TeamMember[] | null> {
+  const { data } = await getJson<{ success: boolean; data: { profiles: RawInvestorProfile[] } }>(
+    '/api/investor-relations',
+    60,
+    3000
+  );
+  const profiles = data?.success ? data.data?.profiles : null;
+  if (!Array.isArray(profiles)) return null;
+  return profiles
+    .filter((p) => p && typeof p.id === 'string' && typeof p.name === 'string' && typeof p.imageUrl === 'string')
+    .map((p) => ({
+      id: p.id,
+      name: p.name,
+      role: p.role ?? '',
+      location: p.location ?? '',
+      website: p.websiteLabel ?? '',
+      websiteUrl: p.websiteUrl ?? '',
+      subscribers: '',
+      shortBio: '',
+      fullBio: p.bio ?? '',
+      image: p.imageUrl,
+      linkedinUrl: p.linkedinUrl ?? undefined,
+      emailAddress: p.email ?? undefined,
+    }));
 }
 
 // ── Featured event (/events) ───────────────────────────────────────────────

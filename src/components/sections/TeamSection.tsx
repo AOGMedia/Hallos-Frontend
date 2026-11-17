@@ -8,8 +8,10 @@
 // import type { TeamMember } from '@/components/team/types';
 import { TeamMemberProfile } from '@/components/team/TeamMemberProfile';
 import { TEAM_MEMBERS } from '@/components/team/teamData';
+import type { TeamMember } from '@/components/team/types';
 
-export function TeamSection() {
+/** `members`: the profiles set in the admin (the built-in list if not given). */
+export function TeamSection({ members = TEAM_MEMBERS }: { members?: TeamMember[] }) {
   // const [selectedMember, setSelectedMember] = useState<TeamMember | null>(null);
 
   return (
@@ -35,9 +37,12 @@ export function TeamSection() {
 
         {/* Full profiles */}
         <div className="flex flex-col gap-6 px-4 sm:px-6 lg:px-10">
-          {TEAM_MEMBERS.map((member, i) => (
+          {members.map((member, i) => (
             <TeamMemberProfile key={member.id} member={member} priority={i === 0} />
           ))}
+          {members.length === 0 && (
+            <p className="mx-auto max-w-md text-center text-text-muted">Profiles are being updated. Please check back soon.</p>
+          )}
         </div>
 
         {/* Cards row — overflow container spans full width so padding isn't clipped */}
