@@ -411,6 +411,7 @@ export function ScheduleTabsClient() {
                     else open();
                   }}
                   onDelete={!isLiveNow ? () => handleDeleteLiveClass(c.id) : undefined}
+                  onEdit={() => router.push(`/live/${c.id}/edit`)}
                 />
               );
             })}
