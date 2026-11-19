@@ -15,6 +15,7 @@ import { usePromoStore } from '@/store/promoStore';
 import { PromoModal, PromoCompactBanner } from '@/components/promo';
 import { listLiveClassesExternal } from '@/services/liveClassService';
 import { listSeries } from '@/services/seriesService';
+import { ADMIN_APP_URL } from '@/lib/adminApp';
 
 const GlobalFeedback = dynamic(() => import('@/components/ui/GlobalFeedback'), {
   ssr: false,
@@ -64,13 +65,12 @@ export function DashboardLayoutClient({ children }: DashboardLayoutClientProps) 
     }
   }, [user, userLoading, pathname, router]);
 
-  // Redirect admin users to admin panel
+  // Admins use the admin app (a separate site), not the dashboard.
   useEffect(() => {
     if (user && !userLoading && user.role === 'admin') {
-      console.log('🔒 Admin user detected in dashboard, redirecting to /admin');
-      router.push('/admin');
+      window.location.replace(ADMIN_APP_URL);
     }
-  }, [user, userLoading, router]);
+  }, [user, userLoading]);
 
   // Until the user is loaded (or a redirect happens), show the dashboard frame
   // rather than a blank screen — loading the user waits on the backend.

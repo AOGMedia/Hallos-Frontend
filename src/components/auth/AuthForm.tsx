@@ -13,6 +13,7 @@ import ChevronDownAltIcon from '@/components/icons/ChevronDownAltIcon';
 import type { AxiosError } from 'axios';
 import type { AuthError } from '@/types/auth';
 import Image from 'next/image';
+import { friendlyErrorMessage } from '@/features/network/friendlyError';
 
 interface AuthFormProps {
   mode: 'signup' | 'signin';
@@ -36,7 +37,9 @@ export function AuthForm({ mode, onSubmit, isLoading, error }: AuthFormProps) {
       ? 'Your account is suspended. Contact support@hallos.net if you think this is a mistake.'
       : mode === 'signin' && searchParams.get('error') === 'account_deleted'
         ? 'That account has been deleted, as requested. You’re welcome to create a new one.'
-        : null;
+        : mode === 'signin' && searchParams.get('error') === 'staff_login'
+          ? 'That’s a Hallos staff login. Use it to sign in to the Hallos admin, not here.'
+          : null;
 
   const [showMoreOptions, setShowMoreOptions] = useState(true);
   const [formData, setFormData] = useState({
@@ -80,8 +83,9 @@ export function AuthForm({ mode, onSubmit, isLoading, error }: AuthFormProps) {
     if (error.response?.status === 429) {
       return 'Too many requests. Please try again later.';
     }
-    
-    return 'An error occurred. Please try again.';
+
+    // Offline, slow connection, server down: say which.
+    return friendlyErrorMessage(error, 'An error occurred. Please try again.');
   };
 
   return (

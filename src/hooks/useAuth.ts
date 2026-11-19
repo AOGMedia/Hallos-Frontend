@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { authApi } from '@/lib/api/auth';
 import { useAuthStore } from '@/store/authStore';
 import { clearAccountPreview } from '@/components/nav/account/accountPreview';
+import { ADMIN_APP_URL } from '@/lib/adminApp';
 import type {
   SignupRequest,
   LoginRequest,
@@ -152,8 +153,8 @@ export function useAuth() {
         console.log('No redirect parameter, checking role. User role:');
         // Check role and redirect accordingly
         if (u && u.role === 'admin') {
-            // console.log('👑 User is admin');
-            router.replace('/admin');
+            // Admin screens live in the admin app now (a separate site).
+            window.location.replace(ADMIN_APP_URL);
         } else {
             // console.log('👤 User is not admin (role:', u?.role, '), redirecting to /dashboard');
             router.replace('/dashboard');

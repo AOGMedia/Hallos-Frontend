@@ -9,6 +9,7 @@ import { authApi } from '@/lib/api/auth';
 import Image from 'next/image';
 import type { AxiosError } from 'axios';
 import type { AuthError } from '@/types/auth';
+import { friendlyErrorMessage } from '@/features/network/friendlyError';
 
 type Step = 'EMAIL' | 'OTP' | 'PASSWORD' | 'SUCCESS';
 
@@ -52,7 +53,8 @@ export function ForgotPasswordForm() {
     if (error.response?.data?.message) {
       return error.response.data.message;
     }
-    return 'An error occurred. Please try again.';
+    // Offline, slow connection, server down: say which.
+    return friendlyErrorMessage(err, 'An error occurred. Please try again.');
   };
 
   const handleRequestOtp = async (e: FormEvent) => {

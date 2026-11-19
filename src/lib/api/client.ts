@@ -44,7 +44,9 @@
 // );
 
 // lib/api/client.ts
-import axios, { type AxiosError } from 'axios';
+import axios, { AxiosError, type InternalAxiosRequestConfig } from 'axios';
+import { getNetworkMonitor } from '@/features/network/networkStatus';
+import { OFFLINE_ERROR_CODE } from '@/features/network/friendlyError';
 
 declare global {
   interface Window {
@@ -127,6 +129,71 @@ apiClient.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
+// ── Network awareness ────────────────────────────────────────────────────
+// Every request reports how it went to the network monitor (features/network),
+// which decides whether the person is offline, on a slow connection, or can't
+// reach Hallos, and shows the status bar.
+
+const DEFAULT_TIMEOUT_MS = 10000;
+/** Reads given more time when the connection is slow. */
+const SLOW_NETWORK_TIMEOUT_MS = 20000;
+/** Endpoints that are slow on the server itself: timing them says nothing about the connection. */
+const KNOWN_SLOW_PATHS = ['/live/getLive'];
+
+type NetworkAwareConfig = InternalAxiosRequestConfig & {
+  __networkStartedAt?: number;
+  __networkSample?: boolean;
+  __retryCount?: number;
+};
+
+apiClient.interceptors.request.use((config) => {
+  if (typeof window === 'undefined') return config;
+  const c = config as NetworkAwareConfig;
+  const method = (c.method ?? 'get').toLowerCase();
+
+  // Don't send saves or payments when the device is definitely offline: they
+  // would only fail after a wait. Reads are left to retry and pause as usual.
+  if (method !== 'get' && navigator.onLine === false) {
+    getNetworkMonitor()?.deviceWentOffline();
+    throw new AxiosError("You're offline. Check your internet connection and try again.", OFFLINE_ERROR_CODE, c);
+  }
+
+  // Only time ordinary reads (not uploads, long-running creates or known-slow endpoints).
+  const url = c.url ?? '';
+  c.__networkSample =
+    method === 'get' &&
+    c.__retryCount === undefined &&
+    (c.timeout ?? DEFAULT_TIMEOUT_MS) <= DEFAULT_TIMEOUT_MS &&
+    !KNOWN_SLOW_PATHS.some((p) => url.includes(p));
+  c.__networkStartedAt = Date.now();
+
+  // On a slow connection, give reads more time rather than letting them fail.
+  if (method === 'get' && c.timeout === DEFAULT_TIMEOUT_MS && getNetworkMonitor()?.isSlow()) {
+    c.timeout = SLOW_NETWORK_TIMEOUT_MS;
+  }
+  return c;
+});
+
+/** Tell the network monitor how a request went (browser only). */
+function reportToNetworkMonitor(config: NetworkAwareConfig | undefined, error?: AxiosError) {
+  const monitor = getNetworkMonitor();
+  if (!monitor || !config || config.__networkStartedAt === undefined) return;
+  if (error?.code === 'ERR_CANCELED' || error?.code === OFFLINE_ERROR_CODE) return;
+
+  const response = error ? error.response : undefined;
+  if (!error || response) {
+    if (response && [502, 503, 504].includes(response.status)) {
+      monitor.reportGatewayError();
+      return;
+    }
+    // Any other answer, even 4xx, means the server is reachable.
+    monitor.reportResponse(config.__networkSample ? Date.now() - config.__networkStartedAt : undefined);
+    return;
+  }
+  const timedOut = error.code === 'ECONNABORTED' || error.code === 'ETIMEDOUT' || /timeout/i.test(error.message);
+  monitor.reportNoResponse(timedOut ? 'timeout' : 'network');
+}
+
 /**
  * Reads (GET) are retried when the server is briefly unreachable — a timeout,
  * a dropped connection, or 502/503/504 while the backend restarts or wakes up.
@@ -168,8 +235,13 @@ function signOutSuspended(reason: 'account_suspended' | 'account_deleted' = 'acc
 
 // Response interceptor for error handling
 apiClient.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    reportToNetworkMonitor(response.config as NetworkAwareConfig);
+    return response;
+  },
   async (error: AxiosError) => {
+    reportToNetworkMonitor(error.config as NetworkAwareConfig | undefined, error);
+
     if (shouldRetryGet(error)) {
       const config = error.config as RetriableConfig;
       const attempt = config.__retryCount ?? 0;
