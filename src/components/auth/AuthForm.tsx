@@ -13,6 +13,7 @@ import ChevronDownAltIcon from '@/components/icons/ChevronDownAltIcon';
 import type { AxiosError } from 'axios';
 import type { AuthError } from '@/types/auth';
 import Image from 'next/image';
+import { friendlyErrorMessage } from '@/features/network/friendlyError';
 
 interface AuthFormProps {
   mode: 'signup' | 'signin';
@@ -82,8 +83,9 @@ export function AuthForm({ mode, onSubmit, isLoading, error }: AuthFormProps) {
     if (error.response?.status === 429) {
       return 'Too many requests. Please try again later.';
     }
-    
-    return 'An error occurred. Please try again.';
+
+    // Offline, slow connection, server down: say which.
+    return friendlyErrorMessage(error, 'An error occurred. Please try again.');
   };
 
   return (

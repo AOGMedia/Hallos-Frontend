@@ -1,5 +1,6 @@
 import axios, { type AxiosError, type AxiosProgressEvent } from 'axios'
 import { apiClient } from './client'
+import { friendlyErrorMessage } from '@/features/network/friendlyError'
 
 export type CreateKind = 'liveClass' | 'liveSeries'
 
@@ -63,7 +64,8 @@ export function isTransientNetworkError(e: unknown): boolean {
 
 export function toCreateError(e: unknown): CreateRequestError {
   const err = e as AxiosError<{ message?: string }>
-  const msg = err?.response?.data?.message || err?.message || 'Request failed'
+  // The server's message if it sent one; otherwise a precise network message.
+  const msg = friendlyErrorMessage(e, err?.message || 'Request failed')
   return new CreateRequestError(msg, isTransientNetworkError(e))
 }
 

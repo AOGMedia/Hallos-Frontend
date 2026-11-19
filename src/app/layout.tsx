@@ -9,6 +9,7 @@ import { SITE } from "@/lib/seo/site";
 import { organizationSchema, websiteSchema } from "@/lib/seo/jsonLd";
 import { Suspense } from "react";
 import { SAVED_LOGIN_KEYS } from "@/components/nav/account/savedLogin";
+import { NetworkStatusBar } from "@/features/network/NetworkStatusBar";
 
 // No `alternates.canonical` here on purpose: it would be inherited by every
 // page that doesn't set its own, pointing them all at the homepage.
@@ -110,6 +111,8 @@ export default function RootLayout({
         </Suspense>
         <ScrollRestorationDisabler />
         <QueryProvider>{children}</QueryProvider>
+        {/* Network status bar: offline / slow connection / can't reach Hallos, on every page. */}
+        <NetworkStatusBar />
       </body>
     </html>
   );

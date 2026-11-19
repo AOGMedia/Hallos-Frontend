@@ -10,6 +10,7 @@ import {
   type CreateRequestOptions,
 } from '@/lib/api/resilientCreate'
 import type { LegacyLiveProvider, LiveProvider } from '@/lib/live/providers'
+import { friendlyErrorMessage } from '@/features/network/friendlyError'
 export type LiveStatus = 'scheduled' | 'live' | 'ended' | 'recorded'
 
 export interface LiveClass {
@@ -93,8 +94,9 @@ export interface CreateLiveClassResponse {
 
 function toError(e: unknown): Error {
   const err = e as AxiosError<{ message?: string }>
-  const msg = err.response?.data?.message || err.message || 'Request failed'
-  return new Error(msg)
+  // The server's message if it sent one; otherwise a precise network message
+  // ("You're offline…") instead of "Network Error".
+  return new Error(friendlyErrorMessage(e, err?.message || 'Request failed'))
 }
 
 export async function createLiveClass(

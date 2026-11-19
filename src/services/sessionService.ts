@@ -9,11 +9,12 @@ import type {
   JoinSessionResponse,
   EndSessionResponse,
 } from '@/types/series';
+import { friendlyErrorMessage } from '@/features/network/friendlyError';
 
 function toError(e: unknown): Error {
   const err = e as AxiosError<{ message?: string }>;
-  const msg = err.response?.data?.message || err.message || 'Request failed';
-  return new Error(msg);
+  // The server's message if it sent one; otherwise a precise network message.
+  return new Error(friendlyErrorMessage(e, err?.message || 'Request failed'));
 }
 
 /**
