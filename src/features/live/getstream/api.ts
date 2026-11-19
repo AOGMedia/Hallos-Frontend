@@ -1,4 +1,5 @@
 import { apiClient } from "@/lib/api/client";
+import type { RecordingSettings } from "./lib/recordingSettings";
 
 /**
  * GetStream endpoints (backend: routes/getStreamRoutes.js for live classes,
@@ -123,10 +124,32 @@ export async function sendGetStreamHeartbeat(
   return res.data.data;
 }
 
-/** Start or stop recording (creator only; done server-side). */
+/**
+ * Start or stop recording (creator only; done server-side). On start with
+ * saved recording settings, `settingsApplied` says whether GetStream took
+ * them (false: it recorded with the standard ones).
+ */
 export async function setGetStreamRecording(target: GetStreamTarget, action: "start" | "stop") {
   const res = await apiClient.post(`${basePath(target)}/recording-getstream`, { action });
-  return res.data.data as { recording: boolean };
+  return res.data.data as { recording: boolean; settingsApplied?: boolean };
+}
+
+/** The signed-in creator's recording settings, and whether they've saved any. */
+export async function getRecordingSettings(): Promise<{ settings: RecordingSettings; saved: boolean }> {
+  const res = await apiClient.get("/live/getstream/recording-settings");
+  return { settings: res.data.data.settings, saved: Boolean(res.data.data.saved) };
+}
+
+/** Save the creator's recording settings (validated again on the server). */
+export async function saveRecordingSettings(settings: RecordingSettings): Promise<RecordingSettings> {
+  const res = await apiClient.put("/live/getstream/recording-settings", { settings });
+  return res.data.data.settings;
+}
+
+/** Back to the standard recording settings. */
+export async function resetRecordingSettings(): Promise<RecordingSettings> {
+  const res = await apiClient.delete("/live/getstream/recording-settings");
+  return res.data.data.settings;
 }
 
 /** Turn live captions on or off for everyone (hosts; done server-side). */

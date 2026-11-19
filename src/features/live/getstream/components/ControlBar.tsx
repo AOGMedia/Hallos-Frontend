@@ -5,6 +5,7 @@ import { useCall, useCallStateHooks } from "@stream-io/video-react-sdk";
 import {
   Gift,
   Hand,
+  Link2,
   MessageCircle,
   Mic,
   MicOff,
@@ -12,6 +13,7 @@ import {
   MoreHorizontal,
   PhoneOff,
   Settings,
+  SlidersHorizontal,
   SmilePlus,
   SwitchCamera,
   Video,
@@ -141,6 +143,10 @@ export interface ControlBarProps {
   onOpenHands: () => void;
   onOpenGifts: () => void;
   onOpenSettings: () => void;
+  /** Recording settings (only offered with canRecord). */
+  onOpenRecordingSettings?: () => void;
+  /** Hosts: the class link to copy or share. */
+  onOpenClassLink?: () => void;
   onToggleRecording: () => void;
   onLeave: () => void;
   onDeviceError: (message: string) => void;
@@ -250,6 +256,17 @@ export const ControlBar = memo(function ControlBar(props: ControlBarProps) {
       {/* Phones: everything that doesn't fit in the bar */}
       <Sheet open={moreOpen} onClose={() => setMoreOpen(false)} title="More" mobileHeight="max-h-[70dvh]">
         <div className="space-y-2 px-4 pb-[max(env(safe-area-inset-bottom),16px)]">
+          {props.onOpenClassLink && (
+            <MoreItem
+              icon={<Link2 className="h-5 w-5" />}
+              label="Share class link"
+              hint="Copy it or send it to people"
+              onClick={() => {
+                setMoreOpen(false);
+                props.onOpenClassLink?.();
+              }}
+            />
+          )}
           <MoreItem
             icon={<SmilePlus className="h-5 w-5" />}
             label="Reactions"
@@ -276,6 +293,17 @@ export const ControlBar = memo(function ControlBar(props: ControlBarProps) {
               onClick={() => {
                 props.onToggleRecording();
                 setMoreOpen(false);
+              }}
+            />
+          )}
+          {props.canRecord && props.onOpenRecordingSettings && (
+            <MoreItem
+              icon={<SlidersHorizontal className="h-5 w-5" />}
+              label="Recording settings"
+              hint="Quality, layout, look, auto-record"
+              onClick={() => {
+                setMoreOpen(false);
+                props.onOpenRecordingSettings?.();
               }}
             />
           )}
