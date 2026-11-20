@@ -200,8 +200,8 @@ export function PublishRecordingSheet({
         {error && <p className="mt-4 rounded-xl bg-red-500/10 px-4 py-3 text-sm text-red-300">{error}</p>}
 
         <p className="mt-4 text-xs text-white/50">
-          Hallos copies the recording into your videos for you. Long classes can take a few minutes — you can leave this
-          page meanwhile.
+          Hallos copies the recording into your videos for you. Long classes can take a few minutes, and you can leave
+          this page meanwhile.
         </p>
 
         <button

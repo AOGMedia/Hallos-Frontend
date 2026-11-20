@@ -9,10 +9,12 @@ import { useEffect } from "react";
  *   - stops the page itself from scrolling or rubber-banding behind the room,
  *   - exposes the on-screen keyboard height as --kb-inset so bottom sheets
  *     sit above the keyboard (iOS doesn't resize the layout for it).
- * Everything is undone when the room closes.
+ * Everything is undone when the room closes, or when `active` turns off (the
+ * class-ended and "you left" screens scroll like normal pages).
  */
-export function useMobileRoom() {
+export function useMobileRoom(active = true) {
   useEffect(() => {
+    if (!active) return;
     const root = document.documentElement;
     const body = document.body;
     const saved = {
@@ -68,5 +70,5 @@ export function useMobileRoom() {
       document.removeEventListener("visibilitychange", onVisibility);
       void wakeLock?.release().catch(() => {});
     };
-  }, []);
+  }, [active]);
 }

@@ -5,6 +5,7 @@ import { useCall, useCallStateHooks } from "@stream-io/video-react-sdk";
 import {
   Gift,
   Hand,
+  Link2,
   MessageCircle,
   Mic,
   MicOff,
@@ -12,6 +13,7 @@ import {
   MoreHorizontal,
   PhoneOff,
   Settings,
+  SlidersHorizontal,
   SmilePlus,
   SwitchCamera,
   Video,
@@ -107,7 +109,7 @@ const MicButton = memo(function MicButton({ onError }: { onError: (what: string)
     <div className="relative">
       {isSpeakingWhileMuted && (
         <span className="pointer-events-none absolute bottom-full left-1/2 mb-3 w-max -translate-x-1/2 rounded-full bg-[#1f2537] px-3 py-1.5 text-xs font-medium text-white shadow-xl ring-1 ring-white/10">
-          You&apos;re muted — tap to speak
+          You&apos;re muted. Tap to speak
         </span>
       )}
       <ControlButton
@@ -141,6 +143,10 @@ export interface ControlBarProps {
   onOpenHands: () => void;
   onOpenGifts: () => void;
   onOpenSettings: () => void;
+  /** Recording settings (only offered with canRecord). */
+  onOpenRecordingSettings?: () => void;
+  /** Hosts: the class link to copy or share. */
+  onOpenClassLink?: () => void;
   onToggleRecording: () => void;
   onLeave: () => void;
   onDeviceError: (message: string) => void;
@@ -250,6 +256,17 @@ export const ControlBar = memo(function ControlBar(props: ControlBarProps) {
       {/* Phones: everything that doesn't fit in the bar */}
       <Sheet open={moreOpen} onClose={() => setMoreOpen(false)} title="More" mobileHeight="max-h-[70dvh]">
         <div className="space-y-2 px-4 pb-[max(env(safe-area-inset-bottom),16px)]">
+          {props.onOpenClassLink && (
+            <MoreItem
+              icon={<Link2 className="h-5 w-5" />}
+              label="Share class link"
+              hint="Copy it or send it to people"
+              onClick={() => {
+                setMoreOpen(false);
+                props.onOpenClassLink?.();
+              }}
+            />
+          )}
           <MoreItem
             icon={<SmilePlus className="h-5 w-5" />}
             label="Reactions"
@@ -276,6 +293,17 @@ export const ControlBar = memo(function ControlBar(props: ControlBarProps) {
               onClick={() => {
                 props.onToggleRecording();
                 setMoreOpen(false);
+              }}
+            />
+          )}
+          {props.canRecord && props.onOpenRecordingSettings && (
+            <MoreItem
+              icon={<SlidersHorizontal className="h-5 w-5" />}
+              label="Recording settings"
+              hint="Quality, layout, look, auto-record"
+              onClick={() => {
+                setMoreOpen(false);
+                props.onOpenRecordingSettings?.();
               }}
             />
           )}

@@ -30,6 +30,7 @@ import LiveDotIcon from "@/components/icons/LiveDotIcon";
 import ScheduledSummary from "@/components/liveEvents/ScheduledSummary";
 import RegistrationsModal from "@/components/liveEvents/RegistrationsModal";
 import { PastClassesRecordings, useRecordedGetStreamClasses } from "@/features/live/getstream";
+import { MyFeedbackList } from "@/features/class-feedback/results/MyFeedbackList";
 
 import { useCurrencyPreference } from "@/hooks/useCurrencyPreference";
 
@@ -427,6 +428,7 @@ export function ScheduleTabsClient() {
                   }}
                   onDelete={!isLiveNow ? () => handleDeleteLiveClass(c.id) : undefined}
                   onEdit={() => router.push(`/live/${c.id}/edit`)}
+                  isLive={c.status === "live"}
                 />
               );
             })}
@@ -472,6 +474,8 @@ export function ScheduleTabsClient() {
       )}
 
       <PastClassesRecordings classes={filteredEndedClasses} />
+
+      <MyFeedbackList search={searchQuery} />
 
       {filteredMyClasses.length === 0 && filteredMySeries.length === 0 && filteredEndedClasses.length === 0 && (
         <div className="text-gray-400 text-center py-10 bg-[#1F2636] rounded-xl border border-white/5">

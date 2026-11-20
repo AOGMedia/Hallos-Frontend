@@ -78,7 +78,7 @@ export function Header() {
     };
   }, []);
 
-  const isAuthRoute = pathname==="/signin" || pathname==="/signup" || pathname.startsWith("/dashboard")|| pathname.startsWith("/live")|| pathname.startsWith("/not-found")|| pathname.startsWith("/payments")|| pathname.startsWith("/series")|| pathname.startsWith("/series/")||pathname.startsWith("/admin")||pathname.startsWith("/campaign/")||pathname.startsWith("/email-portal");
+  const isAuthRoute = pathname==="/signin" || pathname==="/signup" || pathname.startsWith("/dashboard")|| pathname.startsWith("/live")|| pathname.startsWith("/not-found")|| pathname.startsWith("/payments")|| pathname.startsWith("/series")|| pathname.startsWith("/series/")||pathname.startsWith("/admin")||pathname.startsWith("/campaign/")||pathname.startsWith("/email-portal")||pathname.startsWith("/feedback/");
 
   const isCourseRoute = pathname.startsWith("/course");
   const isBlogRoute = pathname.startsWith("/blog");

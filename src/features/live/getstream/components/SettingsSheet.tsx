@@ -2,7 +2,20 @@
 
 import { memo, useState, type ReactNode } from "react";
 import { useCall, useCallStateHooks } from "@stream-io/video-react-sdk";
-import { Captions, Check, Keyboard, LayoutGrid, Loader2, Mic, Settings, Sparkles, Speaker, Video } from "lucide-react";
+import {
+  Captions,
+  Check,
+  ChevronRight,
+  Keyboard,
+  LayoutGrid,
+  Loader2,
+  Mic,
+  Settings,
+  SlidersHorizontal,
+  Sparkles,
+  Speaker,
+  Video,
+} from "lucide-react";
 import type { StageLayout } from "./ClassStage";
 import type { BlurLevel, EffectsControls } from "./EffectsHost";
 import { Sheet } from "./Sheet";
@@ -23,6 +36,8 @@ interface SettingsSheetProps {
   onToggleCaptions: () => void;
   showCaptions: boolean;
   onShowCaptions: (show: boolean) => void;
+  /** Whoever can record gets a link to their recording settings. */
+  onOpenRecordingSettings?: () => void;
 }
 
 function Section({ icon, title, children }: { icon: ReactNode; title: string; children: ReactNode }) {
@@ -141,7 +156,7 @@ export const SettingsSheet = memo(function SettingsSheet(props: SettingsSheetPro
                 Strong blur
               </Choice>
               {effects.degraded && (
-                <p className="px-1 pt-1 text-xs text-amber-300">This device is struggling with the effect — turn it off for smoother video.</p>
+                <p className="px-1 pt-1 text-xs text-amber-300">This device is struggling with the effect. Turn it off for smoother video.</p>
               )}
             </div>
           )}
@@ -150,22 +165,38 @@ export const SettingsSheet = memo(function SettingsSheet(props: SettingsSheetPro
         <Section icon={<LayoutGrid className="h-3.5 w-3.5" />} title="Layout">
           <div className="space-y-1.5">
             <Choice selected={props.layout === "auto"} onClick={() => props.onLayout("auto")}>
-              Auto — the speaker large, others alongside
+              Auto: the speaker large, others alongside
             </Choice>
             <Choice selected={props.layout === "tiled"} onClick={() => props.onLayout("tiled")}>
-              Tiled — everyone the same size
+              Tiled: everyone the same size
             </Choice>
             <Choice selected={props.layout === "spotlight"} onClick={() => props.onLayout("spotlight")}>
-              Spotlight — one person full screen
+              Spotlight: one person full screen
             </Choice>
           </div>
         </Section>
+
+        {props.onOpenRecordingSettings && (
+          <Section icon={<SlidersHorizontal className="h-3.5 w-3.5" />} title="Recording">
+            <button
+              type="button"
+              onClick={props.onOpenRecordingSettings}
+              className="flex w-full items-center justify-between gap-3 rounded-2xl bg-white/5 px-4 py-3 text-left text-sm text-white/85 transition hover:bg-white/10"
+            >
+              <span className="min-w-0">
+                <span className="block font-medium text-white">Recording settings</span>
+                <span className="block text-xs text-white/50">Quality, layout, look, auto-record</span>
+              </span>
+              <ChevronRight className="h-4 w-4 shrink-0 text-white/50" aria-hidden />
+            </button>
+          </Section>
+        )}
 
         <Section icon={<Captions className="h-3.5 w-3.5" />} title="Captions">
           <div className="space-y-1.5">
             {props.canControlCaptions && (
               <Choice selected={captioning} disabled={props.captionsBusy} onClick={props.onToggleCaptions}>
-                {props.captionsBusy ? "Updating…" : captioning ? "Captions are on for everyone — turn off" : "Turn on captions for everyone"}
+                {props.captionsBusy ? "Updating…" : captioning ? "Turn off captions for everyone" : "Turn on captions for everyone"}
               </Choice>
             )}
             {captioning ? (

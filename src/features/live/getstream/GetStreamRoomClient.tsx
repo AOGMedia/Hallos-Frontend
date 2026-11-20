@@ -18,6 +18,22 @@ const GetStreamRoom = dynamic(() => import("./components/GetStreamRoom"), {
   loading: () => <FullScreenStatus title="Joining the class…" spinner />,
 });
 
+/**
+ * One start request per class at a time. A second mount while the first is
+ * still in flight (React's development double effects) shares its answer, so
+ * "already live" only ever means the host is coming back to a running class.
+ */
+const pendingStarts = new Map<string, Promise<GetStreamCredentials>>();
+function startOnce(target: GetStreamTarget): Promise<GetStreamCredentials> {
+  const key = `${target.kind}:${target.id}`;
+  let pending = pendingStarts.get(key);
+  if (!pending) {
+    pending = startGetStreamLive(target).finally(() => pendingStarts.delete(key));
+    pendingStarts.set(key, pending);
+  }
+  return pending;
+}
+
 /** Retry a class that reads as inactive for about a minute — same as the ZegoCloud room. */
 const INACTIVE_RETRY_MS = 10_000;
 const MAX_INACTIVE_RETRIES = 6;
@@ -65,7 +81,7 @@ export function GetStreamRoomClient({ target, isOwner, title, backHref, schedule
       try {
         const target = { kind, id };
         if (isOwner) {
-          const creds = await startGetStreamLive(target);
+          const creds = await startOnce(target);
           if (mounted) setCredentials(creds);
           return;
         }
@@ -123,7 +139,7 @@ export function GetStreamRoomClient({ target, isOwner, title, backHref, schedule
         body="The class isn't reachable right now — the host may be rejoining. We'll keep trying for a minute."
       />
     ) : (
-      <FullScreenStatus spinner title={isOwner ? "Starting your class…" : "Securing your connection…"} />
+      <FullScreenStatus spinner title={isOwner ? "Opening your class…" : "Securing your connection…"} />
     );
   }
 

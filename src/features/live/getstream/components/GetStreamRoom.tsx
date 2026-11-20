@@ -4,6 +4,7 @@ import "@stream-io/video-react-sdk/dist/css/styles.css";
 import "../styles/room.css";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import dynamic from "next/dynamic";
 import {
   CallingState,
   ParticipantsAudio,
@@ -17,7 +18,7 @@ import {
   type Call,
   type StreamVideoParticipant,
 } from "@stream-io/video-react-sdk";
-import { ArrowLeft, Gift, Loader2, SmilePlus, Users, Volume2, WifiOff } from "lucide-react";
+import { ArrowLeft, Gift, Link2, Loader2, SmilePlus, Users, Volume2, WifiOff } from "lucide-react";
 import {
   endGetStreamLive,
   setGetStreamCaptions,
@@ -56,8 +57,14 @@ import { RoomToasts } from "./RoomToasts";
 import { TileActionsContext, type TileActionsValue } from "./TileActions";
 import { CaptionsOverlay, ChatPreview, EmptyRoomCard, RaisedHandsChip } from "./RoomOverlays";
 import { AutoLowerHand, ConnectionBanner, JoinSounds, RecordingNotice } from "./RoomWatchers";
-import { ClassEndedScreen, HostLeftDialog, LeaveChoiceDialog } from "./RoomDialogs";
+import { ClassEndedScreen, ConnectionLostScreen, HostLeftDialog, LeaveChoiceDialog } from "./RoomDialogs";
 import { BrandGlide } from "./BrandGlide";
+import { ClassLinkSheet } from "./ClassLinkSheet";
+import { classInviteUrl } from "../lib/inviteLink";
+
+// Recording settings are only for whoever can record, and only once opened:
+// loaded on demand so the room itself stays as light as before.
+const RecordingSettingsSheet = dynamic(() => import("./recording/RecordingSettingsSheet"), { ssr: false });
 
 export interface GetStreamRoomProps {
   /** The live class, or the series session, in this room. */
@@ -163,6 +170,7 @@ export default function GetStreamRoom({ target, credentials, title, backHref, sc
               userType={credentials.userType}
               schedule={schedule}
               joining={phase === "joining"}
+              rejoining={Boolean(credentials.alreadyLive)}
               error={joinError}
               onJoin={join}
               onBack={() => router.push(backHref)}
@@ -206,6 +214,7 @@ const RoomHeader = memo(function RoomHeader({
   earned,
   onBack,
   onOpenParticipants,
+  onOpenClassLink,
   glidePaused,
 }: {
   title: string;
@@ -213,6 +222,8 @@ const RoomHeader = memo(function RoomHeader({
   earned: string | null;
   onBack: () => void;
   onOpenParticipants: () => void;
+  /** Hosts: the class link, always one tap away. */
+  onOpenClassLink?: () => void;
   glidePaused: boolean;
 }) {
   const { useParticipantCount, useIsCallRecordingInProgress } = useCallStateHooks();
@@ -247,6 +258,17 @@ const RoomHeader = memo(function RoomHeader({
         <span className="flex items-center gap-1.5 rounded-full bg-red-500 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide">
           <span className="h-1.5 w-1.5 rounded-full bg-white" /> Live
         </span>
+        {onOpenClassLink && (
+          <button
+            type="button"
+            onClick={onOpenClassLink}
+            aria-label="Class link"
+            title="Class link"
+            className="flex h-8 w-8 touch-manipulation items-center justify-center rounded-full bg-white/10 transition hover:bg-white/15 active:scale-95"
+          >
+            <Link2 className="h-4 w-4" />
+          </button>
+        )}
         <button
           type="button"
           onClick={onOpenParticipants}
@@ -261,7 +283,6 @@ const RoomHeader = memo(function RoomHeader({
 });
 
 function RoomLayout({ target, credentials, title, backHref }: GetStreamRoomProps) {
-  useMobileRoom();
   const router = useRouter();
   const call = useCall();
   const me = useConnectedUser();
@@ -325,6 +346,8 @@ function RoomLayout({ target, credentials, title, backHref }: GetStreamRoomProps
   const [giftsOpen, setGiftsOpen] = useState(false);
   const [peopleOpen, setPeopleOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [recordingSettingsOpen, setRecordingSettingsOpen] = useState(false);
+  const [classLinkOpen, setClassLinkOpen] = useState(false);
   const [reactionsOpen, setReactionsOpen] = useState(false);
   const [leaveChoice, setLeaveChoice] = useState(false);
   const [hostLeft, setHostLeft] = useState(false);
@@ -349,7 +372,7 @@ function RoomLayout({ target, credentials, title, backHref }: GetStreamRoomProps
     if (isCreator) return;
     tapHaptic(15);
     toast(
-      isHost ? "You're now a co-host — you can mute, spotlight and manage people." : "You're no longer a co-host",
+      isHost ? "You're now a co-host. You can mute, spotlight and manage people." : "You're no longer a co-host",
       isHost ? "success" : "info"
     );
   }, [isHost, isCreator, toast]);
@@ -420,7 +443,7 @@ function RoomLayout({ target, credentials, title, backHref }: GetStreamRoomProps
     playGift();
     tapHaptic([10, 40, 10]);
     if (event.to?.id === selfId && event.from.id !== selfId) {
-      toast(`${event.from.name} sent you a ${look.name} ${look.emoji} — it's in your wallet.`, "success");
+      toast(`${event.from.name} sent you a ${look.name} ${look.emoji}. It's in your wallet.`, "success");
     }
     if (isHost || event.to?.id === selfId) {
       // Batch a burst of gifts into one refresh (host total / own balance).
@@ -455,6 +478,10 @@ function RoomLayout({ target, credentials, title, backHref }: GetStreamRoomProps
 
   // ---- Lifecycle --------------------------------------------------------------
   const classEnded = endedHere || Boolean(endedAt);
+  // App-like (no page scroll, screen kept awake) only while you're in the
+  // class; the ended, "you left" and "connection dropped" screens scroll
+  // like normal pages, so nothing on them is ever cut off.
+  useMobileRoom(!classEnded && !hostLeft && callingState !== CallingState.RECONNECTING_FAILED);
   // Live classes only — series sessions have no heartbeat, same as ZegoCloud.
   useHostHeartbeat({
     liveClassId: target.id,
@@ -490,8 +517,12 @@ function RoomLayout({ target, credentials, title, backHref }: GetStreamRoomProps
   const toggleRecording = useCallback(async () => {
     setRecordingBusy(true);
     try {
-      await setGetStreamRecording(target, recording ? "stop" : "start");
-      toast(recording ? "Recording stopped. It'll be ready in a few minutes." : "Recording started — everyone has been told.", "success");
+      const result = await setGetStreamRecording(target, recording ? "stop" : "start");
+      toast(recording ? "Recording stopped. It'll be ready in a few minutes." : "Recording started. Everyone has been told.", "success");
+      // Saved settings couldn't be applied: it's recording with the standard ones.
+      if (!recording && result?.settingsApplied === false) {
+        toast("Your recording settings couldn't be used this time, so it's recording in standard 720p.", "info");
+      }
     } catch (error) {
       toast(friendlyError(error, "We couldn't change the recording. Please try again."), "error");
     } finally {
@@ -592,12 +623,20 @@ function RoomLayout({ target, credentials, title, backHref }: GetStreamRoomProps
   const openSettings = useCallback(() => {
     setSettingsOpen(true);
   }, []);
+  const openRecordingSettings = useCallback(() => {
+    setSettingsOpen(false);
+    setRecordingSettingsOpen(true);
+  }, []);
+  const closeRecordingSettings = useCallback(() => setRecordingSettingsOpen(false), []);
+  const openClassLink = useCallback(() => setClassLinkOpen(true), []);
+  const closeClassLink = useCallback(() => setClassLinkOpen(false), []);
   const toggleReactions = useCallback(() => setReactionsOpen((v) => !v), []);
   const closeReactions = useCallback(() => setReactionsOpen(false), []);
   const showError = useCallback((message: string) => toast(message, "error"), [toast]);
   const requestEffects = useCallback(() => setEffectsRequested(true), []);
 
-  const anyPanelOpen = chatOpen || giftsOpen || peopleOpen || settingsOpen || reactionsOpen || leaveChoice;
+  const anyPanelOpen =
+    chatOpen || giftsOpen || peopleOpen || settingsOpen || recordingSettingsOpen || classLinkOpen || reactionsOpen || leaveChoice;
   const chrome = useImmersiveChrome({ autoHide: presenting, blocked: anyPanelOpen });
 
   useRoomShortcuts({
@@ -608,10 +647,8 @@ function RoomLayout({ target, credentials, title, backHref }: GetStreamRoomProps
     },
   });
 
-  const inviteUrl = useMemo(() => {
-    if (typeof window === "undefined") return "";
-    return target.kind === "class" ? `${window.location.origin}/live/join/${target.id}` : window.location.href;
-  }, [target]);
+  // The class's lobby link (series sessions: the same link the series page uses).
+  const inviteUrl = useMemo(() => classInviteUrl(target), [target]);
 
   if (classEnded) {
     // Recordings: the creator, plus co-hosts of live classes (series have none).
@@ -624,6 +661,17 @@ function RoomLayout({ target, credentials, title, backHref }: GetStreamRoomProps
       <div className="min-h-[100dvh] bg-[#0d111b]">
         <HostLeftDialog onRejoin={() => window.location.reload()} onEnd={endForEveryone} />
       </div>
+    );
+  }
+
+  // GetStream stopped trying to reconnect: say so, instead of a frozen room.
+  if (callingState === CallingState.RECONNECTING_FAILED) {
+    return (
+      <ConnectionLostScreen
+        isCreator={isCreator}
+        onRejoin={() => window.location.reload()}
+        onLeave={() => router.push(backHref)}
+      />
     );
   }
 
@@ -656,12 +704,13 @@ function RoomLayout({ target, credentials, title, backHref }: GetStreamRoomProps
             earned={earned}
             onBack={leave}
             onOpenParticipants={openPeople}
+            onOpenClassLink={isHost ? openClassLink : undefined}
             glidePaused={hide}
           />
           {(callingState === CallingState.RECONNECTING || callingState === CallingState.OFFLINE) && (
             <div className="mx-3 mb-1 flex items-center justify-center gap-2 rounded-full bg-amber-400/15 py-1.5 text-xs font-medium text-amber-200">
               <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              {callingState === CallingState.OFFLINE ? "You're offline — we'll reconnect when you're back" : "Reconnecting…"}
+              {callingState === CallingState.OFFLINE ? "You're offline. We'll reconnect when you're back" : "Reconnecting…"}
             </div>
           )}
           <ConnectionBanner />
@@ -762,6 +811,8 @@ function RoomLayout({ target, credentials, title, backHref }: GetStreamRoomProps
             onOpenHands={openPeople}
             onOpenGifts={openGifts}
             onOpenSettings={openSettings}
+            onOpenRecordingSettings={openRecordingSettings}
+            onOpenClassLink={isHost ? openClassLink : undefined}
             onToggleRecording={toggleRecording}
             onLeave={leave}
             onDeviceError={showError}
@@ -814,7 +865,19 @@ function RoomLayout({ target, credentials, title, backHref }: GetStreamRoomProps
           onToggleCaptions={() => void toggleCaptions()}
           showCaptions={showCaptions}
           onShowCaptions={setShowCaptions}
+          onOpenRecordingSettings={isCreator ? openRecordingSettings : undefined}
         />
+        {isHost && (
+          <ClassLinkSheet open={classLinkOpen} onClose={closeClassLink} url={inviteUrl} title={title} onNotify={toast} />
+        )}
+        {isCreator && recordingSettingsOpen && (
+          <RecordingSettingsSheet
+            open={recordingSettingsOpen}
+            onClose={closeRecordingSettings}
+            recording={recording}
+            onNotify={toast}
+          />
+        )}
         {effectsRequested && <EffectsHost onChange={setEffects} />}
 
         <RecordingNotice recording={recording} isCreator={isCreator} />

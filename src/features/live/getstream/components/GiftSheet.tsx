@@ -113,7 +113,7 @@ export const GiftSheet = memo(function GiftSheet({
                     <a href="/dashboard/wallet" target="_blank" rel="noopener" className="font-semibold underline">
                       Top up your wallet
                     </a>{" "}
-                    and come back — you won&apos;t miss the class.
+                    and come back. You won&apos;t miss the class.
                   </>
                 )}
               </div>

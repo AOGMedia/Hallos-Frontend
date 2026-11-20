@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { CheckCircle2 } from "lucide-react";
+import { CheckCircle2, WifiOff } from "lucide-react";
+import { EndScreenFeedback } from "@/features/class-feedback/components/EndScreenFeedback";
 import { RecordingsList } from "./RecordingsList";
 import { recordingsHref, type GetStreamTarget } from "../api";
 
@@ -137,6 +138,45 @@ export function LeaveChoiceDialog({
   );
 }
 
+/**
+ * GetStream gave up reconnecting (the network was gone for too long). The
+ * class itself carries on for everyone else; rejoining takes you straight
+ * back to the same class.
+ */
+export function ConnectionLostScreen({
+  isCreator,
+  onRejoin,
+  onLeave,
+}: {
+  isCreator: boolean;
+  onRejoin: () => void;
+  onLeave: () => void;
+}) {
+  return (
+    <div className="flex min-h-[100dvh] items-center justify-center bg-[#0d111b] p-4">
+      <div className={panel} role="alertdialog" aria-labelledby="connection-lost-title">
+        <WifiOff className="mx-auto h-11 w-11 text-amber-300" aria-hidden />
+        <h2 id="connection-lost-title" className="mt-3 text-xl font-bold text-white">
+          Your connection dropped
+        </h2>
+        <p className="mt-2 text-sm text-white/70">
+          {isCreator
+            ? "Your class is still live for everyone. Rejoin when your internet is back."
+            : "The class is still going. Rejoin when your internet is back."}
+        </p>
+        <div className="mt-6 flex flex-col gap-3">
+          <button type="button" onClick={onRejoin} className={primaryBtn}>
+            Rejoin class
+          </button>
+          <button type="button" onClick={onLeave} className={ghostBtn}>
+            {isCreator ? "Back to dashboard" : "Leave class"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /** Shown when the class (or series session) has ended. Hosts also get its recordings. */
 export function ClassEndedScreen({
   target,
@@ -156,6 +196,8 @@ export function ClassEndedScreen({
         <p className="mt-2 text-sm text-white/70">
           {showRecordings ? "Great session! Your recordings are below." : `Thanks for joining the ${noun}.`}
         </p>
+        {/* Only appears once the class has ended, for people who were in it. */}
+        <EndScreenFeedback kind={target.kind} id={target.id} />
         {showRecordings && (
           <div className="mt-6">
             <RecordingsList target={target} />
