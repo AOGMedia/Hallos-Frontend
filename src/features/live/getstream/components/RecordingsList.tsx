@@ -80,7 +80,7 @@ export function RecordingsList({ target }: { target: GetStreamTarget }) {
   const sessions = new Set(recordings.map((r) => r.session)).size;
   const suggestedTitle = (rec: GetStreamRecording) => {
     const base = data?.title || "Class recording";
-    return target.kind === "class" && sessions > 1 ? `${base} — Session ${rec.session}` : base;
+    return target.kind === "class" && sessions > 1 ? `${base} · Session ${rec.session}` : base;
   };
 
   return (

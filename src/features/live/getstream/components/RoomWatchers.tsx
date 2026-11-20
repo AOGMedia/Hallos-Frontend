@@ -72,7 +72,7 @@ export const ConnectionBanner = memo(function ConnectionBanner() {
   return (
     <div role="status" className="pointer-events-none flex justify-center px-3">
       <span className="flex items-center gap-2 rounded-full bg-amber-400/15 px-3.5 py-1.5 text-xs font-medium text-amber-200">
-        <WifiOff className="h-3.5 w-3.5" /> Your connection is unstable — video may pause to keep audio clear
+        <WifiOff className="h-3.5 w-3.5" /> Your connection is unstable. Video may pause to keep audio clear
       </span>
     </div>
   );

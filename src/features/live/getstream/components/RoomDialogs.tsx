@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { CheckCircle2 } from "lucide-react";
+import { EndScreenFeedback } from "@/features/class-feedback/components/EndScreenFeedback";
 import { RecordingsList } from "./RecordingsList";
 import { recordingsHref, type GetStreamTarget } from "../api";
 
@@ -156,6 +157,8 @@ export function ClassEndedScreen({
         <p className="mt-2 text-sm text-white/70">
           {showRecordings ? "Great session! Your recordings are below." : `Thanks for joining the ${noun}.`}
         </p>
+        {/* Only appears once the class has ended, for people who were in it. */}
+        <EndScreenFeedback kind={target.kind} id={target.id} />
         {showRecordings && (
           <div className="mt-6">
             <RecordingsList target={target} />

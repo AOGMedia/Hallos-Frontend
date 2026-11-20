@@ -130,7 +130,7 @@ const MessageRow = memo(function MessageRow({
         )}
         {m.status === "failed" ? (
           <button type="button" onClick={() => onRetry(m)} className="mt-1 flex items-center gap-1 text-left text-[11px] text-red-400">
-            <AlertCircle className="h-3 w-3 shrink-0" /> {m.error || "Not sent — tap to try again"}
+            <AlertCircle className="h-3 w-3 shrink-0" /> {m.error || "Not sent. Tap to try again"}
           </button>
         ) : (
           <span className="mt-0.5 text-[10px] text-white/40">{timeOf(m.sentAt)}</span>

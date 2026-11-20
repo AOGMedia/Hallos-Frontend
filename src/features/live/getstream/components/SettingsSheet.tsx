@@ -156,7 +156,7 @@ export const SettingsSheet = memo(function SettingsSheet(props: SettingsSheetPro
                 Strong blur
               </Choice>
               {effects.degraded && (
-                <p className="px-1 pt-1 text-xs text-amber-300">This device is struggling with the effect — turn it off for smoother video.</p>
+                <p className="px-1 pt-1 text-xs text-amber-300">This device is struggling with the effect. Turn it off for smoother video.</p>
               )}
             </div>
           )}
@@ -165,13 +165,13 @@ export const SettingsSheet = memo(function SettingsSheet(props: SettingsSheetPro
         <Section icon={<LayoutGrid className="h-3.5 w-3.5" />} title="Layout">
           <div className="space-y-1.5">
             <Choice selected={props.layout === "auto"} onClick={() => props.onLayout("auto")}>
-              Auto — the speaker large, others alongside
+              Auto: the speaker large, others alongside
             </Choice>
             <Choice selected={props.layout === "tiled"} onClick={() => props.onLayout("tiled")}>
-              Tiled — everyone the same size
+              Tiled: everyone the same size
             </Choice>
             <Choice selected={props.layout === "spotlight"} onClick={() => props.onLayout("spotlight")}>
-              Spotlight — one person full screen
+              Spotlight: one person full screen
             </Choice>
           </div>
         </Section>
@@ -196,7 +196,7 @@ export const SettingsSheet = memo(function SettingsSheet(props: SettingsSheetPro
           <div className="space-y-1.5">
             {props.canControlCaptions && (
               <Choice selected={captioning} disabled={props.captionsBusy} onClick={props.onToggleCaptions}>
-                {props.captionsBusy ? "Updating…" : captioning ? "Captions are on for everyone — turn off" : "Turn on captions for everyone"}
+                {props.captionsBusy ? "Updating…" : captioning ? "Turn off captions for everyone" : "Turn on captions for everyone"}
               </Choice>
             )}
             {captioning ? (

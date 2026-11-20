@@ -57,7 +57,7 @@ export default function RecordingSettingsSheet({ open, onClose, recording, onNot
           onSave={(settings) =>
             save.mutate(settings, {
               onSuccess: () => {
-                onNotify(recording ? "Saved — your next recording will use these settings." : "Recording settings saved.", "success");
+                onNotify(recording ? "Saved. Your next recording will use these settings." : "Recording settings saved.", "success");
                 onClose();
               },
               onError: (error) => onNotify(friendlyError(error, "We couldn't save your settings. Please try again."), "error"),

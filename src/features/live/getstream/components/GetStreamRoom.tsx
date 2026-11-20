@@ -372,7 +372,7 @@ function RoomLayout({ target, credentials, title, backHref }: GetStreamRoomProps
     if (isCreator) return;
     tapHaptic(15);
     toast(
-      isHost ? "You're now a co-host — you can mute, spotlight and manage people." : "You're no longer a co-host",
+      isHost ? "You're now a co-host. You can mute, spotlight and manage people." : "You're no longer a co-host",
       isHost ? "success" : "info"
     );
   }, [isHost, isCreator, toast]);
@@ -443,7 +443,7 @@ function RoomLayout({ target, credentials, title, backHref }: GetStreamRoomProps
     playGift();
     tapHaptic([10, 40, 10]);
     if (event.to?.id === selfId && event.from.id !== selfId) {
-      toast(`${event.from.name} sent you a ${look.name} ${look.emoji} — it's in your wallet.`, "success");
+      toast(`${event.from.name} sent you a ${look.name} ${look.emoji}. It's in your wallet.`, "success");
     }
     if (isHost || event.to?.id === selfId) {
       // Batch a burst of gifts into one refresh (host total / own balance).
@@ -514,7 +514,7 @@ function RoomLayout({ target, credentials, title, backHref }: GetStreamRoomProps
     setRecordingBusy(true);
     try {
       const result = await setGetStreamRecording(target, recording ? "stop" : "start");
-      toast(recording ? "Recording stopped. It'll be ready in a few minutes." : "Recording started — everyone has been told.", "success");
+      toast(recording ? "Recording stopped. It'll be ready in a few minutes." : "Recording started. Everyone has been told.", "success");
       // Saved settings couldn't be applied: it's recording with the standard ones.
       if (!recording && result?.settingsApplied === false) {
         toast("Your recording settings couldn't be used this time, so it's recording in standard 720p.", "info");
@@ -695,7 +695,7 @@ function RoomLayout({ target, credentials, title, backHref }: GetStreamRoomProps
           {(callingState === CallingState.RECONNECTING || callingState === CallingState.OFFLINE) && (
             <div className="mx-3 mb-1 flex items-center justify-center gap-2 rounded-full bg-amber-400/15 py-1.5 text-xs font-medium text-amber-200">
               <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              {callingState === CallingState.OFFLINE ? "You're offline — we'll reconnect when you're back" : "Reconnecting…"}
+              {callingState === CallingState.OFFLINE ? "You're offline. We'll reconnect when you're back" : "Reconnecting…"}
             </div>
           )}
           <ConnectionBanner />

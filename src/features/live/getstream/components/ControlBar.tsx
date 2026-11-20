@@ -109,7 +109,7 @@ const MicButton = memo(function MicButton({ onError }: { onError: (what: string)
     <div className="relative">
       {isSpeakingWhileMuted && (
         <span className="pointer-events-none absolute bottom-full left-1/2 mb-3 w-max -translate-x-1/2 rounded-full bg-[#1f2537] px-3 py-1.5 text-xs font-medium text-white shadow-xl ring-1 ring-white/10">
-          You&apos;re muted — tap to speak
+          You&apos;re muted. Tap to speak
         </span>
       )}
       <ControlButton

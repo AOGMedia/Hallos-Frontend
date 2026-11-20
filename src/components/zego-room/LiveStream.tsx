@@ -9,6 +9,7 @@ import { ZegoSuperBoardManager } from "zego-superboard-web";
 import { RaiseHandButton } from "./RaiseHandButton";
 import { RaiseHandPanel } from "./RaiseHandPanel";
 import { CustomAlert } from "./CustomAlert";
+import { ZegoClassEnded } from "./ZegoClassEnded";
 
 interface LiveStreamProps {
   liveClassId: string;
@@ -51,6 +52,10 @@ const LiveStream = ({ liveClassId, token, roomId, appId, isCreator = false, isSe
   const [hostLeft, setHostLeft] = useState(false);
   const [confirmEnd, setConfirmEnd] = useState(false);
   const [ending, setEnding] = useState(false);
+  /** The host ended the class from here: show the class-ended screen. */
+  const [classEnded, setClassEnded] = useState(false);
+  /** Each time a non-host leaves the room (a fresh check that the class has ended). */
+  const [leaveCount, setLeaveCount] = useState(0);
 
   // The owner is always Host. Others get Co-host only through a co-host
   // invite link; everyone else is Audience. A missing or edited ?role= can
@@ -185,6 +190,8 @@ const LiveStream = ({ liveClassId, token, roomId, appId, isCreator = false, isSe
             // Leaving no longer ends the class automatically: attendees and
             // co-hosts may still be in the room. The host decides explicitly.
             if (isCreator) setHostLeft(true);
+            // Others: if the class is over, the class-ended screen (with feedback) shows.
+            else setLeaveCount((n) => n + 1);
           },
         });
       } catch (err) {
@@ -240,7 +247,10 @@ const LiveStream = ({ liveClassId, token, roomId, appId, isCreator = false, isSe
     setEnding(true);
     try {
       await endZegoLive(liveClassId);
-      router.push("/dashboard");
+      // Like GetStream: an end screen (feedback, then back to the dashboard).
+      setClassEnded(true);
+      setHostLeft(false);
+      setEnding(false);
     } catch (error) {
       console.error("Failed to end class:", error);
       setAlert({ message: "Couldn't end the class. Please try again.", type: "error" });
@@ -314,6 +324,12 @@ const LiveStream = ({ liveClassId, token, roomId, appId, isCreator = false, isSe
             );
           }}
         />
+      )}
+
+      {/* After the class: the class-ended screen with feedback. */}
+      {classEnded && <ZegoClassEnded kind={isSeries ? "session" : "class"} id={liveClassId} reason="ended" />}
+      {!classEnded && leaveCount > 0 && (
+        <ZegoClassEnded key={leaveCount} kind={isSeries ? "session" : "class"} id={liveClassId} reason="left" />
       )}
 
       {/* Host left the room: the class stays live until they choose to end it */}
