@@ -38,6 +38,8 @@ interface PreJoinScreenProps {
   error: string | null;
   onJoin: () => void;
   onBack: () => void;
+  /** The creator is coming back to a class that is still live (e.g. after losing connection). */
+  rejoining?: boolean;
 }
 
 const ROLE_LABEL: Record<GetStreamUserType, string> = {
@@ -174,6 +176,7 @@ export function PreJoinScreen({
   error,
   onJoin,
   onBack,
+  rejoining = false,
 }: PreJoinScreenProps) {
   const call = useCall();
   const { useMicrophoneState, useCameraState, useSpeakerState } = useCallStateHooks();
@@ -223,8 +226,12 @@ export function PreJoinScreen({
 
   const camOn = !cam.optimisticIsMute;
   const micOn = !mic.optimisticIsMute;
-  // The creator starts the class; everyone else (co-hosts too) joins it.
-  const verb = userType === "creator" ? "Start" : "Join";
+  // The creator starts the class (or rejoins it if it's still live); everyone
+  // else (co-hosts too) joins it.
+  const isCreator = userType === "creator";
+  const backInLive = isCreator && rejoining;
+  const verb = isCreator ? (backInLive ? "Rejoin" : "Start") : "Join";
+  const busyLabel = verb === "Start" ? "Starting…" : verb === "Rejoin" ? "Rejoining…" : "Joining…";
   const message = error || deviceError;
 
   const joinButton = (
@@ -239,7 +246,7 @@ export function PreJoinScreen({
     >
       {joining ? (
         <>
-          <Loader2 className="h-5 w-5 animate-spin" /> {verb === "Start" ? "Starting…" : "Joining…"}
+          <Loader2 className="h-5 w-5 animate-spin" /> {busyLabel}
         </>
       ) : (
         <>
@@ -283,7 +290,13 @@ export function PreJoinScreen({
               <span className="inline-flex items-center gap-1.5">
                 <Users className="h-3.5 w-3.5" /> {ROLE_LABEL[userType]}
               </span>
-              {when && (
+              {backInLive && (
+                <span className="inline-flex items-center gap-1.5 font-medium text-red-300">
+                  <span className="h-2 w-2 rounded-full bg-red-500" aria-hidden />
+                  Your class is still live. Everyone&apos;s waiting for you.
+                </span>
+              )}
+              {when && !backInLive && (
                 <span className="inline-flex items-center gap-1.5">
                   <CalendarClock className="h-3.5 w-3.5" /> {when}
                 </span>

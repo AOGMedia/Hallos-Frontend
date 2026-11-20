@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { CheckCircle2 } from "lucide-react";
+import { CheckCircle2, WifiOff } from "lucide-react";
 import { EndScreenFeedback } from "@/features/class-feedback/components/EndScreenFeedback";
 import { RecordingsList } from "./RecordingsList";
 import { recordingsHref, type GetStreamTarget } from "../api";
@@ -131,6 +131,45 @@ export function LeaveChoiceDialog({
           </button>
           <button type="button" onClick={onCancel} disabled={ending} className={ghostBtn}>
             Cancel
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * GetStream gave up reconnecting (the network was gone for too long). The
+ * class itself carries on for everyone else; rejoining takes you straight
+ * back to the same class.
+ */
+export function ConnectionLostScreen({
+  isCreator,
+  onRejoin,
+  onLeave,
+}: {
+  isCreator: boolean;
+  onRejoin: () => void;
+  onLeave: () => void;
+}) {
+  return (
+    <div className="flex min-h-[100dvh] items-center justify-center bg-[#0d111b] p-4">
+      <div className={panel} role="alertdialog" aria-labelledby="connection-lost-title">
+        <WifiOff className="mx-auto h-11 w-11 text-amber-300" aria-hidden />
+        <h2 id="connection-lost-title" className="mt-3 text-xl font-bold text-white">
+          Your connection dropped
+        </h2>
+        <p className="mt-2 text-sm text-white/70">
+          {isCreator
+            ? "Your class is still live for everyone. Rejoin when your internet is back."
+            : "The class is still going. Rejoin when your internet is back."}
+        </p>
+        <div className="mt-6 flex flex-col gap-3">
+          <button type="button" onClick={onRejoin} className={primaryBtn}>
+            Rejoin class
+          </button>
+          <button type="button" onClick={onLeave} className={ghostBtn}>
+            {isCreator ? "Back to dashboard" : "Leave class"}
           </button>
         </div>
       </div>

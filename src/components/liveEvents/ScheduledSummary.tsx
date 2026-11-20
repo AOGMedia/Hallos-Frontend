@@ -26,6 +26,8 @@ interface ScheduledSummaryProps {
   onDelete?: () => void;
   /** Opens the class's edit page (details, price, date and time). */
   onEdit?: () => void;
+  /** The class is running right now: the host rejoins it rather than starting it. */
+  isLive?: boolean;
 }
 
 export default function ScheduledSummary({
@@ -44,6 +46,7 @@ export default function ScheduledSummary({
   onStartClass,
   onDelete,
   onEdit,
+  isLive = false,
 }: ScheduledSummaryProps) {
   // Class times are full dates saved as the creator set them; read them the
   // same way as everywhere else (the old "HH:MM" formatter misread them).
@@ -57,7 +60,15 @@ export default function ScheduledSummary({
       {/* Class Details */}
       <Card variant="feature" className="live-event-card flex-1 bg-[#1F2636] shadow-2xl shadow-black/80">
         <div className="flex items-center justify-between mb-6">
-          <h3 className="heading-card">Class Details:</h3>
+          <h3 className="heading-card flex items-center gap-3">
+            Class Details:
+            {isLive && (
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-red-500/15 px-2.5 py-1 text-xs font-semibold text-red-400">
+                <span className="h-2 w-2 animate-pulse rounded-full bg-red-500" aria-hidden />
+                Live now
+              </span>
+            )}
+          </h3>
           {onEdit && (
             <button
               type="button"
@@ -193,7 +204,7 @@ export default function ScheduledSummary({
               Delete Class
             </button>
           )}
-          <LiveButton onClick={onStartClass}>Start Class</LiveButton>
+          <LiveButton onClick={onStartClass}>{isLive ? "Rejoin Class" : "Start Class"}</LiveButton>
         </div>
       </div>
     </div>

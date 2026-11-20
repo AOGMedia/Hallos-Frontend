@@ -57,7 +57,7 @@ import { RoomToasts } from "./RoomToasts";
 import { TileActionsContext, type TileActionsValue } from "./TileActions";
 import { CaptionsOverlay, ChatPreview, EmptyRoomCard, RaisedHandsChip } from "./RoomOverlays";
 import { AutoLowerHand, ConnectionBanner, JoinSounds, RecordingNotice } from "./RoomWatchers";
-import { ClassEndedScreen, HostLeftDialog, LeaveChoiceDialog } from "./RoomDialogs";
+import { ClassEndedScreen, ConnectionLostScreen, HostLeftDialog, LeaveChoiceDialog } from "./RoomDialogs";
 import { BrandGlide } from "./BrandGlide";
 import { ClassLinkSheet } from "./ClassLinkSheet";
 import { classInviteUrl } from "../lib/inviteLink";
@@ -170,6 +170,7 @@ export default function GetStreamRoom({ target, credentials, title, backHref, sc
               userType={credentials.userType}
               schedule={schedule}
               joining={phase === "joining"}
+              rejoining={Boolean(credentials.alreadyLive)}
               error={joinError}
               onJoin={join}
               onBack={() => router.push(backHref)}
@@ -282,7 +283,6 @@ const RoomHeader = memo(function RoomHeader({
 });
 
 function RoomLayout({ target, credentials, title, backHref }: GetStreamRoomProps) {
-  useMobileRoom();
   const router = useRouter();
   const call = useCall();
   const me = useConnectedUser();
@@ -478,6 +478,10 @@ function RoomLayout({ target, credentials, title, backHref }: GetStreamRoomProps
 
   // ---- Lifecycle --------------------------------------------------------------
   const classEnded = endedHere || Boolean(endedAt);
+  // App-like (no page scroll, screen kept awake) only while you're in the
+  // class; the ended, "you left" and "connection dropped" screens scroll
+  // like normal pages, so nothing on them is ever cut off.
+  useMobileRoom(!classEnded && !hostLeft && callingState !== CallingState.RECONNECTING_FAILED);
   // Live classes only — series sessions have no heartbeat, same as ZegoCloud.
   useHostHeartbeat({
     liveClassId: target.id,
@@ -657,6 +661,17 @@ function RoomLayout({ target, credentials, title, backHref }: GetStreamRoomProps
       <div className="min-h-[100dvh] bg-[#0d111b]">
         <HostLeftDialog onRejoin={() => window.location.reload()} onEnd={endForEveryone} />
       </div>
+    );
+  }
+
+  // GetStream stopped trying to reconnect: say so, instead of a frozen room.
+  if (callingState === CallingState.RECONNECTING_FAILED) {
+    return (
+      <ConnectionLostScreen
+        isCreator={isCreator}
+        onRejoin={() => window.location.reload()}
+        onLeave={() => router.push(backHref)}
+      />
     );
   }
 
