@@ -1,237 +1,106 @@
 'use client';
 
-import React, { useRef, useState, useEffect, memo, useCallback } from 'react';
-import Hls from 'hls.js';
-import { motion } from 'framer-motion';
+import { memo, useRef, useState } from 'react';
+import { ArrowLeft } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { shareUrl } from '@/lib/video/playerUtils';
-import { VideoControls } from './VideoControls';
-import { VideoPlayButton } from './VideoPlayButton';
-import { VideoShareModal } from './VideoShareModal';
+import { usePlayer } from './player/usePlayer';
+import { usePlayerShell } from './player/usePlayerShell';
+import { PlayerControls } from './player/PlayerControls';
+import { SettingsMenu } from './player/SettingsMenu';
+import { GestureLayer } from './player/GestureLayer';
+import { CenterControls, PlayerStatus, ResumePrompt, StartButton } from './player/PlayerOverlays';
 import type { VideoPlayerProps } from '@/types/video';
 
-function VideoPlayerComponent({ videoUrl, thumbnail }: VideoPlayerProps) {
-  const videoRef = useRef<HTMLVideoElement>(null);
+const isTouch = () => typeof window !== 'undefined' && window.matchMedia('(hover: none) and (pointer: coarse)').matches;
+
+/**
+ * The video player: YouTube-style on desktop (click to play, keyboard keys,
+ * theater, picture-in-picture), app-style on phones (tap for controls,
+ * double-tap to skip, big centre buttons, settings as a bottom sheet).
+ * The pieces live in ./player; this only puts them together.
+ */
+function VideoPlayerComponent({ videoUrl, thumbnail, title, videoId, theater, onToggleTheater, onBack }: VideoPlayerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const hideControlsTimeoutRef = useRef<number | null>(null);
-
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [volume, setVolume] = useState(1);
-  const [isMuted, setIsMuted] = useState(false);
-  const [progress, setProgress] = useState(0);
-  const [currentTime, setCurrentTime] = useState(0);
-  const [duration, setDuration] = useState(0);
-  const [showControls, setShowControls] = useState(true);
-  const [playbackSpeed, setPlaybackSpeed] = useState(1);
-  const [isFullscreen, setIsFullscreen] = useState(false);
-  const [isVertical, setIsVertical] = useState(false);
-  const [showShareModal, setShowShareModal] = useState(false);
-  const [shareCopied, setShareCopied] = useState(false);
-
-  // Share 
-  async function handleShare() {
-    const result = await shareUrl(window.location.href);
-    if (result === 'fallback') {
-      setShowShareModal(true);
-    } else if (result === 'copied') {
-      setShareCopied(true);
-      setShowShareModal(true);
-      setTimeout(() => setShareCopied(false), 2000);
-    }
-  }
-
-  async function handleCopyLink() {
-    const result = await shareUrl(window.location.href);
-    if (result !== 'fallback') {
-      setShareCopied(true);
-      setTimeout(() => setShareCopied(false), 2000);
-    }
-  }
-
-  //  Controls visibility 
-  const resetHideControlsTimeout = useCallback(() => {
-    if (hideControlsTimeoutRef.current) clearTimeout(hideControlsTimeoutRef.current);
-    if (isPlaying) {
-      hideControlsTimeoutRef.current = window.setTimeout(() => setShowControls(false), 3000);
-    }
-  }, [isPlaying]);
-
-  const handleMouseMove = useCallback(() => {
-    setShowControls(true);
-    resetHideControlsTimeout();
-  }, [resetHideControlsTimeout]);
-
-  //  Playback 
-  const togglePlay = useCallback(() => {
-    if (!videoRef.current) return;
-    if (isPlaying) { videoRef.current.pause(); } else { videoRef.current.play(); }
-    setIsPlaying(!isPlaying);
-  }, [isPlaying]);
-
-  const handleVolumeChange = useCallback((value: number[]) => {
-    if (!videoRef.current) return;
-    const v = value[0] / 100;
-    videoRef.current.volume = v;
-    setVolume(v);
-    setIsMuted(v === 0);
-  }, []);
-
-  const handleTimeUpdate = useCallback(() => {
-    if (!videoRef.current) return;
-    const prog = (videoRef.current.currentTime / videoRef.current.duration) * 100;
-    setProgress(isFinite(prog) ? prog : 0);
-    setCurrentTime(videoRef.current.currentTime);
-    setDuration(videoRef.current.duration || 0);
-  }, []);
-
-  const handleSeek = useCallback((value: number[]) => {
-    if (!videoRef.current?.duration) return;
-    const time = (value[0] / 100) * videoRef.current.duration;
-    if (isFinite(time)) { videoRef.current.currentTime = time; setProgress(value[0]); }
-  }, []);
-
-  const toggleMute = useCallback(() => {
-    if (!videoRef.current) return;
-    videoRef.current.muted = !isMuted;
-    setIsMuted(!isMuted);
-    if (!isMuted) { setVolume(0); } else { setVolume(1); videoRef.current.volume = 1; }
-  }, [isMuted]);
-
-  const setSpeed = useCallback((speed: number) => {
-    if (!videoRef.current) return;
-    videoRef.current.playbackRate = speed;
-    setPlaybackSpeed(speed);
-  }, []);
-
-  const toggleFullscreen = useCallback(() => {
-    if (!containerRef.current) return;
-    if (!document.fullscreenElement) { containerRef.current.requestFullscreen(); setIsFullscreen(true); }
-    else { document.exitFullscreen(); setIsFullscreen(false); }
-  }, []);
-
-  const skip = useCallback((seconds: number) => {
-    if (!videoRef.current) return;
-    videoRef.current.currentTime = Math.max(0, Math.min(duration, currentTime + seconds));
-  }, [currentTime, duration]);
-
-  const handleLoadedMetadata = useCallback(() => {
-    if (!videoRef.current) return;
-    setDuration(videoRef.current.duration);
-    setIsVertical(videoRef.current.videoWidth / videoRef.current.videoHeight < 1);
-  }, []);
-
-  //  HLS 
-  useEffect(() => {
-    const el = videoRef.current;
-    if (!el || !videoUrl) return;
-    if (!/\.m3u8(\?|$)/.test(videoUrl)) return;
-    if (Hls.isSupported()) {
-      const hls = new Hls();
-      hls.loadSource(videoUrl);
-      hls.attachMedia(el);
-      return () => hls.destroy();
-    } else if (el.canPlayType('application/vnd.apple.mpegurl')) {
-      el.src = videoUrl;
-    }
-  }, [videoUrl]);
-
-  //  Play/pause events 
-  useEffect(() => {
-    const video = videoRef.current;
-    if (!video) return;
-    const onPlay = () => { setIsPlaying(true); resetHideControlsTimeout(); };
-    const onPause = () => {
-      setIsPlaying(false);
-      setShowControls(true);
-      if (hideControlsTimeoutRef.current) clearTimeout(hideControlsTimeoutRef.current);
-    };
-    video.addEventListener('play', onPlay);
-    video.addEventListener('pause', onPause);
-    return () => {
-      video.removeEventListener('play', onPlay);
-      video.removeEventListener('pause', onPause);
-      if (hideControlsTimeoutRef.current) clearTimeout(hideControlsTimeoutRef.current);
-    };
-  }, [resetHideControlsTimeout]);
-
-  //  Fullscreen change 
-  useEffect(() => {
-    const handler = () => setIsFullscreen(!!document.fullscreenElement);
-    document.addEventListener('fullscreenchange', handler);
-    return () => document.removeEventListener('fullscreenchange', handler);
-  }, []);
-
-  // Keyboard shortcuts 
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (!containerRef.current?.contains(document.activeElement)) return;
-      switch (e.key) {
-        case ' ': case 'k': e.preventDefault(); togglePlay(); break;
-        case 'm': e.preventDefault(); toggleMute(); break;
-        case 'f': e.preventDefault(); toggleFullscreen(); break;
-        case 'ArrowLeft': case 'j': e.preventDefault(); skip(-10); break;
-        case 'ArrowRight': case 'l': e.preventDefault(); skip(10); break;
-        case 'ArrowUp': e.preventDefault(); handleVolumeChange([Math.min(100, volume * 100 + 10)]); break;
-        case 'ArrowDown': e.preventDefault(); handleVolumeChange([Math.max(0, volume * 100 - 10)]); break;
-      }
-    };
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [togglePlay, toggleMute, toggleFullscreen, skip, handleVolumeChange, volume]);
+  const player = usePlayer(videoUrl, videoId);
+  const shell = usePlayerShell(player, containerRef, onToggleTheater);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [touch] = useState(isTouch);
+  const { state: s, actions: a } = player;
+  const chromeVisible = shell.controlsVisible || !s.playing || settingsOpen;
 
   return (
-    <motion.div
+    <div
       ref={containerRef}
       className={cn(
-        'relative w-full mx-auto rounded-xl overflow-hidden bg-black shadow-2xl h-screen',
-        isVertical ? 'max-w-md aspect-[9/16]' : 'max-w-5xl aspect-video'
+        'group/player relative mx-auto w-full overflow-hidden bg-black select-none',
+        shell.fullscreen ? 'h-full' : s.isVertical ? 'aspect-[9/16] max-h-[75dvh]' : 'aspect-video max-h-[calc(100dvh-120px)]',
+        !shell.fullscreen && !theater && 'md:rounded-xl'
       )}
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5 }}
-      onMouseMove={handleMouseMove}
-      onMouseLeave={() => isPlaying && setShowControls(false)}
-      tabIndex={0}
+      onPointerMove={(e) => e.pointerType === 'mouse' && shell.showControls()}
+      onMouseLeave={() => s.playing && !settingsOpen && shell.setControlsVisible(false)}
+      aria-label={`Video player: ${title}`}
     >
       <video
-        ref={videoRef}
-        className="w-full h-full object-contain"
-        onTimeUpdate={handleTimeUpdate}
-        onLoadedMetadata={handleLoadedMetadata}
-        src={videoUrl}
+        ref={player.videoRef}
+        className="h-full w-full object-contain"
         poster={thumbnail}
-        onClick={togglePlay}
+        playsInline
+        preload="metadata"
       />
 
-      <VideoPlayButton isPlaying={isPlaying} onPlay={togglePlay} />
-
-      <VideoControls
-        isPlaying={isPlaying}
-        isMuted={isMuted}
-        volume={volume}
-        progress={progress}
-        currentTime={currentTime}
-        duration={duration}
-        playbackSpeed={playbackSpeed}
-        isFullscreen={isFullscreen}
-        showControls={showControls}
-        onTogglePlay={togglePlay}
-        onToggleMute={toggleMute}
-        onVolumeChange={handleVolumeChange}
-        onSeek={handleSeek}
-        onSkip={skip}
-        onSetSpeed={setSpeed}
-        onToggleFullscreen={toggleFullscreen}
-        onShare={handleShare}
+      <GestureLayer
+        onTap={(pointer) => {
+          if (pointer === 'mouse') a.toggle();
+          else if (chromeVisible && s.playing) shell.setControlsVisible(false);
+          else shell.showControls();
+        }}
+        onDoubleTap={(side, pointer) => {
+          if (pointer === 'mouse') void shell.toggleFullscreen();
+          else { a.seekBy(side === 'left' ? -10 : 10); shell.showControls(); }
+        }}
       />
 
-      <VideoShareModal
-        isOpen={showShareModal}
-        copied={shareCopied}
-        onClose={() => setShowShareModal(false)}
-        onCopy={handleCopyLink}
+      {/* Top bar: back (phones, like the YouTube app) */}
+      {onBack && !shell.fullscreen && (
+        <div className={`absolute inset-x-0 top-0 z-20 bg-gradient-to-b from-black/60 to-transparent p-2 transition-opacity md:hidden ${chromeVisible ? 'opacity-100' : 'pointer-events-none opacity-0'}`}>
+          <button type="button" onClick={onBack} className="flex h-10 w-10 items-center justify-center rounded-full text-white active:bg-white/15" aria-label="Go back">
+            <ArrowLeft className="h-5 w-5" />
+          </button>
+        </div>
+      )}
+
+      <StartButton player={player} />
+      {touch && <CenterControls player={player} visible={chromeVisible} />}
+      <PlayerStatus player={player} />
+      <ResumePrompt player={player} />
+
+      {s.started && (
+        <PlayerControls
+          player={player}
+          visible={chromeVisible}
+          compact={touch}
+          fullscreen={shell.fullscreen}
+          theater={theater}
+          pipSupported={shell.pipSupported}
+          onToggleFullscreen={() => void shell.toggleFullscreen()}
+          onToggleTheater={onToggleTheater}
+          onTogglePip={() => void shell.togglePip()}
+          onOpenSettings={() => setSettingsOpen((o) => !o)}
+        />
+      )}
+
+      <SettingsMenu
+        open={settingsOpen}
+        onClose={() => setSettingsOpen(false)}
+        sheet={touch}
+        speed={s.speed}
+        onSpeed={a.setSpeed}
+        levels={s.levels}
+        level={s.level}
+        activeHeight={s.activeHeight}
+        onLevel={a.setLevel}
       />
-    </motion.div>
+    </div>
   );
 }
 

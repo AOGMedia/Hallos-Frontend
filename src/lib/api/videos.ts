@@ -28,6 +28,11 @@ export interface VideoListItem {
   /** Creator's name and profile picture (null => show their initial). */
   author?: string;
   authorAvatar?: string | null;
+  category?: string;
+  /** Your own uploads only: not published yet (see the upload window's drafts). */
+  isDraft?: boolean;
+  /** The server's own status: uploading, processing, ready or failed. */
+  uploadStatus?: string;
 }
 
 export interface VideoDetailResponse {
@@ -152,6 +157,89 @@ export async function initializeVideoUpload(
   } catch (err) {
     console.error(" initializeVideoUpload failed:", err);
     throw err;
+  }
+}
+
+  //  DRAFT UPLOADS (the upload starts as soon as the file is picked)
+  //  Backend: routes/videoRoutes.js (/videos/drafts). Until Publish the
+  //  video is a private draft. initializeVideoUpload above stays the classic
+  //  flow, used when the server has no drafts yet.
+
+export interface DraftUpload {
+  videoId: string;
+  /** Suggested title (from the file name). */
+  title: string;
+  uploadUrl: string;
+  expiresAt: string;
+}
+
+/** The server explained what's wrong (too big, not yours, …): show its words. */
+export class UploadApiError extends Error {
+  constructor(message: string, readonly code?: string, readonly status?: number) {
+    super(message);
+  }
+}
+
+/** No draft endpoints (older server) or not set up yet: use the classic flow. */
+export class DraftsUnavailableError extends Error {}
+
+function draftError(error: unknown, fallback: string): Error {
+  const res = (error as { response?: { status?: number; data?: { message?: string; code?: string } } })?.response;
+  if (res) {
+    const { status, data } = res;
+    if ((status === 404 && !data?.code) || status === 405 || (status === 503 && data?.code === "DRAFTS_UNAVAILABLE")) {
+      return new DraftsUnavailableError("Drafts not available");
+    }
+    return new UploadApiError(data?.message || fallback, data?.code, status);
+  }
+  return error instanceof Error ? error : new Error(fallback);
+}
+
+export async function createDraft(input: {
+  fileName: string;
+  sizeBytes: number;
+  type: "long" | "short";
+  durationSeconds?: number;
+}): Promise<DraftUpload> {
+  try {
+    const res = await apiClient.post("/videos/drafts", input, { headers: getAuthHeaders(), timeout: 30000 });
+    return res.data.data as DraftUpload;
+  } catch (error) {
+    throw draftError(error, "We couldn’t start your upload. Please try again.");
+  }
+}
+
+/** A fresh upload link for a draft whose upload didn't finish. */
+export async function restartDraft(videoId: string): Promise<DraftUpload> {
+  try {
+    const res = await apiClient.post(`/videos/drafts/${encodeURIComponent(videoId)}/restart`, undefined, {
+      headers: getAuthHeaders(),
+      timeout: 30000,
+    });
+    return res.data.data as DraftUpload;
+  } catch (error) {
+    throw draftError(error, "We couldn’t restart your upload. Please try again.");
+  }
+}
+
+/** Save the details: the video goes live once it has finished processing. */
+export async function publishDraft(videoId: string, details: FormData): Promise<void> {
+  try {
+    await apiClient.put(`/videos/drafts/${encodeURIComponent(videoId)}/publish`, details, {
+      headers: { ...getAuthHeaders(), "Content-Type": "multipart/form-data" },
+      timeout: 60000,
+    });
+  } catch (error) {
+    throw draftError(error, "We couldn’t publish your video. Please try again.");
+  }
+}
+
+/** Cancel the upload and remove the draft. */
+export async function discardDraft(videoId: string): Promise<void> {
+  try {
+    await apiClient.delete(`/videos/drafts/${encodeURIComponent(videoId)}`, { headers: getAuthHeaders(), timeout: 30000 });
+  } catch (error) {
+    throw draftError(error, "We couldn’t remove this upload.");
   }
 }
 
@@ -318,5 +406,8 @@ function normalizeVideoItem(raw: Record<string, unknown>): VideoListItem {
     userId: (raw?.userId as string | number | undefined) ?? (raw?.user_id as string | number | undefined) ?? undefined,
     author: (raw?.author as string | undefined) ?? undefined,
     authorAvatar: (raw?.authorAvatar as string | null | undefined) ?? null,
+    category: (raw?.category as string | undefined) ?? undefined,
+    isDraft: raw?.isDraft === true,
+    uploadStatus: typeof statusRaw === 'string' ? statusRaw.toLowerCase() : undefined,
   };
 }

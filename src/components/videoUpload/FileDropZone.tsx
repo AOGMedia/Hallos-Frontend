@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useState } from 'react';
+import { formatFileSize, isVideoFile } from '@/utils/videoUploadFormatters';
 // import { FileVideo2 } from 'lucide-react';
 
 interface FileDropZoneProps {
@@ -10,13 +11,32 @@ interface FileDropZoneProps {
   children?:React.ReactNode;
 }
 
-export function FileDropZone({ 
-  onFileSelect, 
+export function FileDropZone({
+  onFileSelect,
   accept = 'video/*',
-  maxSize = 500 * 1024 * 1024 ,// 500MB default
+  maxSize = 5 * 1024 * 1024 * 1024, // 5 GB (the server checks this too)
   children
 }: FileDropZoneProps) {
   const [isDragging, setIsDragging] = useState(false);
+  // Shown in the drop zone instead of a browser popup.
+  const [error, setError] = useState<string | null>(null);
+
+  const accept_ = useCallback((file: File) => {
+    if (!isVideoFile(file)) {
+      setError(`“${file.name}” isn’t a video file. Please choose a video.`);
+      return;
+    }
+    if (file.size === 0) {
+      setError('This file looks empty. Please choose another video.');
+      return;
+    }
+    if (file.size > maxSize) {
+      setError(`This video is ${formatFileSize(file.size)}. The limit is ${formatFileSize(maxSize)}.`);
+      return;
+    }
+    setError(null);
+    onFileSelect(file);
+  }, [onFileSelect, maxSize]);
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -33,27 +53,16 @@ export function FileDropZone({
     setIsDragging(false);
 
     const files = Array.from(e.dataTransfer.files);
-    const videoFile = files.find(file => file.type.startsWith('video/'));
-
-    if (videoFile) {
-      if (videoFile.size <= maxSize) {
-        onFileSelect(videoFile);
-      } else {
-        alert(`File size exceeds ${maxSize / (1024 * 1024)}MB limit`);
-      }
-    }
-  }, [onFileSelect, maxSize]);
+    const videoFile = files.find(isVideoFile) ?? files[0];
+    if (videoFile) accept_(videoFile);
+  }, [accept_]);
 
   const handleFileInput = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      if (file.size <= maxSize) {
-        onFileSelect(file);
-      } else {
-        alert(`File size exceeds ${maxSize / (1024 * 1024)}MB limit`);
-      }
-    }
-  }, [onFileSelect, maxSize]);
+    if (file) accept_(file);
+    // Choosing the same file again (after an error) should still work.
+    e.target.value = '';
+  }, [accept_]);
 
   return (
     <div
@@ -87,6 +96,12 @@ export function FileDropZone({
       <p className="text-regular text-text-primary text-center">
         Drag and drop file here
       </p>
+
+      {error && (
+        <p role="alert" className="text-accent-red text-sm bg-red-500/10 px-4 py-3 rounded-lg border border-red-500/20 text-center">
+          {error}
+        </p>
+      )}
 
       <label className="cursor-pointer">
         <input

@@ -1,5 +1,12 @@
+import { useSyncExternalStore } from 'react';
 import { useMutation } from '@tanstack/react-query';
 import { initializeVideoUpload, type InitializeUploadResult } from '@/lib/api/videos';
+import { uploadEngine, type UploadState } from '@/components/videoUpload/uploadEngine';
+
+/** The video upload in progress (chunked, resumable), kept in sync with the engine. */
+export function useUploadProgress(): UploadState {
+  return useSyncExternalStore(uploadEngine.subscribe, uploadEngine.getState, uploadEngine.getServerState);
+}
 // import { useAuthStore } from '@/store/authStore';
 
 export interface InitializePayload {
@@ -96,13 +103,13 @@ export async function performDirectUpload(
       if (xhr.status >= 200 && xhr.status < 300) {
         resolve();
       } else {
-        reject(new Error(`Mux upload failed: ${xhr.status} ${xhr.statusText}`));
+        reject(new Error("The upload didn’t go through. Please check your connection and try again."));
       }
     };
 
     // error
     xhr.onerror = () => {
-      reject(new Error("Network error during upload"));
+      reject(new Error("The upload stopped. Please check your connection and try again."));
     };
 
     // send file
