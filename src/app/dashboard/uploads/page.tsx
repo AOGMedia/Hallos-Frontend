@@ -6,7 +6,10 @@ import { getMyVideos, deleteVideo, type VideoListItem } from '@/lib/api/videos';
 import { VideoCard } from '@/components/dashboard/VideoCard';
 import { ShortVideoCard } from '@/components/dashboard/ShortVideoCard';
 import { EmptyState } from '@/components/uploads/EmptyState';
-import { UploadingState } from '@/components/uploads/UploadingState';
+import { UploadingState, type UploadCardVariant } from '@/components/uploads/UploadingState';
+import { useRouter } from 'next/navigation';
+import { useUploadProgress } from '@/hooks/useVideoUpload';
+import { uploadEngine } from '@/components/videoUpload/uploadEngine';
 import Image from 'next/image';
 import { ConfirmationModal } from '@/components/ui/ConfirmationModal';
 import { AlertModal } from '@/components/ui/AlertModal';
@@ -20,6 +23,9 @@ export default function UploadsPage() {
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [alertMessage, setAlertMessage] = useState<string | null>(null);
   const { userAvatarUrl } = useCurrentUser();
+  const router = useRouter();
+  // The upload going on in this tab (shows live progress on its card).
+  const upload = useUploadProgress();
 
   const handleDeleteVideo = (id: string) => {
     setDeleteId(id);
@@ -29,6 +35,8 @@ export default function UploadsPage() {
     if (!deleteId) return;
     const id = deleteId;
     setDeleteId(null);
+    // Deleting the upload that's going on in this tab: stop sending it too.
+    if (uploadEngine.getState().videoId === id) void uploadEngine.cancel();
     try {
       await deleteVideo(id);
       queryClient.invalidateQueries({ queryKey: ['user-videos-all'] });
@@ -62,9 +70,29 @@ export default function UploadsPage() {
     return v.type !== 'short';
   });
 
-  // Separate videos by status
-  const uploadingItems = currentData?.filter(item => item.status === 'uploading') || [];
-  const readyItems = currentData?.filter(item => item.status === 'ready') || [];
+  // Separate videos by status: anything not live yet (uploading, processing,
+  // drafts, stopped or failed uploads) shows as a status card first.
+  const needsCard = (item: VideoListItem) =>
+    item.isDraft || item.status === 'uploading' || item.uploadStatus === 'failed';
+  const uploadingItems = currentData?.filter(needsCard) || [];
+  const readyItems = currentData?.filter(item => item.status === 'ready' && !needsCard(item)) || [];
+
+  /** Which card a not-yet-live upload gets. */
+  const cardFor = (item: VideoListItem): { variant: UploadCardVariant; progress?: number } => {
+    const raw = item.uploadStatus;
+    // Going up right now in this tab.
+    if (upload.videoId === item.id && (upload.phase === 'uploading' || upload.phase === 'starting')) {
+      return { variant: 'uploading', progress: upload.percent };
+    }
+    if (raw === 'failed' && !item.isDraft) return { variant: 'failed' };
+    if (item.isDraft) {
+      return raw === 'processing' || raw === 'ready' ? { variant: 'draft' } : { variant: 'unfinished' };
+    }
+    // An upload link lasts a day: still "uploading" after that, it never finished.
+    const age = item.createdAt ? Date.now() - new Date(item.createdAt).getTime() : 0;
+    if (raw === 'uploading' && age > 24 * 60 * 60 * 1000) return { variant: 'unfinished' };
+    return { variant: 'processing' };
+  };
 
   return (
     <div className="flex flex-col gap-6">
@@ -129,14 +157,20 @@ export default function UploadsPage() {
           {/* Uploading Items */}
           {uploadingItems.length > 0 && (
             <div className="flex flex-wrap gap-12">
-              {uploadingItems.map((item) => (
-                <UploadingState
-                  key={item.id}
-                  title={item.title}
-                  type={activeTab}
-                  onDelete={() => handleDeleteVideo(item.id)}
-                />
-              ))}
+              {uploadingItems.map((item) => {
+                const card = cardFor(item);
+                return (
+                  <UploadingState
+                    key={item.id}
+                    title={item.title}
+                    type={activeTab}
+                    variant={card.variant}
+                    progress={card.progress}
+                    onFinish={item.isDraft ? () => router.push(`/dashboard/create?draft=${encodeURIComponent(item.id)}`) : undefined}
+                    onDelete={() => handleDeleteVideo(item.id)}
+                  />
+                );
+              })}
             </div>
           )}
 

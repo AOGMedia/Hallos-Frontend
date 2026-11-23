@@ -16,6 +16,7 @@ import { PromoModal, PromoCompactBanner } from '@/components/promo';
 import { listLiveClassesExternal } from '@/services/liveClassService';
 import { listSeries } from '@/services/seriesService';
 import { ADMIN_APP_URL } from '@/lib/adminApp';
+import { UploadStatusPill } from '@/components/videoUpload/UploadStatus';
 
 const GlobalFeedback = dynamic(() => import('@/components/ui/GlobalFeedback'), {
   ssr: false,
@@ -118,6 +119,8 @@ export function DashboardLayoutClient({ children }: DashboardLayoutClientProps) 
         </main>
       </div>
       <GlobalFeedback />
+      {/* A video upload carries on while you browse the dashboard. */}
+      <UploadStatusPill />
       {(!modalDismissed || modalReopened) && <PromoModal onClose={() => { dismissModal(); setModalReopened(false); }} />}
     </div>
   );
