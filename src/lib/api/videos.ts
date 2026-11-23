@@ -29,6 +29,9 @@ export interface VideoListItem {
   author?: string;
   authorAvatar?: string | null;
   category?: string;
+  sizeBytes?: number;
+  /** Your own drafts: the file being uploaded (pick the same one to continue). */
+  draftFileName?: string;
   /** Your own uploads only: not published yet (see the upload window's drafts). */
   isDraft?: boolean;
   /** The server's own status: uploading, processing, ready or failed. */
@@ -209,10 +212,14 @@ export async function createDraft(input: {
   }
 }
 
-/** A fresh upload link for a draft whose upload didn't finish. */
-export async function restartDraft(videoId: string): Promise<DraftUpload> {
+/**
+ * The upload link for a draft whose upload didn't finish: the same link while
+ * it's still valid (so the upload continues where it stopped), or a new one
+ * with `fresh` (expired link, or a different file).
+ */
+export async function restartDraft(videoId: string, fresh = false): Promise<DraftUpload> {
   try {
-    const res = await apiClient.post(`/videos/drafts/${encodeURIComponent(videoId)}/restart`, undefined, {
+    const res = await apiClient.post(`/videos/drafts/${encodeURIComponent(videoId)}/restart`, { fresh }, {
       headers: getAuthHeaders(),
       timeout: 30000,
     });
@@ -407,6 +414,8 @@ function normalizeVideoItem(raw: Record<string, unknown>): VideoListItem {
     author: (raw?.author as string | undefined) ?? undefined,
     authorAvatar: (raw?.authorAvatar as string | null | undefined) ?? null,
     category: (raw?.category as string | undefined) ?? undefined,
+    sizeBytes: raw?.sizeBytes !== undefined && raw?.sizeBytes !== null ? Number(raw.sizeBytes) : undefined,
+    draftFileName: (raw?.draftFileName as string | undefined) ?? undefined,
     isDraft: raw?.isDraft === true,
     uploadStatus: typeof statusRaw === 'string' ? statusRaw.toLowerCase() : undefined,
   };

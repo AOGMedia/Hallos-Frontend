@@ -1,13 +1,14 @@
-import { UpChunk } from "@mux/upchunk";
 import { createDraft, discardDraft, DraftsUnavailableError, restartDraft } from "@/lib/api/videos";
+import { ResumableUpload, UploadAbortedError, UploadLinkExpiredError } from "./resumableUpload";
 
 /**
  * The one video upload in progress, kept outside React so it carries on while
  * the creator fills in the details or moves around the dashboard.
  *
- * The file goes straight to Mux in chunks (UpChunk): each chunk is retried on
- * its own, the chunk size follows the connection, and when the connection
- * drops the upload pauses and carries on from the last finished chunk.
+ * The file goes straight to Mux in chunks (see resumableUpload): it always
+ * continues from what the server already has, so a dropped connection,
+ * "Try again", or even finishing a draft after a reload never starts over.
+ * The same upload link is reused until it expires.
  *
  * Two modes:
  *  - "draft": the upload starts when the file is picked (a private draft on
@@ -47,6 +48,12 @@ export interface UploadState {
   published: boolean;
   /** A draft from earlier whose file has to be picked again to finish. */
   needsFile: boolean;
+  /** That draft's file size: the same file continues, another one starts over. */
+  expectedSize: number | null;
+  /** A failed chunk: seconds until the next try (null when sending). */
+  retryIn: number | null;
+  /** The upload link expired: trying again needs a fresh one (from 0). */
+  linkExpired: boolean;
   error: string | null;
 }
 
@@ -65,16 +72,18 @@ const INITIAL: UploadState = {
   suggestedTitle: null,
   published: false,
   needsFile: false,
+  expectedSize: null,
+  retryIn: null,
+  linkExpired: false,
   error: null,
 };
 
 const STALL_AFTER_MS = 30_000;
-const KB = 1024;
 
 let state: UploadState = INITIAL;
 const listeners = new Set<() => void>();
 let file: File | null = null;
-let upload: UpChunk | null = null;
+let upload: ResumableUpload | null = null;
 let lastEndpoint: string | null = null;
 let lastOptions: { type: "long" | "short"; durationSeconds?: number } = { type: "long" };
 let lastProgressAt = 0;
@@ -107,6 +116,8 @@ export const uploadEngine = {
   /** File picked: make the draft and start sending it. */
   async start(picked: File, options: { type: "long" | "short"; durationSeconds?: number }) {
     const resumeId = state.needsFile ? state.videoId : null;
+    // Finishing a draft with the same file continues it; another file starts over.
+    const sameFile = state.expectedSize === null || state.expectedSize === picked.size;
     if (!resumeId) await this.cancel();
     stopUpload();
     file = picked;
@@ -114,7 +125,7 @@ export const uploadEngine = {
     set({ ...INITIAL, phase: "starting", fileName: picked.name, size: picked.size, videoId: resumeId });
     try {
       const draft = resumeId
-        ? await restartDraft(resumeId)
+        ? await restartDraft(resumeId, !sameFile)
         : await createDraft({
             fileName: picked.name,
             sizeBytes: picked.size,
@@ -148,7 +159,10 @@ export const uploadEngine = {
     return new Promise((resolve, reject) => waiters.push({ resolve, reject }));
   },
 
-  /** Try again after a failure: a fresh link for the same draft (or the same classic link). */
+  /**
+   * Try again after a failure. It continues on the same link from where the
+   * server got to; only an expired link needs a fresh one (from 0).
+   */
   async retry() {
     if (!file) return;
     if (!state.mode) {
@@ -156,9 +170,10 @@ export const uploadEngine = {
       return this.start(file, lastOptions);
     }
     if (state.mode === "draft" && state.videoId) {
-      set({ phase: "starting", error: null, percent: 0, loaded: 0, speed: 0, secondsLeft: null });
+      const fresh = state.linkExpired;
+      set({ phase: "starting", error: null, speed: 0, secondsLeft: null, ...(fresh ? { percent: 0, loaded: 0 } : {}) });
       try {
-        const draft = await restartDraft(state.videoId);
+        const draft = await restartDraft(state.videoId, fresh);
         run(draft.uploadUrl);
       } catch (error) {
         set({ phase: "failed", error: messageOf(error) });
@@ -196,7 +211,7 @@ export const uploadEngine = {
    * Continue a draft from the uploads page. Uploaded already: straight to the
    * details. Not finished: the creator picks the file again.
    */
-  attachDraft(draft: { videoId: string; fileName: string; uploaded: boolean }) {
+  attachDraft(draft: { videoId: string; fileName: string; uploaded: boolean; sizeBytes?: number | null }) {
     if (state.videoId === draft.videoId && state.phase !== "idle") return; // still going in this tab
     stopUpload();
     file = null;
@@ -208,6 +223,7 @@ export const uploadEngine = {
       phase: draft.uploaded ? "done" : "idle",
       percent: draft.uploaded ? 100 : 0,
       needsFile: !draft.uploaded,
+      expectedSize: draft.sizeBytes ?? null,
     });
   },
 };
@@ -218,67 +234,73 @@ function run(endpoint: string) {
   lastEndpoint = endpoint;
   const size = file.size;
   lastProgressAt = Date.now();
-  lastSample = { at: Date.now(), loaded: 0 };
-  set({ phase: "uploading", error: null, percent: 0, loaded: 0, speed: 0, secondsLeft: null, stalled: false, offline: typeof navigator !== "undefined" && !navigator.onLine });
+  lastSample = { at: Date.now(), loaded: state.loaded };
+  set({
+    phase: "uploading",
+    error: null,
+    linkExpired: false,
+    retryIn: null,
+    speed: 0,
+    secondsLeft: null,
+    stalled: false,
+    offline: typeof navigator !== "undefined" && !navigator.onLine,
+  });
 
-  const chunked = UpChunk.createUpload({
-    endpoint,
-    file,
-    // Sizes in KB (multiples of 256). Starts small, grows on fast links,
-    // shrinks on slow ones, so a dropped chunk never costs much.
-    chunkSize: 8 * KB,
-    dynamicChunkSize: true,
-    minChunkSize: 2 * KB,
-    maxChunkSize: 64 * KB,
-    attempts: 8,
-    delayBeforeAttempt: 3,
-    maxFileSize: MAX_UPLOAD_BYTES / KB,
+  // Continues from whatever the server already has (see resumableUpload).
+  const chunked = new ResumableUpload(endpoint, file, {
+    onProgress: (loaded) => {
+      if (upload !== chunked) return;
+      const now = Date.now();
+      if (loaded > state.loaded) lastProgressAt = now;
+      let { speed } = state;
+      const elapsed = now - lastSample.at;
+      if (elapsed >= 1000) {
+        const instant = ((loaded - lastSample.loaded) / elapsed) * 1000;
+        speed = speed > 0 ? speed * 0.7 + Math.max(0, instant) * 0.3 : Math.max(0, instant);
+        lastSample = { at: now, loaded };
+      }
+      set({
+        loaded,
+        percent: size ? Math.min(100, (loaded / size) * 100) : 0,
+        speed,
+        secondsLeft: speed > 0 ? (size - loaded) / speed : null,
+        stalled: false,
+      });
+    },
+    onRetry: (seconds) => {
+      if (upload !== chunked) return;
+      if (seconds === null) lastProgressAt = Date.now();
+      set({ retryIn: seconds, stalled: false });
+    },
+    onOffline: (offline) => {
+      if (upload !== chunked) return;
+      lastProgressAt = Date.now();
+      set({ offline, stalled: false });
+    },
   });
   upload = chunked;
 
-  chunked.on("progress", (event) => {
-    if (upload !== chunked) return;
-    const percent = Math.min(100, Math.max(0, Number(event.detail) || 0));
-    const loaded = (size * percent) / 100;
-    const now = Date.now();
-    if (loaded > state.loaded) lastProgressAt = now;
-    let { speed } = state;
-    const elapsed = now - lastSample.at;
-    if (elapsed >= 1000) {
-      const instant = ((loaded - lastSample.loaded) / elapsed) * 1000;
-      speed = speed > 0 ? speed * 0.7 + Math.max(0, instant) * 0.3 : Math.max(0, instant);
-      lastSample = { at: now, loaded };
-    }
-    set({
-      percent,
-      loaded,
-      speed,
-      secondsLeft: speed > 0 ? (size - loaded) / speed : null,
-      stalled: false,
+  chunked
+    .start()
+    .then(() => {
+      if (upload !== chunked) return;
+      upload = null;
+      stopTimers();
+      set({ phase: "done", percent: 100, loaded: size, secondsLeft: 0, stalled: false, offline: false, retryIn: null });
+      waiters.forEach((w) => w.resolve());
+      waiters = [];
+    })
+    .catch((error) => {
+      if (upload !== chunked || error instanceof UploadAbortedError) return;
+      upload = null;
+      stopTimers();
+      const expired = error instanceof UploadLinkExpiredError;
+      const message = expired
+        ? "This upload took too long and its link expired. Try again to start a fresh upload."
+        : "The upload stopped. Try again; it picks up where it left off.";
+      set({ phase: "failed", error: message, linkExpired: expired, stalled: false, retryIn: null });
+      rejectWaiters(new Error(message));
     });
-  });
-  chunked.on("offline", () => upload === chunked && set({ offline: true, stalled: false }));
-  chunked.on("online", () => {
-    if (upload !== chunked) return;
-    lastProgressAt = Date.now();
-    set({ offline: false });
-  });
-  chunked.on("success", () => {
-    if (upload !== chunked) return;
-    upload = null;
-    stopTimers();
-    set({ phase: "done", percent: 100, loaded: size, secondsLeft: 0, stalled: false, offline: false });
-    waiters.forEach((w) => w.resolve());
-    waiters = [];
-  });
-  chunked.on("error", (event) => {
-    if (upload !== chunked) return;
-    upload = null;
-    stopTimers();
-    const message = friendlyUploadError((event.detail as { message?: string })?.message);
-    set({ phase: "failed", error: message, stalled: false });
-    rejectWaiters(new Error(message));
-  });
 
   stallTimer = setInterval(() => {
     if (state.phase !== "uploading" || state.offline) return;
@@ -312,11 +334,6 @@ function rejectWaiters(error: Error) {
 
 function messageOf(error: unknown): string {
   return error instanceof Error && error.message ? error.message : "We couldn’t start your upload. Please try again.";
-}
-
-function friendlyUploadError(raw?: string): string {
-  if (raw && /file size|maxFileSize|exceeds/i.test(raw)) return "This video is larger than 5 GB. Please choose a smaller file.";
-  return "The upload stopped. Check your connection and try again; it picks up with a fresh link.";
 }
 
 // ── Page guards while bytes are still going up ─────────────────────────────

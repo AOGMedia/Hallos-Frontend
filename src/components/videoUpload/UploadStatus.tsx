@@ -28,8 +28,13 @@ export function uploadStatusText(s: UploadState): { heading: string; detail: str
       if (s.offline) {
         return { heading: 'Upload paused', detail: 'No connection. It carries on by itself when you’re back online.', tone: 'warning' };
       }
-      if (s.loaded <= 0) return { heading: 'Uploading a file', detail: `Starting upload of ${formatFileSize(s.size)}…`, tone: 'normal' };
       const sent = `${formatFileSize(s.loaded)} of ${formatFileSize(s.size)}`;
+      if (s.retryIn !== null) {
+        // Connected but the upload can't get through: it keeps trying, never starting over.
+        const when = s.retryIn > 0 ? `in ${s.retryIn}s` : 'now';
+        return { heading: 'Reconnecting', detail: `${sent} · Connection lost. Trying again ${when}; nothing is lost.`, tone: 'warning' };
+      }
+      if (s.loaded <= 0) return { heading: 'Uploading a file', detail: `Starting upload of ${formatFileSize(s.size)}…`, tone: 'normal' };
       if (s.stalled) return { heading: 'Uploading a file', detail: `${sent} · Slow connection, still uploading…`, tone: 'warning' };
       const parts = [sent, formatSpeed(s.speed), formatTimeLeft(s.secondsLeft)].filter(Boolean);
       return { heading: 'Uploading a file', detail: parts.join(' · '), tone: 'normal' };
@@ -106,6 +111,8 @@ export function UploadStatusPill() {
       ? 'Upload stopped'
       : upload.offline
         ? 'Upload paused'
+        : upload.retryIn !== null
+          ? 'Reconnecting'
         : upload.published
           ? `Publishing ${formatProgress(upload.percent)}`
           : `Uploading ${formatProgress(upload.percent)}`;
