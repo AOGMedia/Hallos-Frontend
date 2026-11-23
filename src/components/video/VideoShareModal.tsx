@@ -15,7 +15,7 @@ export function VideoShareModal({ isOpen, copied, onClose, onCopy }: VideoShareM
     <AnimatePresence>
       {isOpen && (
         <motion.div
-          className="absolute inset-0 flex items-end justify-center pb-20 z-50"
+          className="fixed inset-0 flex items-end justify-center bg-black/40 pb-[max(env(safe-area-inset-bottom),24px)] z-[2147483647] sm:items-center sm:pb-0"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}

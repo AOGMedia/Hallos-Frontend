@@ -28,6 +28,7 @@ export interface VideoListItem {
   /** Creator's name and profile picture (null => show their initial). */
   author?: string;
   authorAvatar?: string | null;
+  category?: string;
   /** Your own uploads only: not published yet (see the upload window's drafts). */
   isDraft?: boolean;
   /** The server's own status: uploading, processing, ready or failed. */
@@ -405,6 +406,7 @@ function normalizeVideoItem(raw: Record<string, unknown>): VideoListItem {
     userId: (raw?.userId as string | number | undefined) ?? (raw?.user_id as string | number | undefined) ?? undefined,
     author: (raw?.author as string | undefined) ?? undefined,
     authorAvatar: (raw?.authorAvatar as string | null | undefined) ?? null,
+    category: (raw?.category as string | undefined) ?? undefined,
     isDraft: raw?.isDraft === true,
     uploadStatus: typeof statusRaw === 'string' ? statusRaw.toLowerCase() : undefined,
   };

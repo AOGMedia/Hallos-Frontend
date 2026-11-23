@@ -27,6 +27,13 @@ export interface VideoPlayerProps {
   videoUrl?: string;
   thumbnail: string;
   title: string;
+  /** Remembers where the viewer stopped ("Continue from 4:32"). */
+  videoId?: string;
+  /** Desktop theater mode (wide player), controlled by the page. */
+  theater?: boolean;
+  onToggleTheater?: () => void;
+  /** Phones: a back button over the video, like the YouTube app. */
+  onBack?: () => void;
 }
 
 export interface VideoMetadataProps {

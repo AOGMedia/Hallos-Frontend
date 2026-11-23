@@ -1,17 +1,13 @@
 "use client";
 
-import {
-  useEffect,
-  useState,
-  // useMemo
-} from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import Image from "next/image";
-// import { ArrowLeft, ArrowRight } from 'lucide-react';
+import { ArrowLeft, Lock } from "lucide-react";
 import { VideoPlayer } from "@/components/video/VideoPlayer";
-import { InstructorInfo } from "@/components/video/InstructorInfo";
-import { VideoMetadata } from "@/components/video/VideoMetadata";
-// import { CountdownTimer } from "@/components/video/CountdownTimer";
+import { VideoInfo } from "@/components/video/VideoInfo";
+import { VideoDescription } from "@/components/video/VideoDescription";
+import { UpNextList, useUpNext } from "@/components/video/UpNext";
+import { VideoPageSkeleton } from "@/components/video/VideoPageSkeleton";
 import { Button } from "@/components/ui/Button";
 import { getVideoById } from "@/lib/api/videos";
 import type { VideoDetail } from "@/types/video";
@@ -19,7 +15,8 @@ import { checkAccess } from '@/lib/api/payments';
 import { usePaymentStore } from '@/store/paymentStore';
 import { PaymentModal } from '@/components/payments/PaymentModal';
 import { useCurrentUser } from "@/hooks/useCurrentUser";
-import { ReportButton } from "@/components/report/ReportButton";
+
+const THEATER_KEY = "hallos:theater";
 
 export default function VideoDetailsPage() {
   const params = useParams();
@@ -32,6 +29,17 @@ export default function VideoDetailsPage() {
   const [error, setError] = useState<string | null>(null);
   const [hasAccessToVideo, setHasAccessToVideo] = useState<boolean>(false);
   const [isCheckingAccess, setIsCheckingAccess] = useState<boolean>(true);
+  // Desktop theater mode, remembered like YouTube (wide player, details below).
+  const [theater, setTheater] = useState(false);
+  useEffect(() => {
+    try { setTheater(localStorage.getItem(THEATER_KEY) === "1"); } catch { /* private mode */ }
+  }, []);
+  const toggleTheater = useCallback(() => {
+    setTheater((on) => {
+      try { localStorage.setItem(THEATER_KEY, on ? "0" : "1"); } catch { /* private mode */ }
+      return !on;
+    });
+  }, []);
 
   const {
     hasAccess,
@@ -178,146 +186,95 @@ export default function VideoDetailsPage() {
     return () => { cancelled = true };
   }, [video, videoId, user, hasAccess, markContentAsPurchased, setContent, setPriceCurrency, openModal, setPaymentError]);
 
-  // const handleRegister = () => {
-  //   // Handle registration logic
-  //   console.log("Register for class:", video?.id);
-  // };
 
+  const isOwner = Boolean(user && video?.userId && String(user.id) === String(video.userId));
+  const upNext = useUpNext({ id: videoId, userId: video?.userId, category: video?.category });
+  // Only a right-hand column when there's something to put in it.
+  const hasUpNext = upNext.items.length > 0;
+
+  // Back stays inside Hallos: someone who opened a shared link goes to the dashboard.
   const handleBack = () => {
-    router.back();
+    let sameSite = false;
+    try { sameSite = Boolean(document.referrer) && new URL(document.referrer).origin === window.location.origin; } catch { /* no referrer */ }
+    if (sameSite && window.history.length > 1) router.back();
+    else router.push("/dashboard");
   };
 
-  if (loading) {
-    return (
-      
-      // <div className="min-h-screen bg-background-darker flex items-center justify-center">
-      //   <div className="text-text-primary">Loading video...</div>
-      // </div>
-      <div className="min-h-screen bg-background-darker flex items-center justify-center">
-        <div className="text-text-primary">Loading video...</div>
-      </div>
-    );
-  }
-
-  if (isCheckingAccess) {
-    return (
-      <div className="min-h-screen bg-background-darker flex items-center justify-center">
-        <div className="text-text-primary">Verifying access…</div>
-      </div>
-    );
-  }
-
-  if (isCheckingAccess) {
-    return (
-      <div className="min-h-screen bg-background-darker flex items-center justify-center">
-        <div className="text-text-primary">Verifying access…</div>
-      </div>
-    );
-  }
+  if (loading || isCheckingAccess) return <VideoPageSkeleton />;
 
   if (error || !video) {
     return (
-      <div className="min-h-screen bg-background-darker flex items-center justify-center">
-        <div className="text-text-primary">Video not found</div>
+      <div className="min-h-screen bg-background-darker flex flex-col items-center justify-center gap-4 p-6 text-center">
+        <p className="text-text-primary font-semibold">This video isn’t available</p>
+        <p className="text-sm text-text-muted">It may have been removed or made private.</p>
+        <Button variant="primary" onClick={() => router.push("/dashboard")}>Back to dashboard</Button>
       </div>
     );
   }
 
+  const player = hasAccessToVideo ? (
+    <VideoPlayer
+      videoUrl={video.videoUrl}
+      thumbnail={video.thumbnail}
+      title={video.title}
+      videoId={video.id}
+      theater={theater && hasUpNext}
+      onToggleTheater={hasUpNext ? toggleTheater : undefined}
+      onBack={handleBack}
+    />
+  ) : (
+    <Paywall thumbnail={video.thumbnail} onBuy={() => { setContent('video', videoId); openModal(); }} />
+  );
+
   return (
     <div className="min-h-screen bg-background-darker">
-      <div className="container mx-auto px-4 py-6 lg:py-8 max-w-7xl">
-        {/* Header with Back Button */}
-        <div className="flex items-center gap-4 mb-6">
-          <button
-            onClick={handleBack}
-            className="flex items-center gap-2 text-text-primary hover:text-primary transition-colors"
-            aria-label="Go back"
-          >
-            <Image
-              src="/icons/arrow-left.svg"
-              alt="Back"
-              width={19}
-              height={14}
-              className="w-[19px] h-[14px]"
-            />
-          </button>
-          <h1 className="text-xl font-bold text-text-primary leading-5 min-w-0 flex-1">
-            {video.title}
-          </h1>
-          {!(user && video.userId && String(user.id) === String(video.userId)) && (
-            <ReportButton targetType="video" targetId={videoId} subject="this video" className="shrink-0" />
-          )}
+      {/* Desktop: a slim bar to get back (the dashboard header is hidden here). */}
+      <div className="hidden md:flex items-center px-6 pt-4">
+        <button onClick={handleBack} className="flex items-center gap-2 rounded-full px-3 py-2 text-sm text-text-primary hover:bg-white/[0.08]" aria-label="Go back">
+          <ArrowLeft className="h-5 w-5" /> Back
+        </button>
+      </div>
+
+      {/*
+        One grid; the player never moves in it (so switching theater mode never
+        restarts the video). Desktop: player and details on the left, "Up next"
+        on the right; theater: the player spans both columns. With nothing to
+        recommend there's no right column at all.
+      */}
+      <div className={`mx-auto grid max-w-[1500px] gap-x-6 md:px-6 md:py-4 ${hasUpNext ? 'lg:grid-cols-[minmax(0,1fr)_400px]' : ''}`}>
+        {/* Phones: the player stays at the top while the details scroll (YouTube app). */}
+        <div className={`sticky top-0 z-30 bg-black md:static md:bg-transparent ${theater && hasUpNext ? 'lg:col-span-2' : ''}`}>
+          {player}
         </div>
-
-        {/* Main Content */}
-        <div className="grid grid-cols-1 gap-6 lg:gap-8">
-          {/* Video and Details */}
-          <div className="flex flex-col gap-6">
-            {/* Video Player */}
-            {hasAccessToVideo ? (
-              <VideoPlayer
-                videoUrl={video.videoUrl}
-                thumbnail={video.thumbnail}
-                title={video.title}
-              />
-            ) : (
-              <div className="w-full aspect-video bg-[#0b0b0b] flex items-center justify-center text-center p-6 text-text-primary">
-                <div>
-                  <div className="text-medium font-semibold mb-2">Access restricted</div>
-                  <div className="text-description mb-4">You need to purchase this content to watch it.</div>
-                  <div className="flex justify-center">
-                    <Button onClick={() => { setContent('video', videoId); openModal(); }} variant="primary">Buy to Watch</Button>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Video Information */}
-            <div className="flex flex-col gap-6">
-              {/* Instructor Info */}
-              <InstructorInfo
-                name={video.author}
-                avatar={video.authorAvatar}
-                bio={video.authorBio}
-              />
-
-              {/* Metadata */}
-              <VideoMetadata
-                duration={video.duration}
-                postedDate={video.postedDate}
-                rating={video.rating}
-                ratingCount={video.ratingCount}
-              />
-            </div>
+        <main className="flex min-w-0 flex-col gap-4 p-4 md:px-0 lg:col-start-1">
+          <VideoInfo video={video} isOwner={isOwner} />
+          <VideoDescription description={video.description} category={video.category} tags={video.tags} />
+          <div className="pt-2 lg:hidden">
+            <UpNextList items={upNext.items} isLoading={false} />
           </div>
-
-          {/* Right Column - Countdown and Register */}
-          {/* <div className="flex flex-col gap-4 lg:min-w-[280px]"> */}
-            {/* Countdown Timer */}
-            {/* {video.classStartDate && (
-              <CountdownTimer targetDate={video.classStartDate} />
-            )} */}
-
-            {/* Register Button */}
-            {/* <Button
-              variant="primary"
-              size="lg"
-              onClick={handleRegister}
-              className="w-full flex items-center justify-center gap-2"
-            >
-              <span>Register for class</span>
-              <Image
-                src="/icons/arrow-right.svg"
-                alt=""
-                width={18}
-                height={14}
-                className="w-[18px] h-[14px]"
-              />
-            </Button> */}
-          {/* </div> */}
-        </div>
+        </main>
+        {hasUpNext && (
+          <aside className={`hidden lg:col-start-2 lg:block ${theater ? 'lg:row-start-2 pt-4' : 'lg:row-start-1 lg:row-span-2'}`}>
+            <UpNextList items={upNext.items} isLoading={false} />
+          </aside>
+        )}
       </div>
       <PaymentModal />
+    </div>
+  );
+}
+
+/** Paid video, not bought yet: the poster with a clear way to buy (same 16:9 frame as the player). */
+function Paywall({ thumbnail, onBuy }: { thumbnail: string; onBuy: () => void }) {
+  return (
+    <div className="relative aspect-video w-full overflow-hidden bg-black md:rounded-xl">
+      {/* eslint-disable-next-line @next/next/no-img-element -- thumbnails come from several hosts */}
+      {thumbnail && <img src={thumbnail} alt="" className="absolute inset-0 h-full w-full object-cover opacity-30 blur-sm" />}
+      <div className="relative flex h-full flex-col items-center justify-center gap-3 p-6 text-center text-text-primary">
+        <Lock className="h-8 w-8" aria-hidden />
+        <p className="font-semibold">Buy this video to watch it</p>
+        <Button onClick={onBuy} variant="primary">Buy to watch</Button>
+      </div>
     </div>
   );
 }
