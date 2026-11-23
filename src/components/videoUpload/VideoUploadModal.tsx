@@ -276,7 +276,7 @@ export function VideoUploadModal() {
         store.resetUpload();
         store.setVideoTitle(draft.title);
         if (draft.type === "short") store.setVideoType(VideoType.SHORT);
-        uploadEngine.attachDraft({ videoId: draft.id, fileName: draft.title, uploaded });
+        uploadEngine.attachDraft({ videoId: draft.id, fileName: draft.draftFileName || draft.title, uploaded, sizeBytes: draft.sizeBytes });
         if (uploaded) store.setCurrentStep(UploadStep.VIDEO_DETAILS);
       })
       .catch(() => {});
